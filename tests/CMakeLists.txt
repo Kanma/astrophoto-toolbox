@@ -14,6 +14,7 @@ target_link_libraries(unittests
         astrophoto-toolbox
 )
 
+add_subdirectory(images)
 
 # Run the unit tests
 add_custom_target(run-unittests ALL unittests
