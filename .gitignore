@@ -2,3 +2,5 @@
 build/
 
 CMakeUserPresets.json
+*.CR2
+.DS_Store

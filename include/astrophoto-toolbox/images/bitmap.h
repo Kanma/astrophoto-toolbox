@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <iostream>
+#include <cmath>
 
 
 namespace astrophototoolbox {
@@ -9,7 +9,11 @@ namespace astrophototoolbox {
     //------------------------------------------------------------------------------------
     /// @brief  Container for a bitmap image
     ///
-    /// The template parameters are the underlying data type and the number of channels.
+    /// This class cannot be instantiated directly, you must use the TypedBitmap template
+    /// or one of the predefined types.
+    ///
+    /// All bitmaps are stored in a uint8_t array, regardless of the real data type of the
+    /// pixel components.
     ///
     /// Automatic conversion is performed between different bitmap types, on a full-range
     /// basis (ie. uint8 0-255 it scaled to uint16 0-65535). Float bitmaps have a range of
@@ -19,32 +23,29 @@ namespace astrophototoolbox {
     /// count are also supported. Thus, special care must be taken when you want to
     /// iterate over all the pixels.
     //------------------------------------------------------------------------------------
-    template<typename T, unsigned int CHANNELS>
-        requires(CHANNELS == 1 || CHANNELS == 3)
     class Bitmap
     {
-    public:
+        //_____ Construction / Destruction __________
+    public: 
+        Bitmap() = delete;
+        virtual ~Bitmap() = default;
+
+
+    protected:
         //--------------------------------------------------------------------------------
-        /// @brief  Construct an empty bitmap (width & height = 0)
+        /// @brief  Construct an empty bitmap
         ///
         /// Can be resized or filled later.
         //--------------------------------------------------------------------------------
-        Bitmap()
-        : _width(0), _height(0), _bytesPerRow(0)
-        {
-        }
+        Bitmap(uint8_t channels, size_t channelSize, bool floatingPoint);
 
         //--------------------------------------------------------------------------------
         /// @brief  Construct a bitmap with the specified dimensions
         ///
         /// All pixels are set to 0.
         //--------------------------------------------------------------------------------
-        Bitmap(unsigned int width, unsigned int height)
-        : _width(width), _height(height), _bytesPerRow(width * CHANNELS * sizeof(T))
-        {
-            _data.resize(_bytesPerRow * height / sizeof(T));
-            memset((void*) _data.data(), 0, _data.size() * sizeof(T));
-        }
+        Bitmap(unsigned int width, unsigned int height, uint8_t channels,
+               size_t channelSize, bool floatingPoint);
 
         //--------------------------------------------------------------------------------
         /// @brief  Construct a bitmap with the specified dimensions, but with more bytes
@@ -52,57 +53,11 @@ namespace astrophototoolbox {
         ///
         /// All pixels are set to 0.
         //--------------------------------------------------------------------------------
-        Bitmap(unsigned int width, unsigned int height, unsigned int bytesPerRow)
-        : _width(width), _height(height), _bytesPerRow(bytesPerRow)
-        {
-            assert(bytesPerRow >= width * CHANNELS * sizeof(T));
-            _data.resize(_bytesPerRow * height / sizeof(T));
-            memset((void*) _data.data(), 0, _data.size() * sizeof(T));
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Construct a bitmap by copying the provided buffer
-        ///
-        /// It is expected than the dimensions provided are exactly those of the image in
-        /// the buffer, and that the number of channels is correct.
-        //--------------------------------------------------------------------------------
-        Bitmap(T* data, unsigned int width, unsigned int height)
-        {
-            set(data, width, height);
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Construct a bitmap by copying the provided buffer
-        ///
-        /// It is expected than the dimensions provided are exactly those of the image in
-        /// the buffer, and that the number of channels and the number of bytes per row
-        /// are correct.
-        //--------------------------------------------------------------------------------
-        Bitmap(T* data, unsigned int width, unsigned int height, unsigned int bytesPerRow)
-        {
-            set(data, width, height, bytesPerRow);
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Construct a bitmap by copying the provided one
-        //--------------------------------------------------------------------------------
-        Bitmap(const Bitmap<T, CHANNELS>& bitmap)
-        {
-            set(bitmap);
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Construct a bitmap by copying the provided one
-        ///
-        /// Automatic conversion is performed as needed.
-        //--------------------------------------------------------------------------------
-        template<typename T2, unsigned int CHANNELS2>
-        Bitmap(const Bitmap<T2, CHANNELS2>& bitmap)
-        {
-            set(bitmap);
-        }
+        Bitmap(unsigned int width, unsigned int height, uint8_t channels,
+               size_t channelSize, bool floatingPoint, unsigned int bytesPerRow);
 
 
+        //_____ Methods __________
     public:
         //--------------------------------------------------------------------------------
         /// @brief  Returns the width of the bitmap
@@ -123,9 +78,17 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Returns the number of channels of the bitmap
         //--------------------------------------------------------------------------------
-        inline unsigned int channels() const
+        inline uint8_t channels() const
         {
-            return CHANNELS;
+            return _channels;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the size in bytes of each channel component of the pixels
+        //--------------------------------------------------------------------------------
+        inline size_t channelSize() const
+        {
+            return _channelSize;
         }
 
         //--------------------------------------------------------------------------------
@@ -133,7 +96,7 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         inline unsigned int bytesPerPixel() const
         {
-            return CHANNELS * sizeof(T);
+            return _channels * _channelSize;
         }
 
         //--------------------------------------------------------------------------------
@@ -147,7 +110,7 @@ namespace astrophototoolbox {
         }
 
         //--------------------------------------------------------------------------------
-        /// @brief  Returns the total size of the buffer holding the bitmap
+        /// @brief  Returns the total size of the buffer holding the bitmap, in bytes
         //--------------------------------------------------------------------------------
         inline unsigned int size() const
         {
@@ -155,9 +118,18 @@ namespace astrophototoolbox {
         }
 
         //--------------------------------------------------------------------------------
+        /// @brief  Indicates if the pixmap contains floating-point numbers (float or
+        ///         double)
+        //--------------------------------------------------------------------------------
+        inline bool isFloatingPoint() const
+        {
+            return _floatingPoint;
+        }
+
+        //--------------------------------------------------------------------------------
         /// @brief  Returns a pointer to the buffer holding the bitmap
         //--------------------------------------------------------------------------------
-        inline T* data()
+        inline uint8_t* ptr()
         {
             return _data.data();
         }
@@ -165,9 +137,221 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Returns a pointer to the buffer holding the bitmap
         //--------------------------------------------------------------------------------
-        inline const T* data() const
+        inline const uint8_t* ptr() const
         {
             return _data.data();
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns a pointer to the beginnining of the specified row
+        //--------------------------------------------------------------------------------
+        inline uint8_t* ptr(unsigned int y)
+        {
+            return _data.data() + y * _bytesPerRow;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns a pointer to the beginnining of the specified row
+        //--------------------------------------------------------------------------------
+        inline const uint8_t* ptr(unsigned int y) const
+        {
+            return _data.data() + y * _bytesPerRow;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns a pointer to the pixel at the specified coordinates
+        //--------------------------------------------------------------------------------
+        inline uint8_t* ptr(unsigned int x, unsigned int y)
+        {
+            return _data.data() + y * _bytesPerRow + x * bytesPerPixel();
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns a pointer to the pixel at the specified coordinates
+        //--------------------------------------------------------------------------------
+        inline const uint8_t* ptr(unsigned int x, unsigned int y) const
+        {
+            return _data.data() + y * _bytesPerRow + x * bytesPerPixel();
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Resize the bitmap to the specified dimensions
+        ///
+        /// The bitmap is filled with 0.
+        //--------------------------------------------------------------------------------
+        void resize(unsigned int width, unsigned int height);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Resize the bitmap to the specified dimensions, but with more bytes per
+        ///         row than would be necessary
+        ///
+        /// The bitmap is filled with 0.
+        //--------------------------------------------------------------------------------
+        void resize(unsigned int width, unsigned int height, unsigned int bytesPerRow);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Fill the bitmap with a copy of the provided buffer
+        ///
+        /// It is expected than the dimensions provided are exactly those of the image in
+        /// the buffer, and that the number of channels is correct.
+        ///
+        /// The bitmap is resized if necessary.
+        //--------------------------------------------------------------------------------
+        void set(uint8_t* data, unsigned int width, unsigned int height);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Fill the bitmap with a copy of the provided buffer
+        ///
+        /// It is expected than the dimensions provided are exactly those of the image in
+        /// the buffer, and that the number of channels and the number of bytes per row
+        /// are correct.
+        ///
+        /// The bitmap is resized if necessary.
+        //--------------------------------------------------------------------------------
+        void set(
+            uint8_t* data, unsigned int width, unsigned int height,
+            unsigned int bytesPerRow
+        );
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Fill the bitmap with a copy of the provided one
+        ///
+        /// The bitmap is resized if necessary, automatic conversion is performed if
+        /// needed.
+        //--------------------------------------------------------------------------------
+        void set(const Bitmap* bitmap);
+
+
+        //_____ Attributes __________
+    protected:
+        std::vector<uint8_t> _data;
+        unsigned int _width = 0;
+        unsigned int _height = 0;
+        uint8_t _channels = 0;
+        size_t _channelSize = 0;
+        bool _floatingPoint = false;
+        unsigned int _bytesPerRow = 0;
+    };
+
+
+    //------------------------------------------------------------------------------------
+    /// @brief  Typed representation of a bitmap image
+    ///
+    /// The template parameters are the underlying data type and the number of channels.
+    ///
+    /// Automatic conversion is performed between different bitmap types, on a full-range
+    /// basis (ie. uint8 0-255 it scaled to uint16 0-65535). Float bitmaps have a range of
+    /// 0.0-1.0.
+    ///
+    /// Bitmaps with more bytes per row than necessary to hold the real horizontal pixel
+    /// count are also supported. Thus, special care must be taken when you want to
+    /// iterate over all the pixels.
+    //------------------------------------------------------------------------------------
+    template<typename T, uint8_t CHANNELS>
+        requires(CHANNELS == 1 || CHANNELS == 3)
+    class TypedBitmap : public Bitmap
+    {
+        //_____ Construction / Destruction __________
+    public:
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct an empty bitmap (width & height = 0)
+        ///
+        /// Can be resized or filled later.
+        //--------------------------------------------------------------------------------
+        TypedBitmap()
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        {
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap with the specified dimensions
+        ///
+        /// All pixels are set to 0.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(unsigned int width, unsigned int height)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        {
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap with the specified dimensions, but with more bytes
+        ///         per row than would be necessary
+        ///
+        /// All pixels are set to 0.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(unsigned int width, unsigned int height, unsigned int bytesPerRow)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow)
+        {
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap by copying the provided buffer
+        ///
+        /// It is expected than the dimensions provided are exactly those of the image in
+        /// the buffer, and that the number of channels is correct.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(T* data, unsigned int width, unsigned int height)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        {
+            set(data, width, height);
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap by copying the provided buffer
+        ///
+        /// It is expected than the dimensions provided are exactly those of the image in
+        /// the buffer, and that the number of channels and the number of bytes per row
+        /// are correct.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(T* data, unsigned int width, unsigned int height,
+                             unsigned int bytesPerRow)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow)
+        {
+            set(data, width, height, bytesPerRow);
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap by copying the provided one
+        ///
+        /// Automatic conversion is performed as needed.
+        //--------------------------------------------------------------------------------
+        template<typename T2, uint8_t CHANNELS2>
+        TypedBitmap(const TypedBitmap<T2, CHANNELS2>& bitmap)
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        {
+            set(&bitmap);
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap by copying the provided one
+        ///
+        /// Automatic conversion is performed as needed.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(Bitmap* bitmap)
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        {
+            set(bitmap);
+        }
+
+        virtual ~TypedBitmap() = default;
+
+
+        //_____ Methods __________
+    public:
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns a pointer to the buffer holding the bitmap
+        //--------------------------------------------------------------------------------
+        inline T* data()
+        {
+            return (T*) _data.data();
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns a pointer to the buffer holding the bitmap
+        //--------------------------------------------------------------------------------
+        inline const T* data() const
+        {
+            return (T*) _data.data();
         }
 
         //--------------------------------------------------------------------------------
@@ -201,329 +385,18 @@ namespace astrophototoolbox {
         {
             return (T*)((uint8_t*) _data.data() + y * _bytesPerRow + x * bytesPerPixel());
         }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Resize the bitmap to the specified dimensions
-        ///
-        /// The bitmap is filled with 0.
-        //--------------------------------------------------------------------------------
-        void resize(unsigned int width, unsigned int height)
-        {
-            _width = width;
-            _height = height;
-            _bytesPerRow = _width * CHANNELS * sizeof(T);
-            _data.resize(_bytesPerRow * _height / sizeof(T));
-            memset((void*) _data.data(), 0, _data.size() * sizeof(T));
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Resize the bitmap to the specified dimensions, but with more bytes per
-        ///         row than would be necessary
-        ///
-        /// The bitmap is filled with 0.
-        //--------------------------------------------------------------------------------
-        void resize(unsigned int width, unsigned int height, unsigned int bytesPerRow)
-        {
-            assert(bytesPerRow >= width * CHANNELS * sizeof(T));
-
-            _width = width;
-            _height = height;
-            _bytesPerRow = bytesPerRow;
-            _data.resize(_bytesPerRow * _height / sizeof(T));
-            memset((void*) _data.data(), 0, _data.size() * sizeof(T));
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Fill the bitmap with a copy of the provided buffer
-        ///
-        /// It is expected than the dimensions provided are exactly those of the image in
-        /// the buffer, and that the number of channels is correct.
-        ///
-        /// The bitmap is resized if necessary.
-        //--------------------------------------------------------------------------------
-        void set(T* data, unsigned int width, unsigned int height)
-        {
-            assert(data);
-
-            if ((_width != width) || (_height != height) || (_bytesPerRow != _width * CHANNELS * sizeof(T)))
-            {
-                _width = width;
-                _height = height;
-                _bytesPerRow = _width * CHANNELS * sizeof(T);
-                _data.resize(_bytesPerRow * _height / sizeof(T));
-            }
-
-            memcpy((void*) _data.data(), (void*) data, _data.size() * sizeof(T));
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Fill the bitmap with a copy of the provided buffer
-        ///
-        /// It is expected than the dimensions provided are exactly those of the image in
-        /// the buffer, and that the number of channels and the number of bytes per row
-        /// are correct.
-        ///
-        /// The bitmap is resized if necessary.
-        //--------------------------------------------------------------------------------
-        void set(T* data, unsigned int width, unsigned int height, unsigned int bytesPerRow)
-        {
-            assert(data);
-            assert(bytesPerRow >= width * CHANNELS * sizeof(T));
-
-            if ((_width != width) || (_height != height) || (_bytesPerRow != bytesPerRow))
-            {
-                _width = width;
-                _height = height;
-                _bytesPerRow = bytesPerRow;
-                _data.resize(_bytesPerRow * _height / sizeof(T));
-            }
-
-            memcpy((void*) _data.data(), (void*) data, _data.size() * sizeof(T));
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Fill the bitmap with a copy of the provided one
-        ///
-        /// The bitmap is resized if necessary, automatic conversion is performed if
-        /// needed.
-        //--------------------------------------------------------------------------------
-        void set(const Bitmap<T, CHANNELS>& bitmap)
-        {
-            if ((_width != bitmap.width()) || (_height != bitmap.height()) || (_bytesPerRow != bitmap.width() * CHANNELS * sizeof(T)))
-            {
-                _width = bitmap.width();
-                _height = bitmap.height();
-                _bytesPerRow = bitmap.width() * CHANNELS * sizeof(T);
-                _data.resize(_bytesPerRow * _height / sizeof(T));
-            }
-
-            const T* src = bitmap.data();
-            T* dest = _data.data();
-
-            for (unsigned int y = 0; y < _height; ++y)
-            {
-                memcpy((void*) dest, (void*) src, _bytesPerRow);
-                src = (T*)((uint8_t*) src + bitmap.bytesPerRow());
-                dest = (T*)((uint8_t*) dest + _bytesPerRow);
-            }
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Fill the bitmap with a copy of the provided one
-        ///
-        /// The bitmap is resized if necessary, automatic conversion is performed if
-        /// needed.
-        //--------------------------------------------------------------------------------
-        template<typename T2, unsigned int CHANNELS2>
-            requires(std::is_integral_v<T> && std::is_integral_v<T2>)
-        void set(const Bitmap<T2, CHANNELS2>& bitmap)
-        {
-            if ((_width != bitmap.width()) || (_height != bitmap.height()) || (_bytesPerRow != bitmap.width() * CHANNELS * sizeof(T)))
-            {
-                _width = bitmap.width();
-                _height = bitmap.height();
-                _bytesPerRow = bitmap.width() * CHANNELS * sizeof(T);
-                _data.resize(_bytesPerRow * _height / sizeof(T));
-            }
-
-            const double factor =  (sizeof(T) > sizeof(T2)
-                ? std::pow(2.0, (sizeof(T) - sizeof(T2)) * 8)
-                : 1.0 / std::pow(2.0, (sizeof(T2) - sizeof(T)) * 8)
-            );
-
-            convert(bitmap, factor);
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Fill the bitmap with a copy of the provided one
-        ///
-        /// The bitmap is resized if necessary, automatic conversion is performed if
-        /// needed.
-        //--------------------------------------------------------------------------------
-        template<typename T2, unsigned int CHANNELS2>
-            requires(!std::is_integral_v<T> && std::is_integral_v<T2>)
-        void set(const Bitmap<T2, CHANNELS2>& bitmap)
-        {
-            if ((_width != bitmap.width()) || (_height != bitmap.height()) || (_bytesPerRow != bitmap.width() * CHANNELS * sizeof(T)))
-            {
-                _width = bitmap.width();
-                _height = bitmap.height();
-                _bytesPerRow = bitmap.width() * CHANNELS * sizeof(T);
-                _data.resize(_bytesPerRow * _height / sizeof(T));
-            }
-
-            const T factor = 1.0 / (std::pow(2.0, sizeof(T2) * 8) - 1);
-            convert(bitmap, factor);
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Fill the bitmap with a copy of the provided one
-        ///
-        /// The bitmap is resized if necessary, automatic conversion is performed if
-        /// needed.
-        //--------------------------------------------------------------------------------
-        template<typename T2, unsigned int CHANNELS2>
-            requires(std::is_integral_v<T> && !std::is_integral_v<T2>)
-        void set(const Bitmap<T2, CHANNELS2>& bitmap)
-        {
-            if ((_width != bitmap.width()) || (_height != bitmap.height()) || (_bytesPerRow != bitmap.width() * CHANNELS * sizeof(T)))
-            {
-                _width = bitmap.width();
-                _height = bitmap.height();
-                _bytesPerRow = bitmap.width() * CHANNELS * sizeof(T);
-                _data.resize(_bytesPerRow * _height / sizeof(T));
-            }
-
-            const double factor = std::pow(2.0, sizeof(T) * 8) - 1;
-            convert(bitmap, factor);
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Fill the bitmap with a copy of the provided one
-        ///
-        /// The bitmap is resized if necessary, automatic conversion is performed if
-        /// needed.
-        //--------------------------------------------------------------------------------
-        template<typename T2, unsigned int CHANNELS2>
-            requires(!std::is_integral_v<T> && !std::is_integral_v<T2>)
-        void set(const Bitmap<T2, CHANNELS2>& bitmap)
-        {
-            if ((_width != bitmap.width()) || (_height != bitmap.height()) || (_bytesPerRow != bitmap.width() * CHANNELS * sizeof(T)))
-            {
-                _width = bitmap.width();
-                _height = bitmap.height();
-                _bytesPerRow = bitmap.width() * CHANNELS * sizeof(T);
-                _data.resize(_bytesPerRow * _height / sizeof(T));
-            }
-
-            convert(bitmap, 1.0);
-        }
-
-
-    private:
-        template<typename T2, unsigned int CHANNELS2, typename FACTOR_TYPE>
-            requires(CHANNELS == CHANNELS2 && CHANNELS != 1)
-        void convert(const Bitmap<T2, CHANNELS2>& bitmap, FACTOR_TYPE factor)
-        {
-            const T2* src = bitmap.data();
-            T* dest = _data.data();
-
-            for (unsigned int y = 0; y < _height; ++y)
-            {
-                const T2* src2 = src;
-
-                for (unsigned int x = 0; x < _width; ++x)
-                {
-                    for (unsigned int c = 0; c < CHANNELS; ++c)
-                    {
-                        *dest = T(FACTOR_TYPE(*src2) * factor);
-                        ++src2;
-                        ++dest;
-                    }
-                }
-
-                src = (T2*)((uint8_t*) src + bitmap.bytesPerRow());
-            }
-        }
-
-        template<typename T2, unsigned int CHANNELS2, typename FACTOR_TYPE>
-            requires(CHANNELS == CHANNELS2 && CHANNELS == 1)
-        void convert(const Bitmap<T2, CHANNELS2>& bitmap, FACTOR_TYPE factor)
-        {
-            const T2* src = bitmap.data();
-            T* dest = _data.data();
-
-            for (unsigned int y = 0; y < _height; ++y)
-            {
-                const T2* src2 = src;
-
-                for (unsigned int x = 0; x < _width; ++x)
-                {
-                    *dest = T(FACTOR_TYPE(*src2) * factor);
-                    ++src2;
-                    ++dest;
-                }
-
-                src = (T2*)((uint8_t*) src + bitmap.bytesPerRow());
-            }
-        }
-
-        template<typename T2, unsigned int CHANNELS2, typename FACTOR_TYPE>
-            requires(CHANNELS != CHANNELS2 && CHANNELS == 1)
-        void convert(const Bitmap<T2, CHANNELS2>& bitmap, FACTOR_TYPE factor)
-        {
-            const T2* src = bitmap.data();
-            T* dest = _data.data();
-
-            for (unsigned int y = 0; y < _height; ++y)
-            {
-                const T2* src2 = src;
-
-                for (unsigned int x = 0; x < _width; ++x)
-                {
-                    FACTOR_TYPE sum = 0.0;
-
-                    for (unsigned int c = 0; c < CHANNELS2; ++c)
-                    {
-                        sum += FACTOR_TYPE(*src2);
-                        ++src2;
-                    }
-
-                    *dest = T(sum * factor / FACTOR_TYPE(CHANNELS2));
-                    ++dest;
-                }
-
-                src = (T2*)((uint8_t*) src + bitmap.bytesPerRow());
-            }
-        }
-
-        template<typename T2, unsigned int CHANNELS2, typename FACTOR_TYPE>
-            requires(CHANNELS != CHANNELS2 && CHANNELS2 == 1)
-        void convert(const Bitmap<T2, CHANNELS2>& bitmap, FACTOR_TYPE factor)
-        {
-            const T2* src = bitmap.data();
-            T* dest = _data.data();
-
-            for (unsigned int y = 0; y < _height; ++y)
-            {
-                const T2* src2 = src;
-
-                for (unsigned int x = 0; x < _width; ++x)
-                {
-                    T v = T(FACTOR_TYPE(*src2) * factor);
-
-                    for (unsigned int c = 0; c < CHANNELS; ++c)
-                    {
-                        *dest = v;
-                        ++dest;
-                    }
-
-                    ++src2;
-                }
-
-                src = (T2*)((uint8_t*) src + bitmap.bytesPerRow());
-            }
-        }
-
-
-        //_____ Attributes __________
-    private:
-        std::vector<T> _data; 
-        unsigned int _width = 0;
-        unsigned int _height = 0;
-        unsigned int _bytesPerRow = 0;
     };
 
 
-    typedef Bitmap<uint8_t, 3> UInt8ColorBitmap;
-    typedef Bitmap<uint16_t, 3> UInt16ColorBitmap;
-    typedef Bitmap<uint32_t, 3> UInt32ColorBitmap;
-    typedef Bitmap<float_t, 3> FloatColorBitmap;
-    typedef Bitmap<double_t, 3> DoubleColorBitmap;
+    typedef TypedBitmap<uint8_t, 3> UInt8ColorBitmap;
+    typedef TypedBitmap<uint16_t, 3> UInt16ColorBitmap;
+    typedef TypedBitmap<uint32_t, 3> UInt32ColorBitmap;
+    typedef TypedBitmap<float_t, 3> FloatColorBitmap;
+    typedef TypedBitmap<double_t, 3> DoubleColorBitmap;
 
-    typedef Bitmap<uint8_t, 1> UInt8GrayBitmap;
-    typedef Bitmap<uint16_t, 1> UInt16GrayBitmap;
-    typedef Bitmap<uint32_t, 1> UInt32GrayBitmap;
-    typedef Bitmap<float_t, 1> FloatGrayBitmap;
-    typedef Bitmap<double_t, 1> DoubleGrayBitmap;
+    typedef TypedBitmap<uint8_t, 1> UInt8GrayBitmap;
+    typedef TypedBitmap<uint16_t, 1> UInt16GrayBitmap;
+    typedef TypedBitmap<uint32_t, 1> UInt32GrayBitmap;
+    typedef TypedBitmap<float_t, 1> FloatGrayBitmap;
+    typedef TypedBitmap<double_t, 1> DoubleGrayBitmap;
 }

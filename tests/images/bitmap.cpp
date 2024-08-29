@@ -1,6 +1,5 @@
 #include <catch.hpp>
 #include <astrophoto-toolbox/images/bitmap.h>
-#include <iostream>
 
 using namespace astrophototoolbox;
 
@@ -60,7 +59,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
     {
         UInt8ColorBitmap image2(10, 8);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 255;
         for (size_t i = 0; i < image2.size(); ++i)
         {
@@ -68,7 +67,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -86,7 +85,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
     {
         UInt8ColorBitmap image2(10, 8, 60);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 255;
         for (size_t i = 0; i < image2.size(); ++i)
         {
@@ -94,7 +93,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -125,7 +124,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -151,7 +150,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -179,7 +178,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
                 v = 1.0f;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -208,7 +207,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
                 v = 1.0;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -227,7 +226,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
     {
         UInt8GrayBitmap image2(10, 8);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 255;
         for (size_t i = 0; i < image2.height() * image2.width(); ++i)
         {
@@ -235,7 +234,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -257,7 +256,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
     {
         UInt8GrayBitmap image2(10, 8, 60);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 255;
         for (size_t i = 0; i < image2.height() * image2.bytesPerRow(); ++i)
         {
@@ -265,7 +264,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -300,7 +299,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
         REQUIRE(image2.size() == image.size());
 
         data = image.data();
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         for (size_t i = 0; i < image2.size(); ++i)
             REQUIRE(data[i] == data2[i]);
     }
@@ -317,7 +316,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -380,7 +379,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(buffer, 10, 8);
+        image.set((uint8_t*) buffer, 10, 8);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -406,7 +405,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -432,7 +431,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -455,7 +454,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
     {
         UInt8ColorBitmap image2(10, 8);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 0xFF;
         for (size_t i = 0; i < image2.height() * image2.width() * 3; ++i)
         {
@@ -463,7 +462,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -489,7 +488,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -517,7 +516,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
                 v = 1.0f;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -545,7 +544,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
                 v = 1.0;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -571,7 +570,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -601,7 +600,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -653,7 +652,7 @@ TEST_CASE("UInt16 color bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -716,7 +715,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(buffer, 10, 8);
+        image.set((uint8_t*) buffer, 10, 8);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -742,7 +741,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -768,7 +767,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -791,7 +790,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
     {
         UInt8ColorBitmap image2(10, 8);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 0xFF;
         for (size_t i = 0; i < image2.height() * image2.width() * 3; ++i)
         {
@@ -799,7 +798,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -825,7 +824,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -853,7 +852,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
                 v = 1.0f;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -881,7 +880,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
                 v = 1.0;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -907,7 +906,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -937,7 +936,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -989,7 +988,7 @@ TEST_CASE("UInt32 color bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1070,7 +1069,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         UInt8GrayBitmap image2(10, 8);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 255;
         for (size_t i = 0; i < image2.size(); ++i)
         {
@@ -1078,7 +1077,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1096,7 +1095,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         UInt8GrayBitmap image2(10, 8, 60);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 255;
         for (size_t i = 0; i < image2.size(); ++i)
         {
@@ -1104,7 +1103,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1135,7 +1134,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1161,7 +1160,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1189,7 +1188,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
                 v = 1.0f;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1218,7 +1217,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
                 v = 1.0;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1237,7 +1236,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         UInt8ColorBitmap image2(10, 8);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 255;
         for (size_t i = 0; i < image2.height() * image2.width() * 3; ++i)
         {
@@ -1245,7 +1244,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1263,7 +1262,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         UInt8ColorBitmap image2(10, 8, 60);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 255;
         for (size_t i = 0; i < image2.height() * image2.bytesPerRow(); ++i)
         {
@@ -1271,7 +1270,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1302,7 +1301,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
         REQUIRE(image2.size() == image.size());
 
         data = image.data();
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         for (size_t i = 0; i < image2.size(); ++i)
             REQUIRE(data[i] == data2[i]);
     }
@@ -1319,7 +1318,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1377,7 +1376,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(buffer, 10, 8);
+        image.set((uint8_t*) buffer, 10, 8);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1403,7 +1402,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1429,7 +1428,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1452,7 +1451,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
     {
         UInt8GrayBitmap image2(10, 8);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 0xFF;
         for (size_t i = 0; i < image2.height() * image2.width(); ++i)
         {
@@ -1460,7 +1459,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1486,7 +1485,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1514,7 +1513,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
                 v = 1.0f;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1542,7 +1541,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
                 v = 1.0;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1568,7 +1567,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1594,7 +1593,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1642,7 +1641,7 @@ TEST_CASE("UInt16 gray bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1700,7 +1699,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(buffer, 10, 8);
+        image.set((uint8_t*) buffer, 10, 8);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1726,7 +1725,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1752,7 +1751,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1775,7 +1774,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
     {
         UInt8GrayBitmap image2(10, 8);
 
-        uint8_t *data2 = image2.data();
+        uint8_t* data2 = image2.data();
         uint8_t v = 0xFF;
         for (size_t i = 0; i < image2.height() * image2.width(); ++i)
         {
@@ -1783,7 +1782,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
             --v;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1809,7 +1808,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1837,7 +1836,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
                 v = 1.0f;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1865,7 +1864,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
                 v = 1.0;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1891,7 +1890,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1917,7 +1916,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
             v -= 0x1000000;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
@@ -1965,7 +1964,7 @@ TEST_CASE("UInt32 gray bitmap", "[Bitmap]")
             v -= 0x100;
         }
 
-        image.set(image2);
+        image.set(&image2);
 
         REQUIRE(image.width() == 10);
         REQUIRE(image.height() == 8);
