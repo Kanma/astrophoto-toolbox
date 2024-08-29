@@ -1,5 +1,6 @@
 #pragma once
 
+#include <astrophoto-toolbox/images/bitmapinfo.h>
 #include <vector>
 #include <cmath>
 
@@ -127,6 +128,22 @@ namespace astrophototoolbox {
         }
 
         //--------------------------------------------------------------------------------
+        /// @brief  Returns the informations about the capture of the bitmap
+        //--------------------------------------------------------------------------------
+        inline bitmap_info_t& info()
+        {
+            return _info;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the informations about the capture of the bitmap
+        //--------------------------------------------------------------------------------
+        inline bitmap_info_t info() const
+        {
+            return _info;
+        }
+
+        //--------------------------------------------------------------------------------
         /// @brief  Returns a pointer to the buffer holding the bitmap
         //--------------------------------------------------------------------------------
         inline uint8_t* ptr()
@@ -231,6 +248,7 @@ namespace astrophototoolbox {
         size_t _channelSize = 0;
         bool _floatingPoint = false;
         unsigned int _bytesPerRow = 0;
+        bitmap_info_t _info;
     };
 
 

@@ -348,6 +348,8 @@ void Bitmap::set(const Bitmap* bitmap)
         _data.resize(_bytesPerRow * _height / sizeof(uint8_t));
     }
 
+    _info = bitmap->info();
+
     if (isFloatingPoint())
     {
         if (_channels == 3)

@@ -43,6 +43,12 @@ TEST_CASE("Open valid file", "[RAW]")
         REQUIRE(image.toBitmap(&bitmap));
         REQUIRE(bitmap.width() == 3906);
         REQUIRE(bitmap.height() == 2602);
+
+        auto info = bitmap.info();
+        REQUIRE(info.isoSpeed == 800);
+        REQUIRE(info.shutterSpeed == Approx(30.0f));
+        REQUIRE(info.aperture == Approx(0.0f));
+        REQUIRE(info.focalLength == Approx(0.0f));
     }
 
     SECTION("conversion to uint16 bitmap")
@@ -51,6 +57,12 @@ TEST_CASE("Open valid file", "[RAW]")
         REQUIRE(image.toBitmap(&bitmap));
         REQUIRE(bitmap.width() == 3906);
         REQUIRE(bitmap.height() == 2602);
+
+        auto info = bitmap.info();
+        REQUIRE(info.isoSpeed == 800);
+        REQUIRE(info.shutterSpeed == Approx(30.0f));
+        REQUIRE(info.aperture == Approx(0.0f));
+        REQUIRE(info.focalLength == Approx(0.0f));
     }
 }
 

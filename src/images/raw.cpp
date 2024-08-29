@@ -151,5 +151,11 @@ bool RawImage::toBitmap(Bitmap* bitmap)
         }
     }
 
+    bitmap_info_t& info = bitmap->info();
+    info.isoSpeed = isoSpeed();
+    info.shutterSpeed = shutterSpeed();
+    info.aperture = aperture();
+    info.focalLength = focalLength();
+
     return (err == 0);
 }

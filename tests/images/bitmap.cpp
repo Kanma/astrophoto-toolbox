@@ -14,6 +14,12 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
     REQUIRE(image.bytesPerRow() == 60);
     REQUIRE(image.size() == 600);
 
+    auto info = image.info();
+    REQUIRE(info.isoSpeed == 0);
+    REQUIRE(info.shutterSpeed == Approx(0.0f));
+    REQUIRE(info.aperture == Approx(0.0f));
+    REQUIRE(info.focalLength == Approx(0.0f));
+
     uint8_t *data = image.data();
     REQUIRE(data);
 
@@ -67,6 +73,12 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
             --v;
         }
 
+        auto& info2 = image2.info();
+        info2.isoSpeed = 400;
+        info2.shutterSpeed = 2.0f;
+        info2.aperture = 4.5f;
+        info2.focalLength = 20.0f;
+
         image.set(&image2);
 
         REQUIRE(image.width() == 10);
@@ -75,6 +87,12 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
         REQUIRE(image.bytesPerPixel() == 3);
         REQUIRE(image.bytesPerRow() == 30);
         REQUIRE(image.size() == 240);
+
+        auto info = image.info();
+        REQUIRE(info.isoSpeed == 400);
+        REQUIRE(info.shutterSpeed == Approx(2.0f));
+        REQUIRE(info.aperture == Approx(4.5f));
+        REQUIRE(info.focalLength == Approx(20.0f));
 
         data = image.data();
         for (size_t i = 0; i < image.size(); ++i)
