@@ -1,5 +1,6 @@
 set(SRC_FILES
     coordinates.cpp
+    data/fits.cpp
     images/bitmap.cpp
     images/pnm.cpp
     images/raw.cpp
@@ -7,6 +8,7 @@ set(SRC_FILES
 
 set(HEADER_FILES
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/coordinates.h
+    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/data/fits.h
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/bitmap.h
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/pnm.h
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/raw.h
@@ -22,4 +24,5 @@ target_include_directories(astrophoto-toolbox
 target_link_libraries(astrophoto-toolbox
     PUBLIC
         libraw::libraw
+        cfitsio
 )

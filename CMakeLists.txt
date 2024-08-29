@@ -30,7 +30,13 @@ FetchContent_Declare(
   GIT_TAG "eb98e4325aef2ce85d2eb031c2ff18640ca616d3"
 )
 
-FetchContent_MakeAvailable(LibRaw LibRaw-cmake)
+FetchContent_Declare(
+  cfitsio
+  GIT_REPOSITORY https://github.com/HEASARC/cfitsio.git
+  GIT_TAG "cfitsio4_4_1_20240617"
+)
+
+FetchContent_MakeAvailable(LibRaw LibRaw-cmake cfitsio)
 
 # Disable warnings in LibRaw
 target_compile_options(raw PRIVATE "-Wno-deprecated-declarations")

@@ -1,6 +1,9 @@
 add_executable(unittests
     main.cpp
     coordinates.cpp
+
+    data/fits.cpp
+
     images/bitmap.cpp
     images/pnm.cpp
     images/raw.cpp
@@ -21,11 +24,11 @@ set(TESTS_TEMP_DIR "${CMAKE_BINARY_DIR}/tests/tmp/")
 
 target_compile_definitions(unittests
     PRIVATE
-        DATA_DIR="${CMAKE_CURRENT_LIST_DIR}/data/"
+        DATA_DIR="${CMAKE_CURRENT_LIST_DIR}/assets/"
         TEMP_DIR="${TESTS_TEMP_DIR}"
 )
 
-add_subdirectory(data)
+add_subdirectory(assets)
 
 # Run the unit tests
 add_custom_target(run-unittests
