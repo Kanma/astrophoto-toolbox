@@ -5,6 +5,16 @@ add_executable(unittests
     data/fits.cpp
 
     images/bitmap.cpp
+    images/bitmap_helpers.h
+    images/bitmap_helpers.cpp
+    images/bitmap_uint8_color.cpp
+    images/bitmap_uint16_color.cpp
+    images/bitmap_uint32_color.cpp
+    images/bitmap_uint8_gray.cpp
+    images/bitmap_uint16_gray.cpp
+    images/bitmap_uint32_gray.cpp
+    images/bitmap_float_color.cpp
+    images/bitmap_float_gray.cpp
     images/pnm.cpp
     images/raw.cpp
 )

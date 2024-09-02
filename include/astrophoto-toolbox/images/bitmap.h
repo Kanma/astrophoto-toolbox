@@ -18,7 +18,7 @@ namespace astrophototoolbox {
     ///
     /// Automatic conversion is performed between different bitmap types, on a full-range
     /// basis (ie. uint8 0-255 it scaled to uint16 0-65535). Float bitmaps have a range of
-    /// 0.0-1.0.
+    /// 0.0-1.0. This behavior can be disabled.
     ///
     /// Bitmaps with more bytes per row than necessary to hold the real horizontal pixel
     /// count are also supported. Thus, special care must be taken when you want to
@@ -233,10 +233,24 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Fill the bitmap with a copy of the provided one
         ///
-        /// The bitmap is resized if necessary, automatic conversion is performed if
-        /// needed.
+        /// The bitmap is resized if necessary. The pixel values are scaled to the range
+        /// of this bitmap by default (for floating point images: between 0 and 1), but
+        /// this behavior can be disabled.
         //--------------------------------------------------------------------------------
-        void set(const Bitmap* bitmap);
+        void set(const Bitmap* bitmap, bool scaleRange = true);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns a single-channel bitmap containing a copy of one channel of
+        ///         this bitmap
+        ///
+        /// The caller is responsible to delete the returned bitmap.
+        //--------------------------------------------------------------------------------
+        Bitmap* channel(uint8_t index) const;
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Set one channel of this bitmap to the values provided
+        //--------------------------------------------------------------------------------
+        bool setChannel(uint8_t index, Bitmap* channel);
 
 
         //_____ Attributes __________
@@ -259,7 +273,7 @@ namespace astrophototoolbox {
     ///
     /// Automatic conversion is performed between different bitmap types, on a full-range
     /// basis (ie. uint8 0-255 it scaled to uint16 0-65535). Float bitmaps have a range of
-    /// 0.0-1.0.
+    /// 0.0-1.0. This behavior can be disabled.
     ///
     /// Bitmaps with more bytes per row than necessary to hold the real horizontal pixel
     /// count are also supported. Thus, special care must be taken when you want to
@@ -334,10 +348,10 @@ namespace astrophototoolbox {
         /// Automatic conversion is performed as needed.
         //--------------------------------------------------------------------------------
         template<typename T2, uint8_t CHANNELS2>
-        TypedBitmap(const TypedBitmap<T2, CHANNELS2>& bitmap)
+        TypedBitmap(const TypedBitmap<T2, CHANNELS2>& bitmap, bool scaleRange = true)
         : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>)
         {
-            set(&bitmap);
+            set(&bitmap, scaleRange);
         }
 
         //--------------------------------------------------------------------------------
@@ -345,10 +359,10 @@ namespace astrophototoolbox {
         ///
         /// Automatic conversion is performed as needed.
         //--------------------------------------------------------------------------------
-        TypedBitmap(Bitmap* bitmap)
+        TypedBitmap(Bitmap* bitmap, bool scaleRange = true)
         : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>)
         {
-            set(bitmap);
+            set(bitmap, scaleRange);
         }
 
         virtual ~TypedBitmap() = default;

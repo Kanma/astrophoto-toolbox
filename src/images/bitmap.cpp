@@ -234,7 +234,7 @@ void Bitmap::set(uint8_t* data, unsigned int width, unsigned int height, unsigne
 
 //-----------------------------------------------------------------------------
 
-#define CONVERT_COLOR_INTEGER(dest, bitmap)    \
+#define CONVERT_COLOR_INTEGER(dest, bitmap, factor)    \
     {   \
         if (bitmap->channelSize() == 1)     \
             convert(dest, dynamic_cast<const UInt8ColorBitmap*>(bitmap), factor);   \
@@ -245,7 +245,7 @@ void Bitmap::set(uint8_t* data, unsigned int width, unsigned int height, unsigne
     }
 
 
-#define CONVERT_GRAY_INTEGER(dest, bitmap)    \
+#define CONVERT_GRAY_INTEGER(dest, bitmap, factor)    \
     {   \
         if (bitmap->channelSize() == 1)     \
             convert(dest, dynamic_cast<const UInt8GrayBitmap*>(bitmap), factor);   \
@@ -256,7 +256,7 @@ void Bitmap::set(uint8_t* data, unsigned int width, unsigned int height, unsigne
     }
 
 
-#define CONVERT_COLOR_FLOAT(dest, bitmap)    \
+#define CONVERT_COLOR_FLOAT(dest, bitmap, factor)    \
     {   \
         if (bitmap->channelSize() == 4)     \
             convert(dest, dynamic_cast<const FloatColorBitmap*>(bitmap), factor);   \
@@ -265,7 +265,7 @@ void Bitmap::set(uint8_t* data, unsigned int width, unsigned int height, unsigne
     }
 
 
-#define CONVERT_GRAY_FLOAT(dest, bitmap)    \
+#define CONVERT_GRAY_FLOAT(dest, bitmap, factor)    \
     {   \
         if (bitmap->channelSize() == 4)     \
             convert(dest, dynamic_cast<const FloatGrayBitmap*>(bitmap), factor);   \
@@ -274,69 +274,69 @@ void Bitmap::set(uint8_t* data, unsigned int width, unsigned int height, unsigne
     }
 
 
-#define CONVERT_INTEGER_TO_INTEGER(dest, bitmap)    \
+#define CONVERT_INTEGER_TO_INTEGER(dest, bitmap, scaleRange)    \
     {   \
         const double factor =  (_channelSize >= bitmap->channelSize()   \
-            ? std::pow(2.0, (_channelSize - bitmap->channelSize()) * 8)   \
-            : 1.0 / std::pow(2.0, (bitmap->channelSize() - _channelSize) * 8)   \
+            ? (scaleRange ? (std::pow(2.0, _channelSize * 8) - 1.0) / (std::pow(2.0, bitmap->channelSize() * 8) - 1.0) : 1.0)   \
+            : 1.0 / ((std::pow(2.0, bitmap->channelSize() * 8) - 1.0) / (std::pow(2.0, _channelSize * 8) - 1.0))   \
         );   \
-    \
+        \
         if (bitmap->channels() == 3)   \
-            CONVERT_COLOR_INTEGER(dest, bitmap)   \
+            CONVERT_COLOR_INTEGER(dest, bitmap, factor)   \
         else   \
-            CONVERT_GRAY_INTEGER(dest, bitmap)   \
+            CONVERT_GRAY_INTEGER(dest, bitmap, factor)   \
     }
 
 
-#define CONVERT_INTEGER_TO_FLOAT(dest, bitmap)    \
+#define CONVERT_INTEGER_TO_FLOAT(dest, bitmap, scaleRange)    \
     {   \
-        const double factor = 1.0 / (std::pow(2.0, bitmap->channelSize() * 8) - 1);   \
-    \
+        const double factor = (scaleRange ? 1.0 / (std::pow(2.0, bitmap->channelSize() * 8) - 1) : 1.0);   \
+        \
         if (bitmap->channels() == 3)   \
-            CONVERT_COLOR_INTEGER(dest, bitmap)   \
+            CONVERT_COLOR_INTEGER(dest, bitmap, factor)   \
         else   \
-            CONVERT_GRAY_INTEGER(dest, bitmap)   \
+            CONVERT_GRAY_INTEGER(dest, bitmap, factor)   \
     }
 
 
-#define CONVERT_FLOAT_TO_INTEGER(dest, bitmap)    \
+#define CONVERT_FLOAT_TO_INTEGER(dest, bitmap, scaleRange)    \
     {   \
-        const double factor = std::pow(2.0, _channelSize * 8) - 1;   \
-    \
+        const double factor = (scaleRange ? std::pow(2.0, _channelSize * 8) - 1.0 : 1.0);   \
+        \
         if (bitmap->channels() == 3)   \
-            CONVERT_COLOR_FLOAT(dest, bitmap)   \
+            CONVERT_COLOR_FLOAT(dest, bitmap, factor)   \
         else   \
-            CONVERT_GRAY_FLOAT(dest, bitmap)   \
+            CONVERT_GRAY_FLOAT(dest, bitmap, factor)   \
     }
 
 
 #define CONVERT_FLOAT_TO_FLOAT(dest, bitmap)    \
     {   \
         const double factor = 1.0;   \
-    \
+        \
         if (bitmap->channels() == 3)   \
-            CONVERT_COLOR_FLOAT(dest, bitmap)   \
+            CONVERT_COLOR_FLOAT(dest, bitmap, factor)   \
         else   \
-            CONVERT_GRAY_FLOAT(dest, bitmap)   \
+            CONVERT_GRAY_FLOAT(dest, bitmap, factor)   \
     }
 
 
-#define CONVERT_INTEGER(dest, bitmap)    \
+#define CONVERT_INTEGER(dest, bitmap, scaleRange)    \
     if (bitmap->isFloatingPoint())    \
-        CONVERT_FLOAT_TO_INTEGER(dest, bitmap)    \
+        CONVERT_FLOAT_TO_INTEGER(dest, bitmap, scaleRange)    \
     else    \
-        CONVERT_INTEGER_TO_INTEGER(dest, bitmap)
+        CONVERT_INTEGER_TO_INTEGER(dest, bitmap, scaleRange)
 
 
-#define CONVERT_FLOAT(dest, bitmap)    \
+#define CONVERT_FLOAT(dest, bitmap, scaleRange)    \
     if (bitmap->isFloatingPoint())    \
         CONVERT_FLOAT_TO_FLOAT(dest, bitmap)    \
     else    \
-        CONVERT_INTEGER_TO_FLOAT(dest, bitmap)
+        CONVERT_INTEGER_TO_FLOAT(dest, bitmap, scaleRange)
 
 
 
-void Bitmap::set(const Bitmap* bitmap)
+void Bitmap::set(const Bitmap* bitmap, bool scaleRange)
 {
     assert(bitmap);
 
@@ -357,12 +357,12 @@ void Bitmap::set(const Bitmap* bitmap)
             if (_channelSize == 4)
             {
                 FloatColorBitmap* dest = dynamic_cast<FloatColorBitmap*>(this);
-                CONVERT_FLOAT(dest, bitmap)
+                CONVERT_FLOAT(dest, bitmap, scaleRange)
             }
             else if (_channelSize == 8)
             {
                 DoubleColorBitmap* dest = dynamic_cast<DoubleColorBitmap*>(this);
-                CONVERT_FLOAT(dest, bitmap)
+                CONVERT_FLOAT(dest, bitmap, scaleRange)
             }
         }
         else if (_channels == 1)
@@ -370,12 +370,12 @@ void Bitmap::set(const Bitmap* bitmap)
             if (_channelSize == 4)
             {
                 FloatGrayBitmap* dest = dynamic_cast<FloatGrayBitmap*>(this);
-                CONVERT_FLOAT(dest, bitmap)
+                CONVERT_FLOAT(dest, bitmap, scaleRange)
             }
             else if (_channelSize == 8)
             {
                 DoubleGrayBitmap* dest = dynamic_cast<DoubleGrayBitmap*>(this);
-                CONVERT_FLOAT(dest, bitmap)
+                CONVERT_FLOAT(dest, bitmap, scaleRange)
             }
         }
     }
@@ -386,17 +386,17 @@ void Bitmap::set(const Bitmap* bitmap)
             if (_channelSize == 1)
             {
                 UInt8ColorBitmap* dest = dynamic_cast<UInt8ColorBitmap*>(this);
-                CONVERT_INTEGER(dest, bitmap)
+                CONVERT_INTEGER(dest, bitmap, scaleRange)
             }
             else if (_channelSize == 2)
             {
                 UInt16ColorBitmap* dest = dynamic_cast<UInt16ColorBitmap*>(this);
-                CONVERT_INTEGER(dest, bitmap)
+                CONVERT_INTEGER(dest, bitmap, scaleRange)
             }
             else if (_channelSize == 4)
             {
                 UInt32ColorBitmap* dest = dynamic_cast<UInt32ColorBitmap*>(this);
-                CONVERT_INTEGER(dest, bitmap)
+                CONVERT_INTEGER(dest, bitmap, scaleRange)
             }
         }
         else if (_channels == 1)
@@ -404,18 +404,88 @@ void Bitmap::set(const Bitmap* bitmap)
             if (_channelSize == 1)
             {
                 UInt8GrayBitmap* dest = dynamic_cast<UInt8GrayBitmap*>(this);
-                CONVERT_INTEGER(dest, bitmap)
+                CONVERT_INTEGER(dest, bitmap, scaleRange)
             }
             else if (_channelSize == 2)
             {
                 UInt16GrayBitmap* dest = dynamic_cast<UInt16GrayBitmap*>(this);
-                CONVERT_INTEGER(dest, bitmap)
+                CONVERT_INTEGER(dest, bitmap, scaleRange)
             }
             else if (_channelSize == 4)
             {
                 UInt32GrayBitmap* dest = dynamic_cast<UInt32GrayBitmap*>(this);
-                CONVERT_INTEGER(dest, bitmap)
+                CONVERT_INTEGER(dest, bitmap, scaleRange)
             }
         }
     }
+}
+
+//-----------------------------------------------------------------------------
+
+Bitmap* Bitmap::channel(uint8_t index) const
+{
+    if (index >= _channels)
+        return nullptr;
+
+    Bitmap* result = nullptr;
+    if (_floatingPoint)
+    {
+        if (_channelSize == 4)
+            result = new FloatGrayBitmap(_width, _height);
+        else if (_channelSize == 8)
+            result = new DoubleGrayBitmap(_width, _height);
+    }
+    else
+    {
+        if (_channelSize == 1)
+            result = new UInt8GrayBitmap(_width, _height);
+        else if (_channelSize == 2)
+            result = new UInt16GrayBitmap(_width, _height);
+        else if (_channelSize == 4)
+            result = new UInt32GrayBitmap(_width, _height);
+    }
+
+    if (!result)
+        return nullptr;
+
+    for (unsigned int y = 0; y < _height; ++y)
+    {
+        const uint8_t* src = ptr(y) + index * _channelSize;
+        uint8_t* dest = result->ptr(y);
+
+        for (unsigned int x = 0; x < _width; ++x)
+        {
+            memcpy(dest, src, _channelSize);
+            src += _channels * _channelSize;
+            dest += _channelSize;
+        }
+    }
+
+    return result;
+}
+
+//-----------------------------------------------------------------------------
+
+bool Bitmap::setChannel(uint8_t index, Bitmap* channel)
+{
+    if (!channel || (index >= _channels) || (channel->channels() != 1) || (channel->channelSize() != _channelSize) ||
+        (channel->width() != _width) || (channel->height() != _height) || (channel->isFloatingPoint() != _floatingPoint))
+    {
+        return false;
+    }
+
+    for (unsigned int y = 0; y < _height; ++y)
+    {
+        const uint8_t* src = channel->ptr(y);
+        uint8_t* dest = ptr(y) + index * _channelSize;
+
+        for (unsigned int x = 0; x < _width; ++x)
+        {
+            memcpy(dest, src, _channelSize);
+            src += _channelSize;
+            dest += _channels * _channelSize;
+        }
+    }
+
+    return true;
 }

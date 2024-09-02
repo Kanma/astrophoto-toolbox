@@ -1,6 +1,7 @@
 #pragma once
 
 #include <astrophoto-toolbox/images/bitmap.h>
+#include <astrophoto-toolbox/astrometry/starlist.h>
 #include <fitsio.h>
 #include <string>
 
@@ -51,20 +52,31 @@ namespace astrophototoolbox {
         bool write(Bitmap* bitmap, const std::string& name = "");
 
         //--------------------------------------------------------------------------------
-        /// @brief  Read a bitmap from the FITS file
-        ///
-        /// If no name is specified, the first image is retrieved
+        /// @brief  Add a list of stars into the FITS file
         //--------------------------------------------------------------------------------
-        Bitmap* readBitmap(const std::string& name = "");
+        bool write(
+            const star_list_t& starList, const std::string& name = "STARS",
+            bool overwrite = false
+        );
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Read the first bitmap from the FITS file
+        //--------------------------------------------------------------------------------
+        bool readBitmap(Bitmap* bitmap);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Read the bitmap with the given name from the FITS file
+        //--------------------------------------------------------------------------------
+        bool readBitmap(const std::string& name, Bitmap* bitmap);
 
         //--------------------------------------------------------------------------------
         /// @brief  Read the n-th bitmap from the FITS file
         //--------------------------------------------------------------------------------
-        Bitmap* readBitmap(int index);
+        bool readBitmap(int index, Bitmap* bitmap);
 
 
     private:
-        Bitmap* readBitmapFromCurrentHDU();
+        bool readBitmapFromCurrentHDU(Bitmap* bitmap);
 
 
         //_____ Attributes __________
