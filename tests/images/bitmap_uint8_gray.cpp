@@ -11,6 +11,7 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     REQUIRE(image.bytesPerPixel() == 1);
     REQUIRE(image.bytesPerRow() == 20);
     REQUIRE(image.size() == 200);
+    REQUIRE(image.range() == RANGE_BYTE);
 
     uint8_t *data = image.data();
     REQUIRE(data);
@@ -57,16 +58,19 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         Bitmap* image2 = createUInt8Bitmap(false, 10, 8);
 
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
-            image.set(image2);
-            checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0, RANGE_BYTE);
+            }
         }
 
-        SECTION("without scaling (should have no effect)")
+        SECTION("with invalid ranges")
         {
-            image.set(image2, false);
-            checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
         }
 
         delete image2;
@@ -76,16 +80,19 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         Bitmap* image2 = createUInt8Bitmap(false, 10, 8, 20);
 
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
-            image.set(image2);
-            checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0, RANGE_BYTE);
+            }
         }
 
-        SECTION("without scaling (should have no effect)")
+        SECTION("with invalid ranges")
         {
-            image.set(image2, false);
-            checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
         }
 
         delete image2;
@@ -93,76 +100,223 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
 
     SECTION("set from another gray bitmap, 16bits integer")
     {
-        Bitmap* image2 = createUInt16Bitmap(false, 10, 8);
-
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
-            image.set(image2);
-            checkBitmap<uint8_t, uint16_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 257.0);
+            Bitmap* image2 = createUInt16Bitmap(false, 10, 8);
+
+            for (range_t range : {RANGE_DEST, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, uint16_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 257.0, RANGE_BYTE);
+            }
+
+            delete image2;
+
+            image2 = createUInt16Bitmap(false, 10, 8, 0, RANGE_BYTE);
+
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, uint16_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0, RANGE_BYTE);
+            }
+
+            delete image2;
         }
 
-        SECTION("without scaling (should have no effect)")
+        SECTION("with invalid ranges")
         {
-            image.set(image2, false);
-            checkBitmap<uint8_t, uint16_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 257.0);
-        }
+            Bitmap* image2 = createUInt16Bitmap(false, 10, 8);
 
-        delete image2;
+            for (range_t range : {RANGE_SOURCE, RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+
+            image2 = createUInt16Bitmap(false, 10, 8, 0, RANGE_BYTE);
+
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+        }
     }
 
     SECTION("set from another gray bitmap, 32bits integer")
     {
-        Bitmap* image2 = createUInt32Bitmap(false, 10, 8);
-
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
-            image.set(image2);
-            checkBitmap<uint8_t, uint32_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 16843009.0);
+            Bitmap* image2 = createUInt32Bitmap(false, 10, 8);
+
+            for (range_t range : {RANGE_DEST, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, uint32_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 16843009.0, RANGE_BYTE);
+            }
+
+            delete image2;
+
+            image2 = createUInt32Bitmap(false, 10, 8, 0, RANGE_USHORT);
+
+            for (range_t range : {RANGE_DEST, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, uint32_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 257.0, RANGE_BYTE);
+            }
+
+            delete image2;
+
+            image2 = createUInt32Bitmap(false, 10, 8, 0, RANGE_BYTE);
+
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, uint32_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0, RANGE_BYTE);
+            }
+
+            delete image2;
         }
 
-        SECTION("without scaling (should have no effect)")
+        SECTION("with invalid ranges")
         {
-            image.set(image2, false);
-            checkBitmap<uint8_t, uint32_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 16843009.0);
-        }
+            Bitmap* image2 = createUInt32Bitmap(false, 10, 8);
 
-        delete image2;
+            for (range_t range : {RANGE_SOURCE, RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+
+            image2 = createUInt32Bitmap(false, 10, 80, 0, RANGE_USHORT);
+
+            for (range_t range : {RANGE_SOURCE, RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+
+            image2 = createUInt32Bitmap(false, 10, 80, 0, RANGE_BYTE);
+
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+         }
     }
 
     SECTION("set from another gray bitmap, float")
     {
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
             Bitmap* image2 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f);
-            image.set(image2);
-            checkBitmap<uint8_t, float>(&image, 10, 8, 1, 1, 10, 80, image2, 255.0);
+
+            for (range_t range : {RANGE_DEST, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, float>(&image, 10, 8, 1, 1, 10, 80, image2, 255.0, RANGE_BYTE);
+            }
+
+            delete image2;
+ 
+            image2 = createFloatBitmap(false, 10, 8, 1.0f, 255.0f, 0, RANGE_BYTE);
+
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, float>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0, RANGE_BYTE);
+            }
+ 
+            delete image2;
+
+            image2 = createFloatBitmap(false, 10, 8, 1000.0f, 65535.0f, 0, RANGE_USHORT);
+
+            for (range_t range : {RANGE_DEST, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, float>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 257.0, RANGE_BYTE);
+            }
+ 
+            delete image2;
+
+            image2 = createFloatBitmap(false, 10, 8, 1000000.0f, 4294967295.0f, 0, RANGE_UINT);
+
+            for (range_t range : {RANGE_DEST, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, float>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 16843009.0, RANGE_BYTE);
+            }
+ 
             delete image2;
         }
 
-        SECTION("without scaling")
+        SECTION("with invalid ranges")
         {
-            Bitmap* image2 = createFloatBitmap(false, 10, 8, 1.0f, 255.0f);
-            image.set(image2, false);
-            checkBitmap<uint8_t, float>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            Bitmap* image2 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f);
+
+            for (range_t range : {RANGE_SOURCE, RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+
+            image2 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f, 0, RANGE_BYTE);
+
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+
+            image2 = createFloatBitmap(false, 10, 8, 256.0f, 65535.0f, 0, RANGE_USHORT);
+
+            for (range_t range : {RANGE_SOURCE, RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+
+            image2 = createFloatBitmap(false, 10, 8, 1000000.0f, 4294967295.0f, 0, RANGE_UINT);
+
+            for (range_t range : {RANGE_SOURCE, RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
             delete image2;
         }
     }
 
     SECTION("set from another color bitmap, double")
     {
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
             Bitmap* image2 = createDoubleBitmap(false, 10, 8, 0.05, 1.0);
-            image.set(image2);
-            checkBitmap<uint8_t, double>(&image, 10, 8, 1, 1, 10, 80, image2, 255.0);
+
+            for (range_t range : {RANGE_DEST, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, double>(&image, 10, 8, 1, 1, 10, 80, image2, 255.0, RANGE_BYTE);
+            }
+
+            delete image2;
+ 
+            image2 = createDoubleBitmap(false, 10, 8, 1.0, 255.0, 0, RANGE_BYTE);
+
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmap<uint8_t, double>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0, RANGE_BYTE);
+            }
+ 
             delete image2;
         }
 
-        SECTION("without scaling")
+        SECTION("with invalid ranges")
         {
-            Bitmap* image2 = createDoubleBitmap(false, 10, 8, 1.0, 255.0);
-            image.set(image2, false);
-            checkBitmap<uint8_t, double>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            Bitmap* image2 = createDoubleBitmap(false, 10, 8, 0.05, 1.0);
+
+            for (range_t range : {RANGE_SOURCE, RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
+            delete image2;
+
+            image2 = createDoubleBitmap(false, 10, 8, 0.05, 1.0, 0, RANGE_BYTE);
+
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
+
             delete image2;
         }
     }
@@ -171,16 +325,19 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         Bitmap* image2 = createUInt8Bitmap(true, 10, 8);
 
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
-            image.set(image2);
-            checkBitmapMeanChannel<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmapMeanChannel<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0, RANGE_BYTE);
+            }
         }
 
-        SECTION("without scaling (should have no effect)")
+        SECTION("with invalid ranges")
         {
-            image.set(image2, false);
-            checkBitmapMeanChannel<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
         }
 
         delete image2;
@@ -190,16 +347,19 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         Bitmap* image2 = createUInt8Bitmap(true, 10, 8, 42);
 
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
-            image.set(image2);
-            checkBitmapMeanChannel<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmapMeanChannel<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0, RANGE_BYTE);
+            }
         }
 
-        SECTION("without scaling (should have no effect)")
+        SECTION("with invalid ranges")
         {
-            image.set(image2, false);
-            checkBitmapMeanChannel<uint8_t, uint8_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0);
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
         }
 
         delete image2;
@@ -207,16 +367,22 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
 
     SECTION("creation from another gray bitmap of the same type")
     {
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
-            UInt8GrayBitmap image2(image);
-            checkBitmap<uint8_t, uint8_t>(&image2, 20, 10, 1, 1, 20, 200, &image, 1.0);
+            for (range_t range : {RANGE_DEST, RANGE_SOURCE, RANGE_BYTE})
+            {
+                UInt8GrayBitmap image2(image, range);
+                checkBitmap<uint8_t, uint8_t>(&image2, 20, 10, 1, 1, 20, 200, &image, 1.0, RANGE_BYTE);
+            }
         }
 
-        SECTION("without scaling (should have no effect)")
+        SECTION("with invalid ranges")
         {
-            UInt8GrayBitmap image2(image, false);
-            checkBitmap<uint8_t, uint8_t>(&image2, 20, 10, 1, 1, 20, 200, &image, 1.0);
+            for (range_t range : {RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+            {
+                UInt8GrayBitmap image2(image, range);
+                REQUIRE(image2.width() == 0);
+            }
         }
     }
 
@@ -224,18 +390,26 @@ TEST_CASE("UInt8 gray bitmap", "[Bitmap]")
     {
         Bitmap* image2 = createUInt16Bitmap(true, 10, 8, 72);
 
-        SECTION("with scaling")
+        SECTION("with valid ranges")
         {
-            image.set(image2);
-            checkBitmapMeanChannel<uint8_t, uint16_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 257.0);
+            for (range_t range : {RANGE_DEST, RANGE_BYTE})
+            {
+                REQUIRE(image.set(image2, range));
+                checkBitmapMeanChannel<uint8_t, uint16_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 257.0, RANGE_BYTE);
+            }
         }
 
-        SECTION("without scaling (should have no effect)")
+        SECTION("with invalid ranges")
         {
-            image.set(image2, false);
-            checkBitmapMeanChannel<uint8_t, uint16_t>(&image, 10, 8, 1, 1, 10, 80, image2, 1.0 / 257.0);
+            for (range_t range : {RANGE_SOURCE, RANGE_USHORT, RANGE_UINT, RANGE_ONE})
+                REQUIRE(!image.set(image2, range));
         }
 
         delete image2;
+    }
+
+    SECTION("fail to change range")
+    {
+        REQUIRE(!image.setRange(RANGE_USHORT));
     }
 }

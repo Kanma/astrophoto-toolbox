@@ -4,7 +4,6 @@ add_executable(unittests
 
     data/fits.cpp
 
-    images/bitmap.cpp
     images/bitmap_helpers.h
     images/bitmap_helpers.cpp
     images/bitmap_uint8_color.cpp

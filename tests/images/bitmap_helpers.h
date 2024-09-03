@@ -13,21 +13,23 @@ Bitmap* createUInt8Bitmap(
 );
 
 Bitmap* createUInt16Bitmap(
-    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow = 0
+    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow = 0,
+    range_t range = RANGE_USHORT
 );
 
 Bitmap* createUInt32Bitmap(
-    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow = 0
+    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow = 0,
+    range_t range = RANGE_UINT
 );
 
 Bitmap* createFloatBitmap(
     bool color, unsigned int width, unsigned int height, float increment,
-    float maxValue, unsigned int bytesPerRow = 0
+    float maxValue, unsigned int bytesPerRow = 0, range_t range = RANGE_ONE
 );
 
 Bitmap* createDoubleBitmap(
     bool color, unsigned int width, unsigned int height, double increment,
-    double maxValue, unsigned int bytesPerRow = 0
+    double maxValue, unsigned int bytesPerRow = 0, range_t range = RANGE_ONE
 );
 
 void checkBitmapInfo(Bitmap* bitmap, Bitmap* ref);
@@ -37,7 +39,7 @@ template<typename T1, typename T2>
 void checkBitmap(
     Bitmap* bitmap, unsigned int width, unsigned int height, unsigned int channels,
     unsigned int bytesPerPixel, unsigned int bytesPerRow, unsigned int size, Bitmap* ref,
-    double factor
+    double factor, range_t range
 )
 {
     REQUIRE(bitmap->width() == width);
@@ -46,6 +48,7 @@ void checkBitmap(
     REQUIRE(bitmap->bytesPerPixel() == bytesPerPixel);
     REQUIRE(bitmap->bytesPerRow() == bytesPerRow);
     REQUIRE(bitmap->size() == size);
+    REQUIRE(bitmap->range() == range);
 
     for (unsigned int y = 0; y < height; ++y)
     {
@@ -65,7 +68,7 @@ void checkIdenticalBitmaps(Bitmap* bitmap, Bitmap* ref)
 {
     checkBitmap<T, T>(
         bitmap, ref->width(), ref->height(), ref->channels(), ref->bytesPerPixel(), 
-        ref->bytesPerRow(), ref->size(), ref, 1.0
+        ref->bytesPerRow(), ref->size(), ref, 1.0, ref->range()
     );
 }
 
@@ -74,7 +77,7 @@ template<typename T1, typename T2>
 void checkBitmapIdenticalChannels(
     Bitmap* bitmap, unsigned int width, unsigned int height, unsigned int channels,
     unsigned int bytesPerPixel, unsigned int bytesPerRow, unsigned int size, Bitmap* ref,
-    double factor
+    double factor, range_t range
 )
 {
     REQUIRE(bitmap->width() == width);
@@ -83,6 +86,7 @@ void checkBitmapIdenticalChannels(
     REQUIRE(bitmap->bytesPerPixel() == bytesPerPixel);
     REQUIRE(bitmap->bytesPerRow() == bytesPerRow);
     REQUIRE(bitmap->size() == size);
+    REQUIRE(bitmap->range() == range);
 
     for (unsigned int y = 0; y < height; ++y)
     {
@@ -104,7 +108,7 @@ template<typename T1, typename T2>
 void checkBitmapMeanChannel(
     Bitmap* bitmap, unsigned int width, unsigned int height, unsigned int channels,
     unsigned int bytesPerPixel, unsigned int bytesPerRow, unsigned int size, Bitmap* ref,
-    double factor
+    double factor, range_t range
 )
 {
     REQUIRE(bitmap->width() == width);
@@ -113,6 +117,7 @@ void checkBitmapMeanChannel(
     REQUIRE(bitmap->bytesPerPixel() == bytesPerPixel);
     REQUIRE(bitmap->bytesPerRow() == bytesPerRow);
     REQUIRE(bitmap->size() == size);
+    REQUIRE(bitmap->range() == range);
 
     for (unsigned int y = 0; y < height; ++y)
     {
@@ -139,7 +144,8 @@ void checkBitmapMeanChannel(
 template<typename T>
 void checkBitmapIsChannel(
     Bitmap* bitmap, unsigned int width, unsigned int height, unsigned int channel,
-    unsigned int bytesPerPixel, unsigned int bytesPerRow, unsigned int size, Bitmap* ref
+    unsigned int bytesPerPixel, unsigned int bytesPerRow, unsigned int size, Bitmap* ref,
+    range_t range
 )
 {
     REQUIRE(bitmap->width() == width);
@@ -148,6 +154,7 @@ void checkBitmapIsChannel(
     REQUIRE(bitmap->bytesPerPixel() == bytesPerPixel);
     REQUIRE(bitmap->bytesPerRow() == bytesPerRow);
     REQUIRE(bitmap->size() == size);
+    REQUIRE(bitmap->range() == range);
 
     for (unsigned int y = 0; y < height; ++y)
     {

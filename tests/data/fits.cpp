@@ -20,7 +20,42 @@ void checkHeaderEntry(const std::string& header, const std::string& key, int val
 }
 
 
-void checkHeader(const char* filename, int bitpix, int naxis, int naxis1, int naxis2, int naxis3 = 0)
+void checkHeaderEntry(const std::string& header, const std::string& key, double value)
+{
+    int pos = header.find((key + " ").c_str());
+    REQUIRE(pos >= 0);
+
+    char buffer[10] = { 0 };
+
+    snprintf(buffer, 10, " %f ", value);
+    int pos2 = header.find(buffer, pos);
+    if (pos2 == -1)
+    {
+        snprintf(buffer, 10, " %ld. ", long(value));
+        pos2 = header.find(buffer, pos);
+    }
+
+    REQUIRE(pos2 >= 0);
+}
+
+
+void checkHeaderEntry(const std::string& header, const std::string& key, const std::string& value)
+{
+    int pos = header.find((key + " ").c_str());
+    REQUIRE(pos >= 0);
+
+    char buffer[10] = { 0 };
+    snprintf(buffer, 10, "'%s", value.c_str());
+
+    pos = header.find(buffer, pos);
+    REQUIRE(pos >= 0);
+}
+
+
+void checkHeader(
+    const char* filename, int bitpix, double datamax, int naxis, int naxis1, int naxis2,
+    int naxis3 = 0, const std::string& extname = ""
+)
 {
     std::ifstream test(filename);
     REQUIRE(test.is_open());
@@ -31,12 +66,17 @@ void checkHeader(const char* filename, int bitpix, int naxis, int naxis1, int na
     std::string sheader(header);
 
     checkHeaderEntry(sheader, "BITPIX", bitpix);
+    checkHeaderEntry(sheader, "DATAMIN", 0.0);
+    checkHeaderEntry(sheader, "DATAMAX", datamax);
     checkHeaderEntry(sheader, "NAXIS", naxis);
     checkHeaderEntry(sheader, "NAXIS1", naxis1);
     checkHeaderEntry(sheader, "NAXIS2", naxis2);
 
     if (naxis3 != 0)
         checkHeaderEntry(sheader, "NAXIS3", naxis3);
+
+    if (!extname.empty())
+        checkHeaderEntry(sheader, "EXTNAME", extname);
 }
 
 
@@ -109,8 +149,24 @@ TEST_CASE("Save 8-bits gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "gray8bits.fits", 8, 2, 32, 8);
+    checkHeader(TEMP_DIR "gray8bits.fits", 8, 255.0, 2, 32, 8);
     checkIntegralContent<uint8_t>(TEMP_DIR "gray8bits.fits", bitmap, 0);
+
+    delete bitmap;
+}
+
+
+TEST_CASE("Save 8-bits gray bitmap as FITS, with name", "[FITS]")
+{
+    Bitmap* bitmap = createUInt8Bitmap(false, 32, 8);
+
+    FITS output;
+    REQUIRE(output.create(TEMP_DIR "namedgray8bits.fits"));
+    REQUIRE(output.write(bitmap, "image"));
+    output.close();
+
+    checkHeader(TEMP_DIR "namedgray8bits.fits", 8, 255.0, 2, 32, 8, 0, "image");
+    checkIntegralContent<uint8_t>(TEMP_DIR "namedgray8bits.fits", bitmap, 0);
 
     delete bitmap;
 }
@@ -125,7 +181,7 @@ TEST_CASE("Save 16-bits gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "gray16bits.fits", 16, 2, 256, 8);
+    checkHeader(TEMP_DIR "gray16bits.fits", 16, 65535.0, 2, 256, 8);
     checkIntegralContent<uint16_t>(TEMP_DIR "gray16bits.fits", bitmap, 0x8000);
 
     delete bitmap;
@@ -141,7 +197,7 @@ TEST_CASE("Save 32-bits gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "gray32bits.fits", 32, 2, 256, 8);
+    checkHeader(TEMP_DIR "gray32bits.fits", 32, 4294967295.0, 2, 256, 8);
     checkIntegralContent<uint32_t>(TEMP_DIR "gray32bits.fits", bitmap, 0x80000000);
 
     delete bitmap;
@@ -157,7 +213,7 @@ TEST_CASE("Save float gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "grayfloat.fits", -32, 2, 100, 8);
+    checkHeader(TEMP_DIR "grayfloat.fits", -32, 1.0, 2, 100, 8);
     checkFloatContent<float, uint32_t>(TEMP_DIR "grayfloat.fits", bitmap);
 
     delete bitmap;
@@ -173,7 +229,7 @@ TEST_CASE("Save double gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "graydouble.fits", -64, 2, 100, 8);
+    checkHeader(TEMP_DIR "graydouble.fits", -64, 1.0, 2, 100, 8);
     checkFloatContent<double, uint64_t>(TEMP_DIR "graydouble.fits", bitmap);
 
     delete bitmap;
@@ -189,7 +245,7 @@ TEST_CASE("Save 8-bits color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "color8bits.fits", 8, 3, 32, 8, 3);
+    checkHeader(TEMP_DIR "color8bits.fits", 8, 255.0, 3, 32, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkIntegralContent<uint8_t>(TEMP_DIR "color8bits.fits", channel, 0, 0);
@@ -216,7 +272,7 @@ TEST_CASE("Save 16-bits color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "color16bits.fits", 16, 3, 256, 8, 3);
+    checkHeader(TEMP_DIR "color16bits.fits", 16, 65535.0, 3, 256, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkIntegralContent<uint16_t>(TEMP_DIR "color16bits.fits", channel, 0x8000, 0);
@@ -243,7 +299,7 @@ TEST_CASE("Save 32-bits color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "color32bits.fits", 32, 3, 256, 8, 3);
+    checkHeader(TEMP_DIR "color32bits.fits", 32, 4294967295.0, 3, 256, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkIntegralContent<uint32_t>(TEMP_DIR "color32bits.fits", channel, 0x80000000, 0);
@@ -270,7 +326,7 @@ TEST_CASE("Save float color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "colorfloat.fits", -32, 3, 100, 8, 3);
+    checkHeader(TEMP_DIR "colorfloat.fits", -32, 1.0, 3, 100, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkFloatContent<float, uint32_t>(TEMP_DIR "colorfloat.fits", channel, 0);
@@ -297,7 +353,7 @@ TEST_CASE("Save double color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "colordouble.fits", -64, 3, 100, 8, 3);
+    checkHeader(TEMP_DIR "colordouble.fits", -64, 1.0, 3, 100, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkFloatContent<double, uint64_t>(TEMP_DIR "colordouble.fits", channel, 0);
@@ -322,95 +378,14 @@ TEST_CASE("Read 8-bits gray FITS image", "[FITS]")
 
     Bitmap* ref = createUInt8Bitmap(false, 32, 8);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<uint8_t>(&bitmap, ref);
-    }
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<UInt8GrayBitmap*>(bitmap));
 
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<uint8_t>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
 
@@ -421,96 +396,14 @@ TEST_CASE("Read 16-bits gray FITS image", "[FITS]")
 
     Bitmap* ref = createUInt16Bitmap(false, 256, 8);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<UInt16GrayBitmap*>(bitmap));
 
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        checkIdenticalBitmaps<uint16_t>(&bitmap, ref);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<uint16_t>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
 
@@ -521,95 +414,14 @@ TEST_CASE("Read 32-bits gray FITS image", "[FITS]")
 
     Bitmap* ref = createUInt32Bitmap(false, 256, 8);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<UInt32GrayBitmap*>(bitmap));
 
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<uint32_t>(&bitmap, ref);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<uint32_t>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
 
@@ -620,95 +432,14 @@ TEST_CASE("Read float gray FITS image", "[FITS]")
 
     Bitmap* ref = createFloatBitmap(false, 100, 8, 0.05f, 1.0f);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<FloatGrayBitmap*>(bitmap));
 
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<float>(&bitmap, ref);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<float>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
 
@@ -719,99 +450,16 @@ TEST_CASE("Read double gray FITS image", "[FITS]")
 
     Bitmap* ref = createDoubleBitmap(false, 100, 8, 0.05, 1.0);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<DoubleGrayBitmap*>(bitmap));
 
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<double>(&bitmap, ref);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<double>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TEST_CASE("Read 8-bits color FITS image", "[FITS]")
 {
@@ -820,95 +468,14 @@ TEST_CASE("Read 8-bits color FITS image", "[FITS]")
 
     Bitmap* ref = createUInt8Bitmap(true, 32, 8);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<UInt8ColorBitmap*>(bitmap));
 
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<uint8_t>(&bitmap, ref);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<uint8_t>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
 
@@ -919,95 +486,14 @@ TEST_CASE("Read 16-bits color FITS image", "[FITS]")
 
     Bitmap* ref = createUInt16Bitmap(true, 256, 8);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<UInt16ColorBitmap*>(bitmap));
 
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<uint16_t>(&bitmap, ref);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<uint16_t>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
 
@@ -1018,95 +504,14 @@ TEST_CASE("Read 32-bits color FITS image", "[FITS]")
 
     Bitmap* ref = createUInt32Bitmap(true, 256, 8);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<UInt32ColorBitmap*>(bitmap));
 
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<uint32_t>(&bitmap, ref);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<uint32_t>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
 
@@ -1117,95 +522,14 @@ TEST_CASE("Read float color FITS image", "[FITS]")
 
     Bitmap* ref = createFloatBitmap(true, 100, 8, 0.05f, 1.0f);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<FloatColorBitmap*>(bitmap));
 
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<float>(&bitmap, ref);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        DoubleColorBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
+    checkIdenticalBitmaps<float>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
 }
 
 
@@ -1216,93 +540,43 @@ TEST_CASE("Read double color FITS image", "[FITS]")
 
     Bitmap* ref = createDoubleBitmap(true, 100, 8, 0.05, 1.0);
 
-    SECTION("as 8-bits gray image")
-    {
-        UInt8GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
+    Bitmap* bitmap = input.readBitmap();
+    REQUIRE(bitmap);
+    REQUIRE(dynamic_cast<DoubleColorBitmap*>(bitmap));
 
-        UInt8GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits gray image")
-    {
-        UInt16GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt16GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits gray image")
-    {
-        UInt32GrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt32GrayBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float gray image")
-    {
-        FloatGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        FloatGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double gray image")
-    {
-        DoubleGrayBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        DoubleGrayBitmap ref2(ref);
-        checkIdenticalBitmaps<double>(&bitmap, &ref2);
-    }
-
-    SECTION("as 8-bits color image")
-    {
-        UInt8ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-
-        UInt8ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint8_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 16-bits color image")
-    {
-        UInt16ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt16ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint16_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as 32-bits color image")
-    {
-        UInt32ColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        UInt32ColorBitmap ref2(ref);
-        checkIdenticalBitmaps<uint32_t>(&bitmap, &ref2);
-    }
-
-    SECTION("as float color image")
-    {
-        FloatColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        
-        FloatColorBitmap ref2(ref);
-        checkIdenticalBitmaps<float>(&bitmap, &ref2);
-    }
-
-    SECTION("as double color image")
-    {
-        DoubleColorBitmap bitmap;
-        REQUIRE(input.readBitmap(&bitmap));
-        checkIdenticalBitmaps<double>(&bitmap, ref);
-    }
+    checkIdenticalBitmaps<double>(bitmap, ref);
 
     delete ref;
+    delete bitmap;
+}
+
+
+TEST_CASE("Read FITS image with invalid index", "[FITS]")
+{
+    FITS input;
+    REQUIRE(input.open(DATA_DIR "gray8bits.fits"));
+
+    Bitmap* bitmap = input.readBitmap(10);
+    REQUIRE(!bitmap);
+}
+
+
+TEST_CASE("Read FITS image with valid name", "[FITS]")
+{
+    FITS input;
+    REQUIRE(input.open(DATA_DIR "namedgray8bits.fits"));
+
+    Bitmap* bitmap = input.readBitmap("image");
+    REQUIRE(bitmap);
+    delete bitmap;
+}
+
+
+TEST_CASE("Read FITS image with invalid name", "[FITS]")
+{
+    FITS input;
+    REQUIRE(input.open(DATA_DIR "gray8bits.fits"));
+
+    Bitmap* bitmap = input.readBitmap("unknown");
+    REQUIRE(!bitmap);
 }

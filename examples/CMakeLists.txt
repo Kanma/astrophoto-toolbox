@@ -6,5 +6,3 @@ include_directories(
 add_executable(raw2img raw2img.cpp)
 target_link_libraries(raw2img PRIVATE astrophoto-toolbox)
 
-add_executable(raw2fits raw2fits.cpp)
-target_link_libraries(raw2fits PRIVATE astrophoto-toolbox)

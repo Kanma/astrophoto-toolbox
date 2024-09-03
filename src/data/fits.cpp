@@ -173,6 +173,21 @@ bool FITS::write(Bitmap* bitmap, const std::string& name)
     if (bzero != 0)
         fits_write_key(_file, TUINT, "BZERO", &bzero, "zero point in scaling equation", &status);
 
+    double vmin = 0.0;
+    double vmax;
+
+    if (bitmap->range() == RANGE_BYTE)
+        vmax = 255.0;
+    else if (bitmap->range() == RANGE_USHORT)
+        vmax = 65535.0;
+    else if (bitmap->range() == RANGE_UINT)
+        vmax = 4294967295.0;
+    else if (bitmap->range() == RANGE_ONE)
+        vmax = 1.0;
+
+    fits_write_key(_file, TDOUBLE, "DATAMIN", &vmin, "minimum data value", &status);
+    fits_write_key(_file, TDOUBLE, "DATAMAX", &vmax, "maximum data value", &status);
+
     bitmap_info_t info = bitmap->info();
     fits_write_key(_file, TUINT, "ISO", &info.isoSpeed, "ISO speed", &status);
     fits_write_key(_file, TFLOAT, "SHUTTER_SPEED", &info.shutterSpeed, "Shutter speed", &status);
@@ -194,7 +209,7 @@ bool FITS::write(const star_list_t& starList, const std::string& name, bool over
     // Does the table already exist?
     if (!name.empty())
     {
-        fits_movnam_hdu(_file, IMAGE_HDU, (char*) name.c_str(), 0, &status);
+        fits_movnam_hdu(_file, BINARY_TBL, (char*) name.c_str(), 0, &status);
         if (status == 0)
         {
             if (!overwrite)
@@ -203,7 +218,7 @@ bool FITS::write(const star_list_t& starList, const std::string& name, bool over
             long nrows;
             fits_get_num_rows(_file, &nrows, &status);
             fits_delete_rows(_file, 1, nrows, &status);
-            fits_insert_rows(_file, 1, starList.stars.size(), &status);
+            fits_insert_rows(_file, 0, starList.stars.size(), &status);
 
             if (status != 0)
                 return false;
@@ -228,22 +243,15 @@ bool FITS::write(const star_list_t& starList, const std::string& name, bool over
     }
 
     // Save the stars in the table
-    fits_write_col(
-        _file, TFLOAT, 1, 1, 1, starList.stars.size(),
-        (uint8_t*) starList.stars.data() + offsetof(star_t, x), &status
-    );
-    fits_write_col(
-        _file, TFLOAT, 2, 1, 1, starList.stars.size(),
-        (uint8_t*) starList.stars.data() + offsetof(star_t, y), &status
-    );
-    fits_write_col(
-        _file, TFLOAT, 3, 1, 1, starList.stars.size(),
-        (uint8_t*) starList.stars.data() + offsetof(star_t, flux), &status
-    );
-    fits_write_col(
-        _file, TFLOAT, 4, 1, 1, starList.stars.size(),
-        (uint8_t*) starList.stars.data() + offsetof(star_t, background), &status
-    );
+    const star_t* src = starList.stars.data();
+    for (size_t i = 1; i <= starList.stars.size(); ++i)
+    {
+        fits_write_col(_file, TFLOAT, 1, i, 1, 1, (void*) &src->x, &status);
+        fits_write_col(_file, TFLOAT, 2, i, 1, 1, (void*) &src->y, &status);
+        fits_write_col(_file, TFLOAT, 3, i, 1, 1, (void*) &src->flux, &status);
+        fits_write_col(_file, TFLOAT, 4, i, 1, 1, (void*) &src->background, &status);
+        ++src;
+    }
 
     // Save the other data
     fits_write_key(_file, TFLOAT, "ESTSIGMA", (void*) &starList.estimatedSourceVariance, "Estimated source image variance", &status);
@@ -268,14 +276,7 @@ bool FITS::write(const star_list_t& starList, const std::string& name, bool over
 
 //-----------------------------------------------------------------------------
 
-bool FITS::readBitmap(Bitmap* bitmap)
-{
-    return readBitmap(0, bitmap);
-}
-
-//-----------------------------------------------------------------------------
-
-bool FITS::readBitmap(const std::string& name, Bitmap* bitmap)
+Bitmap* FITS::readBitmap(const std::string& name)
 {
     int status = 0;
 
@@ -283,6 +284,8 @@ bool FITS::readBitmap(const std::string& name, Bitmap* bitmap)
     if (!name.empty())
     {
         fits_movnam_hdu(_file, IMAGE_HDU, (char*) name.c_str(), 0, &status);
+        if (status != 0)
+            return nullptr;
     }
     else
     {
@@ -293,20 +296,20 @@ bool FITS::readBitmap(const std::string& name, Bitmap* bitmap)
         {
             fits_movabs_hdu(_file, i, &type, &status);
             if (status != 0)
-                return false;
+                return nullptr;
         }
 
         if (type != IMAGE_HDU)
-            return false;
+            return nullptr;
     }
 
     // Read the image
-    return readBitmapFromCurrentHDU(bitmap);
+    return readBitmapFromCurrentHDU();
 }
 
 //-----------------------------------------------------------------------------
 
-bool FITS::readBitmap(int index, Bitmap* bitmap)
+Bitmap* FITS::readBitmap(int index)
 {
     int status = 0;
 
@@ -319,7 +322,7 @@ bool FITS::readBitmap(int index, Bitmap* bitmap)
     {
         fits_movabs_hdu(_file, i, &type, &status);
         if (status != 0)
-            return false;
+            return nullptr;
         
         if (type == IMAGE_HDU)
         {
@@ -327,17 +330,17 @@ bool FITS::readBitmap(int index, Bitmap* bitmap)
             if (nbImages == index + 1)
             {
                 // Read the image
-                return readBitmapFromCurrentHDU(bitmap);
+                return readBitmapFromCurrentHDU();
             }
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 //-----------------------------------------------------------------------------
 
-bool FITS::readBitmapFromCurrentHDU(Bitmap* bitmap)
+Bitmap* FITS::readBitmapFromCurrentHDU()
 {
     int status = 0;
     int bitpix;
@@ -346,16 +349,11 @@ bool FITS::readBitmapFromCurrentHDU(Bitmap* bitmap)
 
     fits_get_img_param(_file, 3, &bitpix, &naxis, naxes, &status);
     if (status != 0)
-        return false;
+        return nullptr;
 
     Bitmap* dest = nullptr;
 
-    if ((((bitmap->channels() == 1) && (naxis == 2)) || ((naxis == 3) && (naxes[2] == bitmap->channels()))) &&
-        (bitmap->width() == naxes[0]) && (bitmap->height() == naxes[1]))
-    {
-        dest = bitmap;
-    }
-    else if (naxis == 3)
+    if (naxis == 3)
     {
         if (bitpix == 8)
             dest = new UInt8ColorBitmap(naxes[0], naxes[1]);
@@ -383,7 +381,28 @@ bool FITS::readBitmapFromCurrentHDU(Bitmap* bitmap)
     }
 
     if (!dest)
-        return false;
+        return nullptr;
+
+
+    double vmax;
+    bool hasRange = true;
+    fits_read_key(_file, TDOUBLE, "DATAMAX", &vmax, nullptr, &status);
+    if (status == 0)
+    {
+        if (vmax <= 2.0)
+            dest->setRange(RANGE_ONE, false);
+        else if (vmax <= 256.0)
+            dest->setRange(RANGE_BYTE, false);
+        else if (vmax <= 65536.0)
+            dest->setRange(RANGE_USHORT, false);
+        else
+            dest->setRange(RANGE_UINT, false);
+    }
+    else
+    {
+        status = 0;
+        hasRange = false;
+    }
 
     int datatype = TBYTE;
     if (dest->isFloatingPoint())
@@ -420,9 +439,39 @@ bool FITS::readBitmapFromCurrentHDU(Bitmap* bitmap)
 
     if (status != 0)
     {
-        if (dest != bitmap)
-            delete dest;
-        return false;
+        delete dest;
+        return nullptr;
+    }
+
+    if (!hasRange && dest->isFloatingPoint())
+    {
+        double maxValue = 0.0;
+
+        if (dest->channelSize() == 4)
+        {
+            for (unsigned int y = 0; y < dest->height(); ++y)
+            {
+                float* data = (float*) dest->ptr(y);
+                for (unsigned int x = 0; x < dest->width(); ++x)
+                    maxValue = std::max(maxValue, double(data[x]));
+            }
+        }
+        else if (dest->channelSize() == 8)
+        {
+            for (unsigned int y = 0; y < dest->height(); ++y)
+            {
+                double* data = (double*) dest->ptr(y);
+                for (unsigned int x = 0; x < dest->width(); ++x)
+                    maxValue = std::max(maxValue, data[x]);
+            }
+        }
+
+        if (maxValue > 65535.0)
+            dest->setRange(RANGE_UINT, false);
+        else if (maxValue > 255.0)
+            dest->setRange(RANGE_USHORT, false);
+        if (maxValue > 1.0)
+            dest->setRange(RANGE_BYTE, false);
     }
 
     // Retrieve the bitmap info
@@ -432,11 +481,5 @@ bool FITS::readBitmapFromCurrentHDU(Bitmap* bitmap)
     fits_read_key(_file, TFLOAT, "APERTURE", &info.aperture, nullptr, &status);
     fits_read_key(_file, TFLOAT, "FOCAL_LENGTH", &info.focalLength, nullptr, &status);
 
-    if (dest != bitmap)
-    {
-        bitmap->set(dest);
-        delete dest;
-    }
-
-    return true;
+    return dest;
 }

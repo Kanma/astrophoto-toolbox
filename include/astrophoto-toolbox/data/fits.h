@@ -60,23 +60,18 @@ namespace astrophototoolbox {
         );
 
         //--------------------------------------------------------------------------------
-        /// @brief  Read the first bitmap from the FITS file
-        //--------------------------------------------------------------------------------
-        bool readBitmap(Bitmap* bitmap);
-
-        //--------------------------------------------------------------------------------
         /// @brief  Read the bitmap with the given name from the FITS file
         //--------------------------------------------------------------------------------
-        bool readBitmap(const std::string& name, Bitmap* bitmap);
+        Bitmap* readBitmap(const std::string& name);
 
         //--------------------------------------------------------------------------------
         /// @brief  Read the n-th bitmap from the FITS file
         //--------------------------------------------------------------------------------
-        bool readBitmap(int index, Bitmap* bitmap);
+        Bitmap* readBitmap(int index = 0);
 
 
     private:
-        bool readBitmapFromCurrentHDU(Bitmap* bitmap);
+        Bitmap* readBitmapFromCurrentHDU();
 
 
         //_____ Attributes __________

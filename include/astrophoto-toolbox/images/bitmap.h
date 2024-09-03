@@ -8,6 +8,21 @@
 namespace astrophototoolbox {
 
     //------------------------------------------------------------------------------------
+    /// @brief  The different ranges of values supported by the bitmaps
+    //------------------------------------------------------------------------------------
+    enum range_t
+    {
+        RANGE_BYTE,     ///< 0-255
+        RANGE_USHORT,   ///< 0-65535
+        RANGE_UINT,     ///< 0-2^32-1
+        RANGE_ONE,      ///< 0.0-1.0, for floating-point bitmaps only
+
+        RANGE_SOURCE,   ///< During bitmap copy, keep the source bitmap range if possible
+        RANGE_DEST,     ///< During bitmap copy, use the destination bitmap range
+    };
+
+
+    //------------------------------------------------------------------------------------
     /// @brief  Container for a bitmap image
     ///
     /// This class cannot be instantiated directly, you must use the TypedBitmap template
@@ -16,9 +31,9 @@ namespace astrophototoolbox {
     /// All bitmaps are stored in a uint8_t array, regardless of the real data type of the
     /// pixel components.
     ///
-    /// Automatic conversion is performed between different bitmap types, on a full-range
-    /// basis (ie. uint8 0-255 it scaled to uint16 0-65535). Float bitmaps have a range of
-    /// 0.0-1.0. This behavior can be disabled.
+    /// Bitmaps have a data range associated with them. When converting a bitmap from a
+    /// format to another, the desired range of values for the destination bitmap can be
+    /// specified. By default, it is the one of the destination bitmap.
     ///
     /// Bitmaps with more bytes per row than necessary to hold the real horizontal pixel
     /// count are also supported. Thus, special care must be taken when you want to
@@ -38,7 +53,16 @@ namespace astrophototoolbox {
         ///
         /// Can be resized or filled later.
         //--------------------------------------------------------------------------------
-        Bitmap(uint8_t channels, size_t channelSize, bool floatingPoint);
+        Bitmap(uint8_t channels, size_t channelSize, bool floatingPoint,
+               range_t defaultRange);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct an empty bitmap
+        ///
+        /// Can be resized or filled later.
+        //--------------------------------------------------------------------------------
+        Bitmap(uint8_t channels, size_t channelSize, bool floatingPoint, range_t range,
+               range_t defaultRange);
 
         //--------------------------------------------------------------------------------
         /// @brief  Construct a bitmap with the specified dimensions
@@ -46,7 +70,15 @@ namespace astrophototoolbox {
         /// All pixels are set to 0.
         //--------------------------------------------------------------------------------
         Bitmap(unsigned int width, unsigned int height, uint8_t channels,
-               size_t channelSize, bool floatingPoint);
+               size_t channelSize, bool floatingPoint, range_t defaultRange);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap with the specified dimensions
+        ///
+        /// All pixels are set to 0.
+        //--------------------------------------------------------------------------------
+        Bitmap(unsigned int width, unsigned int height, uint8_t channels,
+               size_t channelSize, bool floatingPoint, range_t range, range_t defaultRange);
 
         //--------------------------------------------------------------------------------
         /// @brief  Construct a bitmap with the specified dimensions, but with more bytes
@@ -55,7 +87,18 @@ namespace astrophototoolbox {
         /// All pixels are set to 0.
         //--------------------------------------------------------------------------------
         Bitmap(unsigned int width, unsigned int height, uint8_t channels,
-               size_t channelSize, bool floatingPoint, unsigned int bytesPerRow);
+               size_t channelSize, bool floatingPoint, unsigned int bytesPerRow,
+               range_t defaultRange);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap with the specified dimensions, but with more bytes
+        ///         per row than would be necessary
+        ///
+        /// All pixels are set to 0.
+        //--------------------------------------------------------------------------------
+        Bitmap(unsigned int width, unsigned int height, uint8_t channels,
+               size_t channelSize, bool floatingPoint, unsigned int bytesPerRow,
+               range_t range, range_t defaultRange);
 
 
         //_____ Methods __________
@@ -126,6 +169,25 @@ namespace astrophototoolbox {
         {
             return _floatingPoint;
         }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the range of the values in the bitmap
+        //--------------------------------------------------------------------------------
+        inline range_t range() const
+        {
+            return _range;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Change the range of the values in the bitmap, optionally applying it
+        ///         (the default)
+        //--------------------------------------------------------------------------------
+        bool setRange(range_t range, bool apply = true);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the default range for bitmaps of this type
+        //--------------------------------------------------------------------------------
+         virtual range_t defaultRange() = 0;
 
         //--------------------------------------------------------------------------------
         /// @brief  Returns the informations about the capture of the bitmap
@@ -237,7 +299,7 @@ namespace astrophototoolbox {
         /// of this bitmap by default (for floating point images: between 0 and 1), but
         /// this behavior can be disabled.
         //--------------------------------------------------------------------------------
-        void set(const Bitmap* bitmap, bool scaleRange = true);
+        bool set(const Bitmap* bitmap, range_t range = RANGE_DEST);
 
         //--------------------------------------------------------------------------------
         /// @brief  Returns a single-channel bitmap containing a copy of one channel of
@@ -262,8 +324,27 @@ namespace astrophototoolbox {
         size_t _channelSize = 0;
         bool _floatingPoint = false;
         unsigned int _bytesPerRow = 0;
+        range_t _range = RANGE_BYTE;
         bitmap_info_t _info;
     };
+
+
+    template<typename T>
+    constexpr range_t rangeof()
+    {
+        if (std::is_same_v<T, uint8_t>)
+            return RANGE_BYTE;
+        else if (std::is_same_v<T, uint16_t>)
+            return RANGE_USHORT;
+        else if (std::is_same_v<T, uint32_t>)
+            return RANGE_UINT;
+        else if (std::is_same_v<T, float>)
+            return RANGE_ONE;
+        else if (std::is_same_v<T, double>)
+            return RANGE_ONE;
+        else
+            return RANGE_BYTE;
+    }
 
 
     //------------------------------------------------------------------------------------
@@ -271,9 +352,9 @@ namespace astrophototoolbox {
     ///
     /// The template parameters are the underlying data type and the number of channels.
     ///
-    /// Automatic conversion is performed between different bitmap types, on a full-range
-    /// basis (ie. uint8 0-255 it scaled to uint16 0-65535). Float bitmaps have a range of
-    /// 0.0-1.0. This behavior can be disabled.
+    /// Bitmaps have a data range associated with them. When converting a bitmap from a
+    /// format to another, the desired range of values for the destination bitmap can be
+    /// specified. By default, it is the one of the destination bitmap.
     ///
     /// Bitmaps with more bytes per row than necessary to hold the real horizontal pixel
     /// count are also supported. Thus, special care must be taken when you want to
@@ -291,7 +372,17 @@ namespace astrophototoolbox {
         /// Can be resized or filled later.
         //--------------------------------------------------------------------------------
         TypedBitmap()
-        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>, _defaultRange)
+        {
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct an empty bitmap (width & height = 0)
+        ///
+        /// Can be resized or filled later.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(range_t range)
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>, range, _defaultRange)
         {
         }
 
@@ -301,7 +392,18 @@ namespace astrophototoolbox {
         /// All pixels are set to 0.
         //--------------------------------------------------------------------------------
         TypedBitmap(unsigned int width, unsigned int height)
-        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, _defaultRange)
+        {
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap with the specified dimensions
+        ///
+        /// All pixels are set to 0.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(unsigned int width, unsigned int height, range_t range)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, range,
+                 _defaultRange)
         {
         }
 
@@ -312,7 +414,23 @@ namespace astrophototoolbox {
         /// All pixels are set to 0.
         //--------------------------------------------------------------------------------
         TypedBitmap(unsigned int width, unsigned int height, unsigned int bytesPerRow)
-        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow,
+                 _defaultRange)
+        {
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap with the specified dimensions, but with more bytes
+        ///         per row than would be necessary
+        ///
+        /// All pixels are set to 0.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(
+            unsigned int width, unsigned int height, unsigned int bytesPerRow,
+            range_t range
+        )
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow,
+                 range, _defaultRange)
         {
         }
 
@@ -323,9 +441,22 @@ namespace astrophototoolbox {
         /// the buffer, and that the number of channels is correct.
         //--------------------------------------------------------------------------------
         TypedBitmap(T* data, unsigned int width, unsigned int height)
-        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, _defaultRange)
         {
             set(data, width, height);
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap by copying the provided buffer
+        ///
+        /// It is expected than the dimensions provided are exactly those of the image in
+        /// the buffer, and that the number of channels is correct.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(T* data, unsigned int width, unsigned int height, range_t range)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, range,
+                 _defaultRange)
+        {
+            set(data, width, height, range);
         }
 
         //--------------------------------------------------------------------------------
@@ -336,33 +467,45 @@ namespace astrophototoolbox {
         /// are correct.
         //--------------------------------------------------------------------------------
         TypedBitmap(T* data, unsigned int width, unsigned int height,
-                             unsigned int bytesPerRow)
-        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow)
+                    unsigned int bytesPerRow)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow,
+                 _defaultRange)
         {
             set(data, width, height, bytesPerRow);
         }
 
         //--------------------------------------------------------------------------------
-        /// @brief  Construct a bitmap by copying the provided one
+        /// @brief  Construct a bitmap by copying the provided buffer
         ///
-        /// Automatic conversion is performed as needed.
+        /// It is expected than the dimensions provided are exactly those of the image in
+        /// the buffer, and that the number of channels and the number of bytes per row
+        /// are correct.
         //--------------------------------------------------------------------------------
-        template<typename T2, uint8_t CHANNELS2>
-        TypedBitmap(const TypedBitmap<T2, CHANNELS2>& bitmap, bool scaleRange = true)
-        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        TypedBitmap(T* data, unsigned int width, unsigned int height,
+                    unsigned int bytesPerRow, range_t range)
+        : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow,
+                 range, _defaultRange)
         {
-            set(&bitmap, scaleRange);
+            set(data, width, height, bytesPerRow, range);
         }
 
         //--------------------------------------------------------------------------------
         /// @brief  Construct a bitmap by copying the provided one
-        ///
-        /// Automatic conversion is performed as needed.
         //--------------------------------------------------------------------------------
-        TypedBitmap(Bitmap* bitmap, bool scaleRange = true)
-        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>)
+        template<typename T2, uint8_t CHANNELS2>
+        TypedBitmap(const TypedBitmap<T2, CHANNELS2>& bitmap, range_t range = RANGE_DEST)
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>, range, _defaultRange)
         {
-            set(bitmap, scaleRange);
+            set(&bitmap, range);
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct a bitmap by copying the provided one
+        //--------------------------------------------------------------------------------
+        TypedBitmap(Bitmap* bitmap, range_t range = RANGE_DEST)
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>, range, _defaultRange)
+        {
+            set(bitmap, range);
         }
 
         virtual ~TypedBitmap() = default;
@@ -417,6 +560,17 @@ namespace astrophototoolbox {
         {
             return (T*)((uint8_t*) _data.data() + y * _bytesPerRow + x * bytesPerPixel());
         }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the default range for bitmaps of this type
+        //--------------------------------------------------------------------------------
+        range_t defaultRange() override
+        {
+            return _defaultRange;
+        }
+
+    protected:
+        static constexpr range_t _defaultRange = rangeof<T>();
     };
 
 

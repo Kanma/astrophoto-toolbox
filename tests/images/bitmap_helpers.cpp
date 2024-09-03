@@ -48,20 +48,24 @@ Bitmap* createUInt8Bitmap(
 
 
 Bitmap* createUInt16Bitmap(
-    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow
+    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow,
+    range_t range
 )
 {
     Bitmap* bitmap;
     
     if (color)
-        bitmap = new UInt16ColorBitmap();
+        bitmap = new UInt16ColorBitmap(range);
     else
-        bitmap = new UInt16GrayBitmap();
+        bitmap = new UInt16GrayBitmap(range);
 
     if (bytesPerRow > 0)
         bitmap->resize(width, height, bytesPerRow);
     else
         bitmap->resize(width, height);
+
+    uint16_t increment = (range == RANGE_USHORT ? 0x100 : 0x01);
+    uint16_t maxValue = (range == RANGE_USHORT ? 0xFFFF : 0xFF);
 
     uint16_t v = 0;
     for (unsigned int y = 0; y < height; ++y)
@@ -71,7 +75,9 @@ Bitmap* createUInt16Bitmap(
         for (unsigned int x = 0; x < bitmap->bytesPerRow() / 2; ++x)
         {
             data[x] = v;
-            v += 0x100;
+            v += increment;
+            if (v > maxValue)
+                v = 0;
         }
     }
 
@@ -82,20 +88,24 @@ Bitmap* createUInt16Bitmap(
 
 
 Bitmap* createUInt32Bitmap(
-    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow
+    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow,
+    range_t range
 )
 {
     Bitmap* bitmap;
     
     if (color)
-        bitmap = new UInt32ColorBitmap();
+        bitmap = new UInt32ColorBitmap(range);
     else
-        bitmap = new UInt32GrayBitmap();
+        bitmap = new UInt32GrayBitmap(range);
 
     if (bytesPerRow > 0)
         bitmap->resize(width, height, bytesPerRow);
     else
         bitmap->resize(width, height);
+
+    uint32_t increment = (range == RANGE_UINT ? 0x1000000 : (range == RANGE_USHORT ? 0x100 : 0x01));
+    uint32_t maxValue = (range == RANGE_UINT ? 0xFFFFFFFF : (range == RANGE_USHORT ? 0xFFFF : 0xFF));
 
     uint32_t v = 0;
     for (unsigned int y = 0; y < height; ++y)
@@ -105,7 +115,9 @@ Bitmap* createUInt32Bitmap(
         for (unsigned int x = 0; x < bitmap->bytesPerRow() / 4; ++x)
         {
             data[x] = v;
-            v += 0x1000000;
+            v += increment;
+            if (v > maxValue)
+                v = 0;
         }
     }
 
@@ -117,15 +129,15 @@ Bitmap* createUInt32Bitmap(
 
 Bitmap* createFloatBitmap(
     bool color, unsigned int width, unsigned int height, float increment,
-    float maxValue, unsigned int bytesPerRow
+    float maxValue, unsigned int bytesPerRow, range_t range
 )
 {
     Bitmap* bitmap;
     
     if (color)
-        bitmap = new FloatColorBitmap();
+        bitmap = new FloatColorBitmap(range);
     else
-        bitmap = new FloatGrayBitmap();
+        bitmap = new FloatGrayBitmap(range);
 
     if (bytesPerRow > 0)
         bitmap->resize(width, height, bytesPerRow);
@@ -154,15 +166,15 @@ Bitmap* createFloatBitmap(
 
 Bitmap* createDoubleBitmap(
     bool color, unsigned int width, unsigned int height, double increment,
-    double maxValue, unsigned int bytesPerRow
+    double maxValue, unsigned int bytesPerRow, range_t range
 )
 {
     Bitmap* bitmap;
     
     if (color)
-        bitmap = new DoubleColorBitmap();
+        bitmap = new DoubleColorBitmap(range);
     else
-        bitmap = new DoubleGrayBitmap();
+        bitmap = new DoubleGrayBitmap(range);
 
     if (bytesPerRow > 0)
         bitmap->resize(width, height, bytesPerRow);
