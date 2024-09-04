@@ -2,6 +2,8 @@ add_executable(unittests
     main.cpp
     coordinates.cpp
 
+    astrometry/astrometry.cpp
+
     data/fits.cpp
 
     images/bitmap_helpers.h

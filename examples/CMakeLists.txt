@@ -6,3 +6,5 @@ include_directories(
 add_executable(raw2img raw2img.cpp)
 target_link_libraries(raw2img PRIVATE astrophoto-toolbox)
 
+add_executable(detect-stars "detect-stars.cpp")
+target_link_libraries(detect-stars PRIVATE astrophoto-toolbox)

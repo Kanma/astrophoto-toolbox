@@ -23,7 +23,13 @@ FetchContent_Declare(
   GIT_TAG "cfitsio4_4_1_20240617"
 )
 
-FetchContent_MakeAvailable(LibRaw LibRaw-cmake cfitsio)
+FetchContent_Declare(
+  astrometry-net
+  GIT_REPOSITORY https://github.com/dstndstn/astrometry.net.git
+  GIT_TAG "0.95"
+)
+
+FetchContent_MakeAvailable(LibRaw LibRaw-cmake cfitsio astrometry-net)
 
 # Disable warnings in LibRaw
 target_compile_options(raw PRIVATE "-Wno-deprecated-declarations")
