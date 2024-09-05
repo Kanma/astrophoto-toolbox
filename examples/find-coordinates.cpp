@@ -20,23 +20,22 @@ enum
     OPT_VERBOSE,
     OPT_RAW,
     OPT_FITS,
-    OPT_OUTPUT,
-    OPT_UNIFORMIZE,
-    OPT_OBJS,
+    OPT_MIN_SCALE,
+    OPT_MAX_SCALE,
+    OPT_INDEXES_FOLDER,
 };
 
 
 const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
-    { OPT_HELP,         "-h",           SO_NONE },
-    { OPT_HELP,         "--help",       SO_NONE },
-    { OPT_VERBOSE,      "-v",           SO_NONE },
-    { OPT_VERBOSE,      "--verbose",    SO_NONE },
-    { OPT_RAW,          "--raw",        SO_NONE },
-    { OPT_FITS,         "--fits",       SO_NONE },
-    { OPT_OUTPUT,       "-o",           SO_REQ_SEP },
-    { OPT_UNIFORMIZE,   "-u",           SO_NONE },
-    { OPT_UNIFORMIZE,   "--uniformize", SO_NONE },
-    { OPT_OBJS,         "--objs",       SO_REQ_SEP },
+    { OPT_HELP,             "-h",           SO_NONE },
+    { OPT_HELP,             "--help",       SO_NONE },
+    { OPT_VERBOSE,          "-v",           SO_NONE },
+    { OPT_VERBOSE,          "--verbose",    SO_NONE },
+    { OPT_RAW,              "--raw",        SO_NONE },
+    { OPT_FITS,             "--fits",       SO_NONE },
+    { OPT_MIN_SCALE,        "--min-scale",  SO_REQ_SEP },
+    { OPT_MAX_SCALE,        "--max-scale",  SO_REQ_SEP },
+    { OPT_INDEXES_FOLDER,   "--indexes",    SO_REQ_SEP },
     
     SO_END_OF_OPTIONS
 };
@@ -46,31 +45,31 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 
 void showUsage(const std::string& strApplicationName)
 {
-    cout << "detect-stars" << endl
+    cout << "find-coordinates" << endl
          << "Usage: " << strApplicationName << "[options] <--fits | --raw> <image>" << endl
          << endl
-         << "Detect the stars in a FITS or RAW image." << endl
+         << "Determine the astronomical coordinates of a FITS or RAW image." << endl
          << endl
          << "Options:" << endl
          << "    --help, -h        Display this help" << endl
          << "    --verbose, -v     Display more details" << endl
          << "    --fits            Indicates that the image is a FITS one" << endl
          << "    --raw             Indicates that the image is a RAW one" << endl
-         << "    -o FILE           FITS file into which write the coordinates (default: the input FITS image if applicable)" << endl
-         << "    --uniformize, -u  Uniformize the coordinates" << endl
-         << "    -objs NB          Only keep the NB brightest objects" << endl
+         << "    --min-scale       Minimum size (in degrees) of the image (default: 0.1)" << endl
+         << "    --max-scale       Maximum size (in degrees) of the image (default: 180.0)" << endl
+         << "    --indexes         Folder from which load the index files (default: /usr/local/astrometry/data)" << endl
          << endl;
 }
 
 
 int main(int argc, char** argv)
 {
-    std::string outputFileName;
     bool verbose = false;
     bool isRaw = false;
     bool isFits = false;
-    bool uniformize = false;
-    int nbObjs = -1;
+    std::string indexesFolder = "/usr/local/astrometry/data";
+    double minScale = 0.1;
+    double maxScale = 180.0;
 
     // Parse the command-line parameters
     CSimpleOpt args(argc, argv, COMMAND_LINE_OPTIONS);
@@ -96,16 +95,16 @@ int main(int argc, char** argv)
                     isFits = true;
                     break;
 
-                case OPT_OUTPUT:
-                    outputFileName = args.OptionArg();
+                case OPT_MIN_SCALE:
+                    minScale = stod(args.OptionArg());
                     break;
 
-                case OPT_UNIFORMIZE:
-                    uniformize = true;
+                case OPT_MAX_SCALE:
+                    maxScale = stod(args.OptionArg());
                     break;
 
-                case OPT_OBJS:
-                    nbObjs = stoi(args.OptionArg());
+                case OPT_INDEXES_FOLDER:
+                    indexesFolder = args.OptionArg();
                     break;
             }
         }
@@ -132,28 +131,23 @@ int main(int argc, char** argv)
         cerr << "Must indicates either --raw or --fits" << endl;
         return 1;
     }
-    else if (isRaw && outputFileName.empty())
-    {
-        cerr << "Must specify an output file with -o when processing a RAW file" << endl;
-        return 1;
-    }
 
 
     // Open the image
     astrophototoolbox::Bitmap* bitmap = nullptr;
-    astrophototoolbox::FITS fitsImage;
 
     if (isFits)
     {
         // Open the FITS file
-        if (!fitsImage.open(args.File(0), false))
+        astrophototoolbox::FITS image;
+        if (!image.open(args.File(0), false))
         {
             cerr << "Failed to open the FITS file '" << args.File(0) << "'" << endl;
             return 1;
         }
 
         // Retrieve the bitmap
-        bitmap = fitsImage.readBitmap();
+        bitmap = image.readBitmap();
         if (!bitmap)
         {
             cerr << "Failed to read the bitmap from the FITS file" << endl;
@@ -200,11 +194,18 @@ int main(int argc, char** argv)
         bitmap = converted;
     }
 
-    // Star detection
+    // Plate solving
     astrophototoolbox::Astrometry astrometry;
-    if (!astrometry.detectStars(bitmap))
+    if (!astrometry.loadIndexes(indexesFolder))
     {
-        cerr << "Failed to detect the stars" << endl;
+        cerr << "Failed to load the index files from '" << indexesFolder << "'" << endl;
+        delete bitmap;
+        return 1;
+    }
+    
+    if (!astrometry.run(bitmap, minScale, maxScale))
+    {
+        cerr << "Failed to determine the coordinates" << endl;
         delete bitmap;
         return 1;
     }
@@ -216,39 +217,14 @@ int main(int argc, char** argv)
         cout << astrometry.getStarList().size() << " star(s) detected" << endl;
     }
 
-    // If necessary, uniformize the coordinates
-    if (uniformize)
-    {
-        if (!astrometry.uniformize())
-        {
-            cerr << "Failed to uniformize the coordinates" << endl;
-            return 1;
-        }
-    }
+    astrophototoolbox::Coordinates coordinates = astrometry.getCoordinates();
 
-    // If necessary, only keep the brightest objects
-    if (nbObjs > 0)
-        astrometry.cut(nbObjs);
-
-    // Save the coordinates
-    astrophototoolbox::FITS* dest = (isFits ? &fitsImage : nullptr);
-    astrophototoolbox::FITS output;
-
-    if (!outputFileName.empty())
-    {
-        if (std::ifstream(outputFileName).good())
-            output.open(outputFileName, false);
-        else
-            output.create(outputFileName);
-
-        dest = &output;
-    }
-
-    if (!dest->write(astrometry.getStarList(), astrometry.getDetectionInfo(), "STARS", true))
-    {
-        cerr << "Failed to save the coordinates in the FITS file" << endl;
-        return 1;
-    }
+    cout << "Coordinates:" << endl;
+    cout << "  * " << coordinates.getRADECasHMSDMS() << endl;
+    cout << "  * " << coordinates.getRA() << "°, " << coordinates.getDEC() << "°" << endl;
+    cout << endl;
+    cout << "Pixel size: " << astrometry.getPixelSize() << " arcsec" << endl;
+    cout << endl;
 
     return 0;
 }

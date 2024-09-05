@@ -13,9 +13,12 @@ namespace astrophototoolbox {
         float background;
     };
 
-    struct star_list_t
+    typedef std::vector<star_t> star_list_t;
+
+    struct star_detection_info_t
     {
-        std::vector<star_t> stars;
+        unsigned int imageWidth;
+        unsigned int imageHeight;
         float estimatedSourceVariance;
         float gaussianPsfWidth;
         float significanceLimit;

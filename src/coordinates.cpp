@@ -1,7 +1,6 @@
 #include <astrophoto-toolbox/coordinates.h>
 #include <sstream>
 #include <iomanip>
-#include <iostream>
 
 using namespace astrophototoolbox;
 

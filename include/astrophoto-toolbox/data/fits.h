@@ -55,8 +55,8 @@ namespace astrophototoolbox {
         /// @brief  Add a list of stars into the FITS file
         //--------------------------------------------------------------------------------
         bool write(
-            const star_list_t& starList, const std::string& name = "STARS",
-            bool overwrite = false
+            const star_list_t& stars, const star_detection_info_t& infos,
+            const std::string& name = "STARS", bool overwrite = false
         );
 
         //--------------------------------------------------------------------------------
@@ -69,9 +69,25 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         Bitmap* readBitmap(int index = 0);
 
+        //--------------------------------------------------------------------------------
+        /// @brief  Read the bitmap with the given name from the FITS file
+        //--------------------------------------------------------------------------------
+        star_list_t readStarList(
+            const std::string& name, star_detection_info_t* infos = nullptr
+        );
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Read the n-th bitmap from the FITS file
+        //--------------------------------------------------------------------------------
+        star_list_t readStarList(int index = 0, star_detection_info_t* infos = nullptr);
+
 
     private:
         Bitmap* readBitmapFromCurrentHDU();
+        star_list_t readStarListFromCurrentHDU(star_detection_info_t* infos = nullptr);
+
+        bool gotoHDU(const std::string& name, int type);
+        bool gotoHDU(int index, int type);
 
 
         //_____ Attributes __________
