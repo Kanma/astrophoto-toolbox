@@ -94,7 +94,7 @@ bool Astrometry::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
     detectionInfo.gaussianPsfWidth = params.dpsf;
     detectionInfo.significanceLimit = params.plim;
     detectionInfo.distanceLimit = params.dlim;
-    detectionInfo.saddleDiffference = params.saddle;
+    detectionInfo.saddleDifference = params.saddle;
     detectionInfo.maxNbPeaksPerObject = params.maxper;
     detectionInfo.maxNbPeaksTotal = params.maxnpeaks;
     detectionInfo.maxSize = params.maxsize;
@@ -287,6 +287,9 @@ bool Astrometry::loadIndexes(const std::string& folder)
     // Find all index files in the folder
     std::vector<std::string> files;
 
+    if (!std::filesystem::is_directory(folder))
+        return false;
+
     for (const auto& dirEntry : std::filesystem::directory_iterator(folder))
     {
         if (dirEntry.is_directory())
@@ -298,6 +301,9 @@ bool Astrometry::loadIndexes(const std::string& folder)
                 files.push_back(dirEntry.path().c_str());
         }
     }
+
+    if (files.empty())
+        return false;
 
     // Sort them
     std::sort(files.begin(), files.end());

@@ -4,7 +4,10 @@ add_executable(unittests
 
     astrometry/astrometry.cpp
 
-    data/fits.cpp
+    data/fits_helpers.h
+    data/fits_helpers.cpp
+    data/fits_bitmap.cpp
+    data/fits_starlist.cpp
 
     images/bitmap_helpers.h
     images/bitmap_helpers.cpp
@@ -46,6 +49,7 @@ add_custom_target(run-unittests
     ALL
     ${CMAKE_COMMAND} -E rm -rf ${TESTS_TEMP_DIR}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${TESTS_TEMP_DIR}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${TESTS_TEMP_DIR}/empty
     COMMAND unittests
     DEPENDS unittests
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

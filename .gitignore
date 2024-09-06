@@ -1,5 +1,6 @@
 .vscode/
 build/
+tests/assets/downloads/
 
 CMakeUserPresets.json
 *.CR2

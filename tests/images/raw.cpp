@@ -23,7 +23,7 @@ TEST_CASE("Open valid file", "[RAW]")
 {
     RawImage image;
 
-    REQUIRE(image.open(DATA_DIR "starfield.CR2"));
+    REQUIRE(image.open(DATA_DIR "downloads/starfield.CR2"));
 
     SECTION("check the attributes")
     {
@@ -90,7 +90,7 @@ TEST_CASE("Open valid buffer", "[RAW]")
     RawImage image;
 
     std::ifstream stream(
-        DATA_DIR "starfield.CR2", std::ios_base::in | std::ios_base::binary
+        DATA_DIR "downloads/starfield.CR2", std::ios_base::in | std::ios_base::binary
     );
 
     REQUIRE(stream.is_open());

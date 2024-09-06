@@ -23,20 +23,22 @@ enum
     OPT_OUTPUT,
     OPT_UNIFORMIZE,
     OPT_OBJS,
+    OPT_NO_AN_KEYWORDS,
 };
 
 
 const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
-    { OPT_HELP,         "-h",           SO_NONE },
-    { OPT_HELP,         "--help",       SO_NONE },
-    { OPT_VERBOSE,      "-v",           SO_NONE },
-    { OPT_VERBOSE,      "--verbose",    SO_NONE },
-    { OPT_RAW,          "--raw",        SO_NONE },
-    { OPT_FITS,         "--fits",       SO_NONE },
-    { OPT_OUTPUT,       "-o",           SO_REQ_SEP },
-    { OPT_UNIFORMIZE,   "-u",           SO_NONE },
-    { OPT_UNIFORMIZE,   "--uniformize", SO_NONE },
-    { OPT_OBJS,         "--objs",       SO_REQ_SEP },
+    { OPT_HELP,             "-h",               SO_NONE },
+    { OPT_HELP,             "--help",           SO_NONE },
+    { OPT_VERBOSE,          "-v",               SO_NONE },
+    { OPT_VERBOSE,          "--verbose",        SO_NONE },
+    { OPT_RAW,              "--raw",            SO_NONE },
+    { OPT_FITS,             "--fits",           SO_NONE },
+    { OPT_OUTPUT,            "-o",              SO_REQ_SEP },
+    { OPT_UNIFORMIZE,       "-u",               SO_NONE },
+    { OPT_UNIFORMIZE,       "--uniformize",     SO_NONE },
+    { OPT_OBJS,             "--objs",           SO_REQ_SEP },
+    { OPT_NO_AN_KEYWORDS,   "--no-an-keywords", SO_NONE },
     
     SO_END_OF_OPTIONS
 };
@@ -59,6 +61,7 @@ void showUsage(const std::string& strApplicationName)
          << "    -o FILE           FITS file into which write the coordinates (default: the input FITS image if applicable)" << endl
          << "    --uniformize, -u  Uniformize the coordinates" << endl
          << "    -objs NB          Only keep the NB brightest objects" << endl
+         << "    --no-an-keywords  Do not write astrometry.net specific keywords in the file (included by default, for compatibilty)" << endl
          << endl;
 }
 
@@ -71,6 +74,7 @@ int main(int argc, char** argv)
     bool isFits = false;
     bool uniformize = false;
     int nbObjs = -1;
+    bool includeANKeywords = true;
 
     // Parse the command-line parameters
     CSimpleOpt args(argc, argv, COMMAND_LINE_OPTIONS);
@@ -106,6 +110,10 @@ int main(int argc, char** argv)
 
                 case OPT_OBJS:
                     nbObjs = stoi(args.OptionArg());
+                    break;
+
+                case OPT_NO_AN_KEYWORDS:
+                    includeANKeywords = false;
                     break;
             }
         }
@@ -244,10 +252,20 @@ int main(int argc, char** argv)
         dest = &output;
     }
 
-    if (!dest->write(astrometry.getStarList(), astrometry.getDetectionInfo(), "STARS", true))
+    astrophototoolbox::star_detection_info_t info = astrometry.getDetectionInfo();
+    if (!dest->write(astrometry.getStarList(), info, "STARS", true))
     {
         cerr << "Failed to save the coordinates in the FITS file" << endl;
         return 1;
+    }
+
+    if (includeANKeywords)
+    {
+        if (!dest->writeAstrometryNetKeywords(info.imageWidth, info.imageHeight))
+        {
+            cerr << "Failed to write the keywords specific to astrometry.net" << endl;
+            return 1;
+        }
     }
 
     return 0;

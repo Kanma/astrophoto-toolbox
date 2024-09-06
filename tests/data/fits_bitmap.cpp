@@ -1,83 +1,10 @@
 #include <catch.hpp>
 #include <astrophoto-toolbox/data/fits.h>
 #include "../images/bitmap_helpers.h"
+#include "fits_helpers.h"
 #include <fstream>
-#include <string>
 
 using namespace astrophototoolbox;
-
-
-void checkHeaderEntry(const std::string& header, const std::string& key, int value)
-{
-    int pos = header.find((key + " ").c_str());
-    REQUIRE(pos >= 0);
-
-    char buffer[10] = { 0 };
-    snprintf(buffer, 10, " %d ", value);
-
-    pos = header.find(buffer, pos);
-    REQUIRE(pos >= 0);
-}
-
-
-void checkHeaderEntry(const std::string& header, const std::string& key, double value)
-{
-    int pos = header.find((key + " ").c_str());
-    REQUIRE(pos >= 0);
-
-    char buffer[10] = { 0 };
-
-    snprintf(buffer, 10, " %f ", value);
-    int pos2 = header.find(buffer, pos);
-    if (pos2 == -1)
-    {
-        snprintf(buffer, 10, " %ld. ", long(value));
-        pos2 = header.find(buffer, pos);
-    }
-
-    REQUIRE(pos2 >= 0);
-}
-
-
-void checkHeaderEntry(const std::string& header, const std::string& key, const std::string& value)
-{
-    int pos = header.find((key + " ").c_str());
-    REQUIRE(pos >= 0);
-
-    char buffer[10] = { 0 };
-    snprintf(buffer, 10, "'%s", value.c_str());
-
-    pos = header.find(buffer, pos);
-    REQUIRE(pos >= 0);
-}
-
-
-void checkHeader(
-    const char* filename, int bitpix, double datamax, int naxis, int naxis1, int naxis2,
-    int naxis3 = 0, const std::string& extname = ""
-)
-{
-    std::ifstream test(filename);
-    REQUIRE(test.is_open());
-
-    char header[2881] = { 0 };
-    test.read(header, 2880);
-
-    std::string sheader(header);
-
-    checkHeaderEntry(sheader, "BITPIX", bitpix);
-    checkHeaderEntry(sheader, "DATAMIN", 0.0);
-    checkHeaderEntry(sheader, "DATAMAX", datamax);
-    checkHeaderEntry(sheader, "NAXIS", naxis);
-    checkHeaderEntry(sheader, "NAXIS1", naxis1);
-    checkHeaderEntry(sheader, "NAXIS2", naxis2);
-
-    if (naxis3 != 0)
-        checkHeaderEntry(sheader, "NAXIS3", naxis3);
-
-    if (!extname.empty())
-        checkHeaderEntry(sheader, "EXTNAME", extname);
-}
 
 
 template<typename T>
@@ -149,7 +76,7 @@ TEST_CASE("Save 8-bits gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "gray8bits.fits", 8, 255.0, 2, 32, 8);
+    checkBitmapHeader(TEMP_DIR "gray8bits.fits", 8, 255.0, 2, 32, 8);
     checkIntegralContent<uint8_t>(TEMP_DIR "gray8bits.fits", bitmap, 0);
 
     delete bitmap;
@@ -165,7 +92,7 @@ TEST_CASE("Save 8-bits gray bitmap as FITS, with name", "[FITS]")
     REQUIRE(output.write(bitmap, "image"));
     output.close();
 
-    checkHeader(TEMP_DIR "namedgray8bits.fits", 8, 255.0, 2, 32, 8, 0, "image");
+    checkBitmapHeader(TEMP_DIR "namedgray8bits.fits", 8, 255.0, 2, 32, 8, 0, "image");
     checkIntegralContent<uint8_t>(TEMP_DIR "namedgray8bits.fits", bitmap, 0);
 
     delete bitmap;
@@ -181,7 +108,7 @@ TEST_CASE("Save 16-bits gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "gray16bits.fits", 16, 65535.0, 2, 256, 8);
+    checkBitmapHeader(TEMP_DIR "gray16bits.fits", 16, 65535.0, 2, 256, 8);
     checkIntegralContent<uint16_t>(TEMP_DIR "gray16bits.fits", bitmap, 0x8000);
 
     delete bitmap;
@@ -197,7 +124,7 @@ TEST_CASE("Save 32-bits gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "gray32bits.fits", 32, 4294967295.0, 2, 256, 8);
+    checkBitmapHeader(TEMP_DIR "gray32bits.fits", 32, 4294967295.0, 2, 256, 8);
     checkIntegralContent<uint32_t>(TEMP_DIR "gray32bits.fits", bitmap, 0x80000000);
 
     delete bitmap;
@@ -213,7 +140,7 @@ TEST_CASE("Save float gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "grayfloat.fits", -32, 1.0, 2, 100, 8);
+    checkBitmapHeader(TEMP_DIR "grayfloat.fits", -32, 1.0, 2, 100, 8);
     checkFloatContent<float, uint32_t>(TEMP_DIR "grayfloat.fits", bitmap);
 
     delete bitmap;
@@ -229,7 +156,7 @@ TEST_CASE("Save double gray bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "graydouble.fits", -64, 1.0, 2, 100, 8);
+    checkBitmapHeader(TEMP_DIR "graydouble.fits", -64, 1.0, 2, 100, 8);
     checkFloatContent<double, uint64_t>(TEMP_DIR "graydouble.fits", bitmap);
 
     delete bitmap;
@@ -245,7 +172,7 @@ TEST_CASE("Save 8-bits color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "color8bits.fits", 8, 255.0, 3, 32, 8, 3);
+    checkBitmapHeader(TEMP_DIR "color8bits.fits", 8, 255.0, 3, 32, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkIntegralContent<uint8_t>(TEMP_DIR "color8bits.fits", channel, 0, 0);
@@ -272,7 +199,7 @@ TEST_CASE("Save 16-bits color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "color16bits.fits", 16, 65535.0, 3, 256, 8, 3);
+    checkBitmapHeader(TEMP_DIR "color16bits.fits", 16, 65535.0, 3, 256, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkIntegralContent<uint16_t>(TEMP_DIR "color16bits.fits", channel, 0x8000, 0);
@@ -299,7 +226,7 @@ TEST_CASE("Save 32-bits color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "color32bits.fits", 32, 4294967295.0, 3, 256, 8, 3);
+    checkBitmapHeader(TEMP_DIR "color32bits.fits", 32, 4294967295.0, 3, 256, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkIntegralContent<uint32_t>(TEMP_DIR "color32bits.fits", channel, 0x80000000, 0);
@@ -326,7 +253,7 @@ TEST_CASE("Save float color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "colorfloat.fits", -32, 1.0, 3, 100, 8, 3);
+    checkBitmapHeader(TEMP_DIR "colorfloat.fits", -32, 1.0, 3, 100, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkFloatContent<float, uint32_t>(TEMP_DIR "colorfloat.fits", channel, 0);
@@ -353,7 +280,7 @@ TEST_CASE("Save double color bitmap as FITS", "[FITS]")
     REQUIRE(output.write(bitmap));
     output.close();
 
-    checkHeader(TEMP_DIR "colordouble.fits", -64, 1.0, 3, 100, 8, 3);
+    checkBitmapHeader(TEMP_DIR "colordouble.fits", -64, 1.0, 3, 100, 8, 3);
 
     Bitmap* channel = bitmap->channel(0);
     checkFloatContent<double, uint64_t>(TEMP_DIR "colordouble.fits", channel, 0);
@@ -368,6 +295,17 @@ TEST_CASE("Save double color bitmap as FITS", "[FITS]")
     delete channel;
 
     delete bitmap;
+}
+
+
+TEST_CASE("Retrieve infos about 8-bits gray FITS image file", "[FITS]")
+{
+    FITS input;
+    REQUIRE(input.open(DATA_DIR "gray8bits.fits"));
+
+    REQUIRE(input.nbHDUs() == 1);
+    REQUIRE(input.nbImages() == 1);
+    REQUIRE(input.nbTables() == 0);
 }
 
 

@@ -169,3 +169,66 @@ TEST_CASE("Star list cut", "[Astrometry]")
         REQUIRE(stars[i].y == Approx(list[i].y));
     }
 }
+
+
+TEST_CASE("Fail to load index files", "[Astrometry]")
+{
+    SECTION("from folder without index file")
+    {
+        Astrometry astrometry;
+        REQUIRE(!astrometry.loadIndexes(TEMP_DIR "empty"));
+    }
+
+    SECTION("from inexistent folder")
+    {
+        Astrometry astrometry;
+        REQUIRE(!astrometry.loadIndexes(DATA_DIR "unknown"));
+    }
+}
+
+
+TEST_CASE("Plate solving", "[Astrometry]")
+{
+    FITS input;
+
+    REQUIRE(input.open(DATA_DIR "starfield.axy"));
+
+    star_detection_info_t info;
+    star_list_t stars = input.readStarList(0, &info);
+
+    REQUIRE(!stars.empty());
+
+    Astrometry astrometry;
+    astrometry.setStarList(stars, info);
+
+    REQUIRE(astrometry.loadIndexes(DATA_DIR "downloads"));
+
+    REQUIRE(astrometry.solve(0.5, 2.0));
+
+    Coordinates coordinates = astrometry.getCoordinates();
+    REQUIRE(coordinates.getRA() == Approx(282.654));
+    REQUIRE(coordinates.getDEC() == Approx(-12.9414));
+
+    REQUIRE(astrometry.getPixelSize() == Approx(1.1736878371));
+}
+
+
+TEST_CASE("Fail to do plate solving without index files", "[Astrometry]")
+{
+    FITS input;
+
+    REQUIRE(input.open(DATA_DIR "starfield.axy"));
+
+    star_detection_info_t info;
+    star_list_t stars = input.readStarList(0, &info);
+
+    REQUIRE(!stars.empty());
+
+    Astrometry astrometry;
+    astrometry.setStarList(stars, info);
+
+    REQUIRE(!astrometry.solve(0.5, 2.0));
+
+    Coordinates coordinates = astrometry.getCoordinates();
+    REQUIRE(coordinates.isNull());
+}

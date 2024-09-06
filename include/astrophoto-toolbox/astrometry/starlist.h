@@ -23,7 +23,7 @@ namespace astrophototoolbox {
         float gaussianPsfWidth;
         float significanceLimit;
         float distanceLimit;
-        float saddleDiffference;
+        float saddleDifference;
         int maxNbPeaksPerObject;
         int maxNbPeaksTotal;
         int maxSize;

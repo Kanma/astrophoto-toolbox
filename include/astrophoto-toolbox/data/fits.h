@@ -47,6 +47,11 @@ namespace astrophototoolbox {
         int nbImages() const;
 
         //--------------------------------------------------------------------------------
+        /// @brief  Returns the number of tables in the FITS file
+        //--------------------------------------------------------------------------------
+        int nbTables() const;
+
+        //--------------------------------------------------------------------------------
         /// @brief  Add a bitmap into the FITS file
         //--------------------------------------------------------------------------------
         bool write(Bitmap* bitmap, const std::string& name = "");
@@ -58,6 +63,16 @@ namespace astrophototoolbox {
             const star_list_t& stars, const star_detection_info_t& infos,
             const std::string& name = "STARS", bool overwrite = false
         );
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Add the keywords needed by astrometry.net's 'astrometry-engine'
+        ///         executable
+        ///
+        /// Only make sense in a file containing a list of stars, ready to be solved.
+        ///
+        /// For maximum compatibility.
+        //--------------------------------------------------------------------------------
+        bool writeAstrometryNetKeywords(unsigned int imageWidth, unsigned int imageHeight);
 
         //--------------------------------------------------------------------------------
         /// @brief  Read the bitmap with the given name from the FITS file

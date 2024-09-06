@@ -84,6 +84,25 @@ int FITS::nbImages() const
 
 //-----------------------------------------------------------------------------
 
+int FITS::nbTables() const
+{
+    int status = 0;
+    int nb = nbHDUs();
+    int type;
+    int nbTables = 0;
+
+    for (int i = 1; i <= nb; ++i)
+    {
+        fits_movabs_hdu(_file, i, &type, &status);
+        if ((status == 0) && (type == BINARY_TBL))
+            ++nbTables;
+    }
+
+    return nbTables;
+}
+
+//-----------------------------------------------------------------------------
+
 bool FITS::write(Bitmap* bitmap, const std::string& name)
 {
     assert(bitmap);
@@ -257,24 +276,41 @@ bool FITS::write(
     }
 
     // Save the other data
-    fits_write_key(_file, TINT, "IMAGEW", (void*) &infos.imageWidth, "Width of the image", &status);
-    fits_write_key(_file, TINT, "IMAGEH", (void*) &infos.imageHeight, "Height of the image", &status);
-    fits_write_key(_file, TFLOAT, "ESTSIGMA", (void*) &infos.estimatedSourceVariance, "Estimated source image variance", &status);
-    fits_write_key(_file, TFLOAT, "DPSF", (void*) &infos.gaussianPsfWidth, "Assumed gaussian psf width", &status);
-    fits_write_key(_file, TFLOAT, "PLIM", (void*) &infos.significanceLimit, "Significance to keep", &status);
-    fits_write_key(_file, TFLOAT, "DLIM", (void*) &infos.distanceLimit, "Closest two peaks can be", &status);
-    fits_write_key(_file, TFLOAT, "SADDLE", (void*) &infos.saddleDiffference, "Saddle difference (in sig)", &status);
-    fits_write_key(_file, TINT, "MAXPER", (void*) &infos.maxNbPeaksPerObject, "Max num of peaks per object", &status);
-    fits_write_key(_file, TINT, "MAXPEAKS", (void*) &infos.maxNbPeaksTotal, "Max num of peaks total", &status);
-    fits_write_key(_file, TINT, "MAXSIZE", (void*) &infos.maxSize, "Max size for extended objects", &status);
-    fits_write_key(_file, TINT, "HALFBOX", (void*) &infos.slidingSkyWindowHalfSize, "Half-size for sliding sky window", &status);
+    fits_update_key(_file, TINT, "IMAGEW", (void*) &infos.imageWidth, "Width of the image", &status);
+    fits_update_key(_file, TINT, "IMAGEH", (void*) &infos.imageHeight, "Height of the image", &status);
+    fits_update_key(_file, TFLOAT, "ESTSIGMA", (void*) &infos.estimatedSourceVariance, "Estimated source image variance", &status);
+    fits_update_key(_file, TFLOAT, "DPSF", (void*) &infos.gaussianPsfWidth, "Assumed gaussian psf width", &status);
+    fits_update_key(_file, TFLOAT, "PLIM", (void*) &infos.significanceLimit, "Significance to keep", &status);
+    fits_update_key(_file, TFLOAT, "DLIM", (void*) &infos.distanceLimit, "Closest two peaks can be", &status);
+    fits_update_key(_file, TFLOAT, "SADDLE", (void*) &infos.saddleDifference, "Saddle difference (in sig)", &status);
+    fits_update_key(_file, TINT, "MAXPER", (void*) &infos.maxNbPeaksPerObject, "Max num of peaks per object", &status);
+    fits_update_key(_file, TINT, "MAXPEAKS", (void*) &infos.maxNbPeaksTotal, "Max num of peaks total", &status);
+    fits_update_key(_file, TINT, "MAXSIZE", (void*) &infos.maxSize, "Max size for extended objects", &status);
+    fits_update_key(_file, TINT, "HALFBOX", (void*) &infos.slidingSkyWindowHalfSize, "Half-size for sliding sky window", &status);
 
-    fits_write_comment(
-        _file,
-        "The X and Y points are specified assuming 1,1 is the center of the leftmost bottom pixel of the "
-        "image in accordance with the FITS standard.",
-        &status
-    );
+    return (status == 0);
+}
+
+//-----------------------------------------------------------------------------
+
+bool FITS::writeAstrometryNetKeywords(unsigned int imageWidth, unsigned int imageHeight)
+{
+    if (!gotoHDU(0, ANY_HDU))
+        return false;
+
+    int status = 0;
+
+    const int sTRUE = 1;
+    const int sFALSE = 0;
+    const int tweak = 2;
+
+    fits_update_key(_file, TINT, "IMAGEW", (void*) &imageWidth, "image width", &status);
+    fits_update_key(_file, TINT, "IMAGEH", (void*) &imageHeight, "image height", &status);
+    fits_update_key(_file, TLOGICAL, "ANRUN", (void*) &sTRUE, "Solve this field!", &status);
+    fits_update_key(_file, TLOGICAL, "ANVERUNI", (void*) &sTRUE, "Uniformize field during verification", &status);
+    fits_update_key(_file, TLOGICAL, "ANVERDUP", (void*) &sFALSE, "Deduplicate field during verification", &status);
+    fits_update_key(_file, TLOGICAL, "ANTWEAK", (void*) &sTRUE, "Tweak: yes please!   ", &status);
+    fits_update_key(_file, TINT, "ANTWEAKO", (void*) &tweak, "Tweak order    ", &status);
 
     return (status == 0);
 }
@@ -501,7 +537,7 @@ star_list_t FITS::readStarListFromCurrentHDU(star_detection_info_t* infos)
         fits_read_key(_file, TFLOAT, "DPSF", (void*) &infos->gaussianPsfWidth, nullptr, &status);
         fits_read_key(_file, TFLOAT, "PLIM", (void*) &infos->significanceLimit, nullptr, &status);
         fits_read_key(_file, TFLOAT, "DLIM", (void*) &infos->distanceLimit, nullptr, &status);
-        fits_read_key(_file, TFLOAT, "SADDLE", (void*) &infos->saddleDiffference, nullptr, &status);
+        fits_read_key(_file, TFLOAT, "SADDLE", (void*) &infos->saddleDifference, nullptr, &status);
         fits_read_key(_file, TINT, "MAXPER", (void*) &infos->maxNbPeaksPerObject, nullptr, &status);
         fits_read_key(_file, TINT, "MAXPEAKS", (void*) &infos->maxNbPeaksTotal, nullptr, &status);
         fits_read_key(_file, TINT, "MAXSIZE", (void*) &infos->maxSize, nullptr, &status);
@@ -560,7 +596,7 @@ bool FITS::gotoHDU(int index, int type)
         if (status != 0)
             return false;
         
-        if (hduType == type)
+        if ((hduType == type) || (type == ANY_HDU))
         {
             ++nbHDUs;
             if (nbHDUs == index + 1)
