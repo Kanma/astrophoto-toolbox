@@ -6,6 +6,7 @@ set(SRC_FILES
     data/fits.cpp
 
     images/bitmap.cpp
+    images/helpers.cpp
     images/pnm.cpp
     images/raw.cpp
 )
@@ -16,6 +17,7 @@ set(HEADER_FILES
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/astrometry/starlist.h
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/data/fits.h
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/bitmap.h
+    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/helpers.h
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/pnm.h
     ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/raw.h
 )

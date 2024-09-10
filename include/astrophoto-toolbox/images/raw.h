@@ -70,7 +70,9 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Convert the RAW image to a bitmap
         //--------------------------------------------------------------------------------
-        bool toBitmap(Bitmap* bitmap);
+        bool toBitmap(
+            Bitmap* bitmap, bool useCameraWhiteBalance = false, bool linear = true
+        );
 
 
         //_____ Attributes __________

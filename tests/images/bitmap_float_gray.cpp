@@ -12,6 +12,7 @@ TEST_CASE("Float gray bitmap", "[Bitmap]")
     REQUIRE(image.bytesPerRow() == 80);
     REQUIRE(image.size() == 800);
     REQUIRE(image.range() == RANGE_ONE);
+    REQUIRE(image.space() == SPACE_LINEAR);
 
     float* data = image.data();
     REQUIRE(data);
@@ -841,5 +842,80 @@ TEST_CASE("Float gray bitmap", "[Bitmap]")
         }
 
         delete image2;
+    }
+
+    SECTION("set from another sRGB gray bitmap")
+    {
+        Bitmap* image2 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f, 0, RANGE_ONE, SPACE_sRGB);
+
+        SECTION("destination: linear")
+        {
+            Bitmap* image3 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f, 0, RANGE_ONE, SPACE_LINEAR);
+
+            REQUIRE(image.set(image2));
+            checkBitmap<float, float>(&image, 10, 8, 1, 4, 40, 320, image3, 1.0, RANGE_ONE, SPACE_LINEAR, 1e-6f);
+
+            delete image3;
+        }
+
+        SECTION("destination: sRGB")
+        {
+            REQUIRE(image.set(image2, RANGE_DEST, SPACE_SOURCE));
+            checkBitmap<float, float>(&image, 10, 8, 1, 4, 40, 320, image2, 1.0, RANGE_ONE, SPACE_sRGB);
+        }
+
+        delete image2;
+    }
+
+    SECTION("set from another linear gray bitmap")
+    {
+        image.setSpace(SPACE_sRGB, false);
+
+        Bitmap* image2 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f, 0, RANGE_ONE, SPACE_LINEAR);
+
+        SECTION("destination: sRGB")
+        {
+            Bitmap* image3 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f, 0, RANGE_ONE, SPACE_sRGB);
+
+            REQUIRE(image.set(image2));
+            checkBitmap<float, float>(&image, 10, 8, 1, 4, 40, 320, image3, 1.0, RANGE_ONE, SPACE_sRGB);
+
+            delete image3;
+        }
+
+        SECTION("destination: linear")
+        {
+            REQUIRE(image.set(image2, RANGE_DEST, SPACE_SOURCE));
+            checkBitmap<float, float>(&image, 10, 8, 1, 4, 40, 320, image2, 1.0, RANGE_ONE, SPACE_LINEAR);
+        }
+
+        delete image2;
+    }
+
+    SECTION("convert to sRGB")
+    {
+        Bitmap* image2 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f, 0, RANGE_ONE, SPACE_LINEAR);
+        Bitmap* image3 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f, 0, RANGE_ONE, SPACE_sRGB);
+
+        REQUIRE(image.set(image2));
+        REQUIRE(image.setSpace(SPACE_sRGB));
+
+        checkBitmap<float, float>(&image, 10, 8, 1, 4, 40, 320, image3, 1.0, RANGE_ONE, SPACE_sRGB);
+
+        delete image2;
+        delete image3;
+    }
+
+    SECTION("convert to linear")
+    {
+        Bitmap* image2 = createFloatBitmap(false, 10, 8, 0.05f, 1.0f, 0, RANGE_ONE, SPACE_sRGB);
+        Bitmap* image3 = createFloatBitmap(false, 10, 8,0.05f, 1.0f,  0, RANGE_ONE, SPACE_LINEAR);
+
+        REQUIRE(image.set(image2, RANGE_DEST, SPACE_SOURCE));
+        REQUIRE(image.setSpace(SPACE_LINEAR));
+        checkBitmap<float, float>(&image, 10, 8, 1, 4, 40, 320, image3, 1.0, RANGE_ONE, SPACE_LINEAR, 1e-6f);
+
+        delete image2;
+        delete image3;
     }
 }

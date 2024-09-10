@@ -12,6 +12,7 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
     REQUIRE(image.bytesPerRow() == 60);
     REQUIRE(image.size() == 600);
     REQUIRE(image.range() == RANGE_BYTE);
+    REQUIRE(image.space() == SPACE_LINEAR);
 
     auto info = image.info();
     REQUIRE(info.isoSpeed == 0);
@@ -468,5 +469,80 @@ TEST_CASE("UInt8 color bitmap", "[Bitmap]")
     {
         UInt16GrayBitmap channel(20, 10);
         REQUIRE(!image.setChannel(0, &channel));
+    }
+
+    SECTION("set from another sRGB color bitmap")
+    {
+        Bitmap* image2 = createUInt8Bitmap(true, 10, 8, 0, SPACE_sRGB);
+
+        SECTION("destination: linear")
+        {
+            Bitmap* image3 = createUInt8Bitmap(true, 10, 8, 0, SPACE_LINEAR);
+
+            REQUIRE(image.set(image2));
+            checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 3, 3, 30, 240, image3, 1.0, RANGE_BYTE, SPACE_LINEAR, 2);
+
+            delete image3;
+        }
+
+        SECTION("destination: sRGB")
+        {
+            REQUIRE(image.set(image2, RANGE_DEST, SPACE_SOURCE));
+            checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 3, 3, 30, 240, image2, 1.0, RANGE_BYTE, SPACE_sRGB);
+        }
+
+        delete image2;
+    }
+
+    SECTION("set from another linear color bitmap")
+    {
+        image.setSpace(SPACE_sRGB, false);
+
+        Bitmap* image2 = createUInt8Bitmap(true, 10, 8, 0, SPACE_LINEAR);
+
+        SECTION("destination: sRGB")
+        {
+            Bitmap* image3 = createUInt8Bitmap(true, 10, 8, 0, SPACE_sRGB);
+
+            REQUIRE(image.set(image2));
+            checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 3, 3, 30, 240, image3, 1.0, RANGE_BYTE, SPACE_sRGB, 1);
+
+            delete image3;
+        }
+
+        SECTION("destination: linear")
+        {
+            REQUIRE(image.set(image2, RANGE_DEST, SPACE_SOURCE));
+            checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 3, 3, 30, 240, image2, 1.0, RANGE_BYTE, SPACE_LINEAR);
+        }
+
+        delete image2;
+    }
+
+    SECTION("convert to sRGB")
+    {
+        Bitmap* image2 = createUInt8Bitmap(true, 10, 8, 0, SPACE_LINEAR);
+        Bitmap* image3 = createUInt8Bitmap(true, 10, 8, 0, SPACE_sRGB);
+
+        REQUIRE(image.set(image2));
+        REQUIRE(image.setSpace(SPACE_sRGB));
+
+        checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 3, 3, 30, 240, image3, 1.0, RANGE_BYTE, SPACE_sRGB);
+
+        delete image2;
+        delete image3;
+    }
+
+    SECTION("convert to linear")
+    {
+        Bitmap* image2 = createUInt8Bitmap(true, 10, 8, 0, SPACE_sRGB);
+        Bitmap* image3 = createUInt8Bitmap(true, 10, 8, 0, SPACE_LINEAR);
+
+        REQUIRE(image.set(image2, RANGE_DEST, SPACE_SOURCE));
+        REQUIRE(image.setSpace(SPACE_LINEAR));
+        checkBitmap<uint8_t, uint8_t>(&image, 10, 8, 3, 3, 30, 240, image3, 1.0, RANGE_BYTE, SPACE_LINEAR, 2);
+
+        delete image2;
+        delete image3;
     }
 }

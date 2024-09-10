@@ -14,15 +14,16 @@ void setBitmapInfo(Bitmap* bitmap)
 
 
 Bitmap* createUInt8Bitmap(
-    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow
+    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow,
+    space_t space
 )
 {
     Bitmap* bitmap;
 
     if (color)
-        bitmap = new UInt8ColorBitmap();
+        bitmap = new UInt8ColorBitmap(space);
     else
-        bitmap = new UInt8GrayBitmap();
+        bitmap = new UInt8GrayBitmap(space);
 
     if (bytesPerRow > 0)
         bitmap->resize(width, height, bytesPerRow);
@@ -36,7 +37,11 @@ Bitmap* createUInt8Bitmap(
 
         for (unsigned int x = 0; x < bitmap->bytesPerRow(); ++x)
         {
-            data[x] = v;
+            if (space == SPACE_LINEAR)
+                data[x] = v;
+            else
+                data[x] = ((1.0 + 0.055) * pow(double(v) / 255.0, 1.0 / 2.4) - 0.055) * 255.0;
+
             ++v;
         }
     }
@@ -49,15 +54,15 @@ Bitmap* createUInt8Bitmap(
 
 Bitmap* createUInt16Bitmap(
     bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow,
-    range_t range
+    range_t range, space_t space
 )
 {
     Bitmap* bitmap;
     
     if (color)
-        bitmap = new UInt16ColorBitmap(range);
+        bitmap = new UInt16ColorBitmap(range, space);
     else
-        bitmap = new UInt16GrayBitmap(range);
+        bitmap = new UInt16GrayBitmap(range, space);
 
     if (bytesPerRow > 0)
         bitmap->resize(width, height, bytesPerRow);
@@ -74,7 +79,13 @@ Bitmap* createUInt16Bitmap(
 
         for (unsigned int x = 0; x < bitmap->bytesPerRow() / 2; ++x)
         {
-            data[x] = v;
+            if (space == SPACE_LINEAR)
+                data[x] = v;
+            else if (double(v) / 65535.0 <= 0.0031308)
+                data[x] = double(v) * 12.92;
+            else
+                data[x] = ((1.0 + 0.055) * pow(double(v) / 65535.0, 1.0 / 2.4) - 0.055) * 65535.0;
+
             v += increment;
             if (v > maxValue)
                 v = 0;
@@ -89,15 +100,15 @@ Bitmap* createUInt16Bitmap(
 
 Bitmap* createUInt32Bitmap(
     bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow,
-    range_t range
+    range_t range, space_t space
 )
 {
     Bitmap* bitmap;
     
     if (color)
-        bitmap = new UInt32ColorBitmap(range);
+        bitmap = new UInt32ColorBitmap(range, space);
     else
-        bitmap = new UInt32GrayBitmap(range);
+        bitmap = new UInt32GrayBitmap(range, space);
 
     if (bytesPerRow > 0)
         bitmap->resize(width, height, bytesPerRow);
@@ -114,7 +125,13 @@ Bitmap* createUInt32Bitmap(
 
         for (unsigned int x = 0; x < bitmap->bytesPerRow() / 4; ++x)
         {
-            data[x] = v;
+            if (space == SPACE_LINEAR)
+                data[x] = v;
+            else if (double(v) / 4294967295.0 <= 0.0031308)
+                data[x] = double(v) * 12.92;
+            else
+                data[x] = ((1.0 + 0.055) * pow(double(v) / 4294967295.0, 1.0 / 2.4) - 0.055) * 4294967295.0;
+
             v += increment;
             if (v > maxValue)
                 v = 0;
@@ -129,15 +146,15 @@ Bitmap* createUInt32Bitmap(
 
 Bitmap* createFloatBitmap(
     bool color, unsigned int width, unsigned int height, float increment,
-    float maxValue, unsigned int bytesPerRow, range_t range
+    float maxValue, unsigned int bytesPerRow, range_t range, space_t space
 )
 {
     Bitmap* bitmap;
     
     if (color)
-        bitmap = new FloatColorBitmap(range);
+        bitmap = new FloatColorBitmap(range, space);
     else
-        bitmap = new FloatGrayBitmap(range);
+        bitmap = new FloatGrayBitmap(range, space);
 
     if (bytesPerRow > 0)
         bitmap->resize(width, height, bytesPerRow);
@@ -151,7 +168,13 @@ Bitmap* createFloatBitmap(
 
         for (unsigned int x = 0; x < bitmap->bytesPerRow() / 4; ++x)
         {
-            data[x] = v;
+            if (space == SPACE_LINEAR)
+                data[x] = v;
+            else if (double(v) <= 0.0031308)
+                data[x] = double(v) * 12.92;
+            else
+                data[x] = ((1.0 + 0.055) * pow(double(v), 1.0 / 2.4) - 0.055);
+
             v += increment;
             if (v > maxValue)
                 v = 0.0f;

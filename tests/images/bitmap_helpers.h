@@ -9,22 +9,24 @@ using namespace astrophototoolbox;
 void setBitmapInfo(Bitmap* bitmap);
 
 Bitmap* createUInt8Bitmap(
-    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow = 0
+    bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow = 0,
+    space_t space = SPACE_LINEAR
 );
 
 Bitmap* createUInt16Bitmap(
     bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow = 0,
-    range_t range = RANGE_USHORT
+    range_t range = RANGE_USHORT, space_t space = SPACE_LINEAR
 );
 
 Bitmap* createUInt32Bitmap(
     bool color, unsigned int width, unsigned int height, unsigned int bytesPerRow = 0,
-    range_t range = RANGE_UINT
+    range_t range = RANGE_UINT, space_t space = SPACE_LINEAR
 );
 
 Bitmap* createFloatBitmap(
     bool color, unsigned int width, unsigned int height, float increment,
-    float maxValue, unsigned int bytesPerRow = 0, range_t range = RANGE_ONE
+    float maxValue, unsigned int bytesPerRow = 0, range_t range = RANGE_ONE,
+    space_t space = SPACE_LINEAR
 );
 
 Bitmap* createDoubleBitmap(
@@ -39,7 +41,7 @@ template<typename T1, typename T2>
 void checkBitmap(
     Bitmap* bitmap, unsigned int width, unsigned int height, unsigned int channels,
     unsigned int bytesPerPixel, unsigned int bytesPerRow, unsigned int size, Bitmap* ref,
-    double factor, range_t range
+    double factor, range_t range, space_t space = SPACE_LINEAR, T1 tolerance = 0
 )
 {
     REQUIRE(bitmap->width() == width);
@@ -49,6 +51,7 @@ void checkBitmap(
     REQUIRE(bitmap->bytesPerRow() == bytesPerRow);
     REQUIRE(bitmap->size() == size);
     REQUIRE(bitmap->range() == range);
+    REQUIRE(bitmap->space() == space);
 
     for (unsigned int y = 0; y < height; ++y)
     {
@@ -56,7 +59,20 @@ void checkBitmap(
         T2* data2 = (T2*) ref->ptr(y);
 
         for (unsigned int x = 0; x < bitmap->bytesPerRow() / sizeof(T1); ++x)
-            REQUIRE(data[x] == T1(double(data2[x]) * factor));
+        {
+            if (tolerance == 0)
+            {
+                REQUIRE(data[x] == T1(double(data2[x]) * factor));
+            }
+            else
+            {
+                if (data[x] - tolerance < data[x])
+                    REQUIRE(data[x] >= T1(double(data2[x]) * factor) - tolerance);
+
+                if (data[x] + tolerance > data[x])
+                    REQUIRE(data[x] <= T1(double(data2[x]) * factor) + tolerance);
+            }
+        }
     }
 
     checkBitmapInfo(bitmap, ref);

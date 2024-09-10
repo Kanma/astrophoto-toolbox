@@ -5,6 +5,7 @@
 #include <astrophoto-toolbox/images/raw.h>
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/images/pnm.h>
+#include <astrophoto-toolbox/images/helpers.h>
 #include <astrophoto-toolbox/data/fits.h>
 
 using namespace std;
@@ -18,19 +19,23 @@ enum
     OPT_HELP,
     OPT_INFO,
     OPT_RECT,
+    OPT_WB,
+    OPT_SRGB,
     OPT_GRAY,
     OPT_CHANNEL,
 };
 
 
 const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
-    { OPT_HELP,     "-h",           SO_NONE },
-    { OPT_HELP,     "--help",       SO_NONE },
-    { OPT_INFO,     "-i",           SO_NONE },
-    { OPT_INFO,     "--info",       SO_NONE },
-    { OPT_RECT,     "--rect",       SO_MULTI },
-    { OPT_GRAY,     "--gray",       SO_NONE },
-    { OPT_CHANNEL,  "--channel",    SO_REQ_SEP },
+    { OPT_HELP,         "-h",           SO_NONE },
+    { OPT_HELP,         "--help",       SO_NONE },
+    { OPT_INFO,         "-i",           SO_NONE },
+    { OPT_INFO,         "--info",       SO_NONE },
+    { OPT_RECT,         "--rect",       SO_MULTI },
+    { OPT_WB,           "--wb",         SO_NONE },
+    { OPT_SRGB,         "--srgb",       SO_NONE },
+    { OPT_GRAY,         "--gray",       SO_NONE },
+    { OPT_CHANNEL,      "--channel",    SO_REQ_SEP },
 
     SO_END_OF_OPTIONS
 };
@@ -49,6 +54,8 @@ void showUsage(const std::string& strApplicationName)
          << "    --help, -h       Display this help" << endl
          << "    --info, -i       Display informations about the image" << endl
          << "    --rect X Y W H   Extract the portion of the image defined by this rectangle" << endl
+         << "    --wb             Use camera white balance" << endl
+         << "    --srgb           Apply sRGB gamma correction" << endl
          << "    --gray           Convert the image to grayscale" << endl
          << "    --channel INDEX  Only save the given channel (0-2)" << endl
          << endl;
@@ -64,6 +71,8 @@ int main(int argc, char** argv)
     unsigned int rect_y;
     unsigned int rect_w;
     unsigned int rect_h;
+    bool useCameraWB = false;
+    bool sRGB = false;
     bool gray = false;
     int channel = -1;
 
@@ -99,6 +108,14 @@ int main(int argc, char** argv)
                     rect_h = stoi(rect[3]);
                     break;
                 }
+
+                case OPT_WB:
+                    useCameraWB = true;
+                    break;
+
+                case OPT_SRGB:
+                    sRGB = true;
+                    break;
 
                 case OPT_GRAY:
                     gray = true;
@@ -145,9 +162,9 @@ int main(int argc, char** argv)
     if (image.channels() == 3)
         bitmap = new astrophototoolbox::UInt16ColorBitmap();
     else
-        bitmap = new astrophototoolbox::UInt8ColorBitmap();
+        bitmap = new astrophototoolbox::UInt16GrayBitmap();
 
-    if (!image.toBitmap(bitmap))
+    if (!image.toBitmap(bitmap, useCameraWB, !sRGB))
     {
         cerr << "Failed to convert the RAW image" << endl;
         delete bitmap;
@@ -166,7 +183,7 @@ int main(int argc, char** argv)
         if (image.channels() == 3)
             portion = new astrophototoolbox::UInt16ColorBitmap(rect_w, rect_h);
         else
-            portion = new astrophototoolbox::UInt8ColorBitmap(rect_w, rect_h);
+            portion = new astrophototoolbox::UInt16GrayBitmap(rect_w, rect_h);
 
         for (unsigned int y = 0; y < rect_h; ++y)
         {

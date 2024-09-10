@@ -23,6 +23,19 @@ namespace astrophototoolbox {
 
 
     //------------------------------------------------------------------------------------
+    /// @brief  The different color spaces supported by the bitmaps
+    //------------------------------------------------------------------------------------
+    enum space_t
+    {
+        SPACE_LINEAR,
+        SPACE_sRGB,
+
+        SPACE_SOURCE,   ///< During bitmap copy, keep the source bitmap space
+        SPACE_DEST,     ///< During bitmap copy, use the destination bitmap space
+    };
+
+
+    //------------------------------------------------------------------------------------
     /// @brief  Container for a bitmap image
     ///
     /// This class cannot be instantiated directly, you must use the TypedBitmap template
@@ -187,7 +200,21 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Returns the default range for bitmaps of this type
         //--------------------------------------------------------------------------------
-         virtual range_t defaultRange() = 0;
+        virtual range_t defaultRange() = 0;
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the color space of the bitmap
+        //--------------------------------------------------------------------------------
+        inline space_t space() const
+        {
+            return _space;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Change the color space of the bitmap, optionally applying it
+        ///         (the default)
+        //--------------------------------------------------------------------------------
+        bool setSpace(space_t space, bool apply = true);
 
         //--------------------------------------------------------------------------------
         /// @brief  Returns the informations about the capture of the bitmap
@@ -299,7 +326,9 @@ namespace astrophototoolbox {
         /// of this bitmap by default (for floating point images: between 0 and 1), but
         /// this behavior can be disabled.
         //--------------------------------------------------------------------------------
-        bool set(const Bitmap* bitmap, range_t range = RANGE_DEST);
+        bool set(
+            const Bitmap* bitmap, range_t range = RANGE_DEST, space_t space = SPACE_DEST
+        );
 
         //--------------------------------------------------------------------------------
         /// @brief  Returns a single-channel bitmap containing a copy of one channel of
@@ -325,6 +354,7 @@ namespace astrophototoolbox {
         bool _floatingPoint = false;
         unsigned int _bytesPerRow = 0;
         range_t _range = RANGE_BYTE;
+        space_t _space = SPACE_LINEAR;
         bitmap_info_t _info;
     };
 
@@ -364,6 +394,13 @@ namespace astrophototoolbox {
         requires(CHANNELS == 1 || CHANNELS == 3)
     class TypedBitmap : public Bitmap
     {
+    public:
+        static constexpr uint8_t Channels = CHANNELS;
+        static constexpr size_t ChannelSize = sizeof(T);
+        static constexpr range_t DefaultRange = rangeof<T>();
+        static constexpr bool FloatingPoint = std::is_integral_v<T>;
+
+
         //_____ Construction / Destruction __________
     public:
         //--------------------------------------------------------------------------------
@@ -387,6 +424,28 @@ namespace astrophototoolbox {
         }
 
         //--------------------------------------------------------------------------------
+        /// @brief  Construct an empty bitmap (width & height = 0)
+        ///
+        /// Can be resized or filled later.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(space_t space)
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>, _defaultRange)
+        {
+            _space = (space >= SPACE_SOURCE ? SPACE_LINEAR : space);
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Construct an empty bitmap (width & height = 0)
+        ///
+        /// Can be resized or filled later.
+        //--------------------------------------------------------------------------------
+        TypedBitmap(range_t range, space_t space)
+        : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>, range, _defaultRange)
+        {
+            _space = (space >= SPACE_SOURCE ? SPACE_LINEAR : space);
+        }
+
+        //--------------------------------------------------------------------------------
         /// @brief  Construct a bitmap with the specified dimensions
         ///
         /// All pixels are set to 0.
@@ -401,10 +460,14 @@ namespace astrophototoolbox {
         ///
         /// All pixels are set to 0.
         //--------------------------------------------------------------------------------
-        TypedBitmap(unsigned int width, unsigned int height, range_t range)
+        TypedBitmap(
+            unsigned int width, unsigned int height, range_t range,
+            space_t space = SPACE_LINEAR
+        )
         : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, range,
                  _defaultRange)
         {
+            _space = (space >= SPACE_SOURCE ? SPACE_LINEAR : space);
         }
 
         //--------------------------------------------------------------------------------
@@ -427,11 +490,12 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         TypedBitmap(
             unsigned int width, unsigned int height, unsigned int bytesPerRow,
-            range_t range
+            range_t range, space_t space = SPACE_LINEAR
         )
         : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow,
                  range, _defaultRange)
         {
+           _space = (space >= SPACE_SOURCE ? SPACE_LINEAR : space);
         }
 
         //--------------------------------------------------------------------------------
@@ -443,7 +507,7 @@ namespace astrophototoolbox {
         TypedBitmap(T* data, unsigned int width, unsigned int height)
         : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, _defaultRange)
         {
-            set(data, width, height);
+            set((uint8_t*) data, width, height);
         }
 
         //--------------------------------------------------------------------------------
@@ -452,11 +516,15 @@ namespace astrophototoolbox {
         /// It is expected than the dimensions provided are exactly those of the image in
         /// the buffer, and that the number of channels is correct.
         //--------------------------------------------------------------------------------
-        TypedBitmap(T* data, unsigned int width, unsigned int height, range_t range)
+        TypedBitmap(
+            T* data, unsigned int width, unsigned int height, range_t range,
+            space_t space = SPACE_LINEAR
+        )
         : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, range,
                  _defaultRange)
         {
-            set(data, width, height, range);
+            _space = (space >= SPACE_SOURCE ? SPACE_LINEAR : space);
+            set((uint8_t*) data, width, height, range);
         }
 
         //--------------------------------------------------------------------------------
@@ -466,12 +534,13 @@ namespace astrophototoolbox {
         /// the buffer, and that the number of channels and the number of bytes per row
         /// are correct.
         //--------------------------------------------------------------------------------
-        TypedBitmap(T* data, unsigned int width, unsigned int height,
-                    unsigned int bytesPerRow)
+        TypedBitmap(
+            T* data, unsigned int width, unsigned int height, unsigned int bytesPerRow
+        )
         : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow,
                  _defaultRange)
         {
-            set(data, width, height, bytesPerRow);
+            set((uint8_t*) data, width, height, bytesPerRow);
         }
 
         //--------------------------------------------------------------------------------
@@ -481,31 +550,39 @@ namespace astrophototoolbox {
         /// the buffer, and that the number of channels and the number of bytes per row
         /// are correct.
         //--------------------------------------------------------------------------------
-        TypedBitmap(T* data, unsigned int width, unsigned int height,
-                    unsigned int bytesPerRow, range_t range)
+        TypedBitmap(
+            T* data, unsigned int width, unsigned int height, unsigned int bytesPerRow,
+            range_t range, space_t space = SPACE_LINEAR
+        )
         : Bitmap(width, height, CHANNELS, sizeof(T), !std::is_integral_v<T>, bytesPerRow,
                  range, _defaultRange)
         {
-            set(data, width, height, bytesPerRow, range);
+            _space = (space >= SPACE_SOURCE ? SPACE_LINEAR : space);
+            set((uint8_t*) data, width, height, bytesPerRow, range);
         }
 
         //--------------------------------------------------------------------------------
         /// @brief  Construct a bitmap by copying the provided one
         //--------------------------------------------------------------------------------
         template<typename T2, uint8_t CHANNELS2>
-        TypedBitmap(const TypedBitmap<T2, CHANNELS2>& bitmap, range_t range = RANGE_DEST)
+        TypedBitmap(
+            const TypedBitmap<T2, CHANNELS2>& bitmap, range_t range = RANGE_DEST,
+            space_t space = SPACE_DEST
+        )
         : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>, range, _defaultRange)
         {
-            set(&bitmap, range);
+            set(&bitmap, range, space);
         }
 
         //--------------------------------------------------------------------------------
         /// @brief  Construct a bitmap by copying the provided one
         //--------------------------------------------------------------------------------
-        TypedBitmap(Bitmap* bitmap, range_t range = RANGE_DEST)
+        TypedBitmap(
+            Bitmap* bitmap, range_t range = RANGE_DEST, space_t space = SPACE_DEST
+        )
         : Bitmap(CHANNELS, sizeof(T), !std::is_integral_v<T>, range, _defaultRange)
         {
-            set(bitmap, range);
+            set(bitmap, range, space);
         }
 
         virtual ~TypedBitmap() = default;

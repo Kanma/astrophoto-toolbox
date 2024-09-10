@@ -1,24 +1,12 @@
 #include <astrophoto-toolbox/images/bitmap.h>
+#include <astrophoto-toolbox/images/helpers.h>
 
 using namespace astrophototoolbox;
-
-
-double CONVERSION_FACTORS[4][4] = {
-    // RANGE_BYTE -> BYTE               | USHORT        | UINT          | ONE
-    {                1.0,                 257.0,          16843009.0,     1.0 / 255.0 },
-    // RANGE_USHORT -> ...
-    {                1.0 / 257.0,         1.0,            65537.0,        1.0 / 65535.0 },
-    // RANGE_UINT -> ...
-    {                1.0 / 16843009.0,    1.0 / 65537.0,  1.0,            1.0 / 4294967295.0 },
-    // RANGE_ONE -> ...
-    {                255.0,               65535.0,        4294967295.0,   1.0 },
-};
 
 
 /********************************** HELPER FUNCTIONS ************************************/
 
 template<typename T1, uint8_t CHANNELS1, typename T2, uint8_t CHANNELS2>
-//    requires(!std::is_same_v<T1, T2> && (CHANNELS1 == CHANNELS2) && (CHANNELS1 != 1))
     requires((CHANNELS1 == CHANNELS2) && (CHANNELS1 != 1))
 void convert(TypedBitmap<T1, CHANNELS1>* destBitmap, const TypedBitmap<T2, CHANNELS2>* srcBitmap, double factor)
 {
@@ -29,14 +17,11 @@ void convert(TypedBitmap<T1, CHANNELS1>* destBitmap, const TypedBitmap<T2, CHANN
     {
         const T2* src2 = src;
 
-        for (unsigned int x = 0; x < destBitmap->width(); ++x)
+        for (unsigned int i = 0; i < destBitmap->width() * CHANNELS1; ++i)
         {
-            for (unsigned int c = 0; c < CHANNELS1; ++c)
-            {
-                *dest = T1(double(*src2) * factor);
-                ++src2;
-                ++dest;
-            }
+            *dest = T1(double(*src2) * factor);
+            ++src2;
+            ++dest;
         }
 
         src = (T2*)((uint8_t*) src + srcBitmap->bytesPerRow());
@@ -46,7 +31,6 @@ void convert(TypedBitmap<T1, CHANNELS1>* destBitmap, const TypedBitmap<T2, CHANN
 //-----------------------------------------------------------------------------
 
 template<typename T1, uint8_t CHANNELS1, typename T2, uint8_t CHANNELS2>
-//    requires(!std::is_same_v<T1, T2> && (CHANNELS1 == CHANNELS2) && (CHANNELS1 == 1))
     requires((CHANNELS1 == CHANNELS2) && (CHANNELS1 == 1))
 void convert(TypedBitmap<T1, CHANNELS1>* destBitmap, const TypedBitmap<T2, CHANNELS2>* srcBitmap, double factor)
 {
@@ -132,7 +116,109 @@ void convert(TypedBitmap<T1, CHANNELS1>* destBitmap, const TypedBitmap<T2, CHANN
 //-----------------------------------------------------------------------------
 
 template<typename T, uint8_t CHANNELS>
-void convert(TypedBitmap<T, CHANNELS>* destBitmap, const Bitmap* srcBitmap, double factor)
+void convertTosRGB(TypedBitmap<T, CHANNELS>* bitmap)
+{
+    T* ptr = bitmap->data();
+
+    const double factorToOne = getConversionFactor(bitmap->range(), RANGE_ONE);
+    const double factorFromOne = getConversionFactor(RANGE_ONE, bitmap->range());
+    const double exponent = 1.0 / 2.4;
+
+    for (unsigned int y = 0; y < bitmap->height(); ++y)
+    {
+        T* ptr2 = ptr;
+
+        for (unsigned int i = 0; i < bitmap->width() * CHANNELS; ++i)
+        {
+            double v = double(*ptr2) * factorToOne;
+
+            if (v <= 0.0031308)
+                v *= 12.92;
+            else
+                v = (1.0 + 0.055) * pow(v, exponent) - 0.055;
+
+            *ptr2 = T(v * factorFromOne);
+            ++ptr2;
+        }
+
+        ptr = (T*)((uint8_t*) ptr + bitmap->bytesPerRow());
+    }
+
+    bitmap->setSpace(SPACE_sRGB, false);
+}
+
+//-----------------------------------------------------------------------------
+
+template<typename T, uint8_t CHANNELS>
+    requires(std::is_integral_v<T>)
+void convertToLinear(TypedBitmap<T, CHANNELS>* bitmap)
+{
+    T* ptr = bitmap->data();
+
+    const double factorToOne = getConversionFactor(bitmap->range(), RANGE_ONE);
+    const double factorFromOne = getConversionFactor(RANGE_ONE, bitmap->range());
+
+    for (unsigned int y = 0; y < bitmap->height(); ++y)
+    {
+        T* ptr2 = ptr;
+
+        for (unsigned int i = 0; i < bitmap->width() * CHANNELS; ++i)
+        {
+            double v = double(*ptr2) * factorToOne;
+
+            if (v <= 0.04045)
+                v /= 12.92;
+            else
+                v = pow(((v + 0.055) / (1.0 + 0.055)), 2.4);
+
+            *ptr2 = T(std::round(v * factorFromOne));
+            ++ptr2;
+        }
+
+        ptr = (T*)((uint8_t*) ptr + bitmap->bytesPerRow());
+    }
+
+    bitmap->setSpace(SPACE_LINEAR, false);
+}
+
+//-----------------------------------------------------------------------------
+
+template<typename T, uint8_t CHANNELS>
+    requires(!std::is_integral_v<T>)
+void convertToLinear(TypedBitmap<T, CHANNELS>* bitmap)
+{
+    T* ptr = bitmap->data();
+
+    const double factorToOne = getConversionFactor(bitmap->range(), RANGE_ONE);
+    const double factorFromOne = getConversionFactor(RANGE_ONE, bitmap->range());
+
+    for (unsigned int y = 0; y < bitmap->height(); ++y)
+    {
+        T* ptr2 = ptr;
+
+        for (unsigned int i = 0; i < bitmap->width() * CHANNELS; ++i)
+        {
+            double v = double(*ptr2) * factorToOne;
+
+            if (v <= 0.04045)
+                v /= 12.92;
+            else
+                v = pow(((v + 0.055) / (1.0 + 0.055)), 2.4);
+
+            *ptr2 = T(v * factorFromOne);
+            ++ptr2;
+        }
+
+        ptr = (T*)((uint8_t*) ptr + bitmap->bytesPerRow());
+    }
+
+    bitmap->setSpace(SPACE_LINEAR, false);
+}
+
+//-----------------------------------------------------------------------------
+
+template<typename T, uint8_t CHANNELS>
+void convert(TypedBitmap<T, CHANNELS>* destBitmap, const Bitmap* srcBitmap, double factor, space_t space)
 {
     if (srcBitmap->isFloatingPoint())
     {
@@ -202,6 +288,13 @@ void convert(TypedBitmap<T, CHANNELS>* destBitmap, const Bitmap* srcBitmap, doub
             }
         }
     }
+
+    destBitmap->setSpace(srcBitmap->space(), false);
+
+    if ((space == SPACE_LINEAR) && ((destBitmap->space() == SPACE_sRGB)))
+        convertToLinear(destBitmap);
+    else if ((space == SPACE_sRGB) && ((destBitmap->space() == SPACE_LINEAR)))
+        convertTosRGB(destBitmap);
 }
 
 
@@ -315,7 +408,7 @@ bool Bitmap::setRange(range_t range, bool apply)
 
     if (apply)
     {
-        double factor = CONVERSION_FACTORS[_range][range];
+        double factor = getConversionFactor(_range, range);
 
         if (_floatingPoint)
         {
@@ -394,6 +487,123 @@ bool Bitmap::setRange(range_t range, bool apply)
 
 //-----------------------------------------------------------------------------
 
+bool Bitmap::setSpace(space_t space, bool apply)
+{
+    if (space >= SPACE_SOURCE)
+        return false;
+
+    if (_space == space)
+        return false;
+
+    if (apply)
+    {
+        if (_floatingPoint)
+        {
+            if (_channels == 3)
+            {
+                if (_channelSize == 4)
+                {
+                    FloatColorBitmap* dest = dynamic_cast<FloatColorBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+                else if (_channelSize == 8)
+                {
+                    DoubleColorBitmap* dest = dynamic_cast<DoubleColorBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+            }
+            else if (_channels == 1)
+            {
+                if (_channelSize == 4)
+                {
+                    FloatGrayBitmap* dest = dynamic_cast<FloatGrayBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+                else if (_channelSize == 8)
+                {
+                    DoubleGrayBitmap* dest = dynamic_cast<DoubleGrayBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+            }
+        }
+        else
+        {
+            if (_channels == 3)
+            {
+                if (_channelSize == 1)
+                {
+                    UInt8ColorBitmap* dest = dynamic_cast<UInt8ColorBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+                else if (_channelSize == 2)
+                {
+                    UInt16ColorBitmap* dest = dynamic_cast<UInt16ColorBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+                else if (_channelSize == 4)
+                {
+                    UInt32ColorBitmap* dest = dynamic_cast<UInt32ColorBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+            }
+            else if (_channels == 1)
+            {
+                if (_channelSize == 1)
+                {
+                    UInt8GrayBitmap* dest = dynamic_cast<UInt8GrayBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+                else if (_channelSize == 2)
+                {
+                    UInt16GrayBitmap* dest = dynamic_cast<UInt16GrayBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+                else if (_channelSize == 4)
+                {
+                    UInt32GrayBitmap* dest = dynamic_cast<UInt32GrayBitmap*>(this);
+                    if (space == SPACE_LINEAR)
+                        convertToLinear(dest);
+                    else if (space == SPACE_sRGB)
+                        convertTosRGB(dest);
+                }
+            }
+        }
+    }
+
+    _space = space;
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
 void Bitmap::resize(unsigned int width, unsigned int height)
 {
     if ((_width != width) || (_height != height) || (_bytesPerRow != _width * _channels * _channelSize))
@@ -461,7 +671,7 @@ void Bitmap::set(uint8_t* data, unsigned int width, unsigned int height, unsigne
 
 //-----------------------------------------------------------------------------
 
-bool Bitmap::set(const Bitmap* bitmap, range_t range)
+bool Bitmap::set(const Bitmap* bitmap, range_t range, space_t space)
 {
     assert(bitmap);
 
@@ -470,6 +680,12 @@ bool Bitmap::set(const Bitmap* bitmap, range_t range)
         range = bitmap->range();
     else if (range == RANGE_DEST)
         range = _range;
+
+    // Determine the destination color space
+    if (space == SPACE_SOURCE)
+        space = bitmap->space();
+    else if (space == SPACE_DEST)
+        space = _space;
 
     if (!_floatingPoint)
     {
@@ -491,7 +707,7 @@ bool Bitmap::set(const Bitmap* bitmap, range_t range)
     _info = bitmap->info();
 
     // Copy the source bitmap
-    double factor = CONVERSION_FACTORS[bitmap->range()][_range];
+    double factor = getConversionFactor(bitmap->range(), _range);
 
     if (_floatingPoint)
     {
@@ -500,12 +716,12 @@ bool Bitmap::set(const Bitmap* bitmap, range_t range)
             if (_channelSize == 4)
             {
                 FloatColorBitmap* dest = dynamic_cast<FloatColorBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
             else if (_channelSize == 8)
             {
                 DoubleColorBitmap* dest = dynamic_cast<DoubleColorBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
         }
         else if (_channels == 1)
@@ -513,12 +729,12 @@ bool Bitmap::set(const Bitmap* bitmap, range_t range)
             if (_channelSize == 4)
             {
                 FloatGrayBitmap* dest = dynamic_cast<FloatGrayBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
             else if (_channelSize == 8)
             {
                 DoubleGrayBitmap* dest = dynamic_cast<DoubleGrayBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
         }
     }
@@ -529,17 +745,17 @@ bool Bitmap::set(const Bitmap* bitmap, range_t range)
             if (_channelSize == 1)
             {
                 UInt8ColorBitmap* dest = dynamic_cast<UInt8ColorBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
             else if (_channelSize == 2)
             {
                 UInt16ColorBitmap* dest = dynamic_cast<UInt16ColorBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
             else if (_channelSize == 4)
             {
                 UInt32ColorBitmap* dest = dynamic_cast<UInt32ColorBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
         }
         else if (_channels == 1)
@@ -547,17 +763,17 @@ bool Bitmap::set(const Bitmap* bitmap, range_t range)
             if (_channelSize == 1)
             {
                 UInt8GrayBitmap* dest = dynamic_cast<UInt8GrayBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
             else if (_channelSize == 2)
             {
                 UInt16GrayBitmap* dest = dynamic_cast<UInt16GrayBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
             else if (_channelSize == 4)
             {
                 UInt32GrayBitmap* dest = dynamic_cast<UInt32GrayBitmap*>(this);
-                convert(dest, bitmap, factor);
+                convert(dest, bitmap, factor, space);
             }
         }
     }

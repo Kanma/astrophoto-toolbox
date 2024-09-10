@@ -7,17 +7,12 @@ using namespace astrophototoolbox;
 
 RawImage::RawImage()
 {
-    _processor.imgdata.params.use_camera_wb = 1;
     _processor.imgdata.params.use_auto_wb = 0;
     _processor.imgdata.params.use_fuji_rotate = 0;
     _processor.imgdata.params.no_auto_bright = 1;
     _processor.imgdata.params.user_flip = 0;
     _processor.imgdata.params.output_bps = 16;
-
-    // sRGB values
     _processor.imgdata.params.output_color = 1;
-    _processor.imgdata.params.gamm[0] = 1.0 / 2.4;
-    _processor.imgdata.params.gamm[1] = 12.92;
 }
 
 //-----------------------------------------------------------------------------
@@ -103,8 +98,21 @@ float RawImage::focalLength() const
 
 //-----------------------------------------------------------------------------
 
-bool RawImage::toBitmap(Bitmap* bitmap)
+bool RawImage::toBitmap(Bitmap* bitmap, bool useCameraWhiteBalance, bool linear)
 {
+    _processor.imgdata.params.use_camera_wb = (useCameraWhiteBalance ? 1 : 0);
+
+    if (linear)
+    {
+        _processor.imgdata.params.gamm[0] = 1.0;
+        _processor.imgdata.params.gamm[1] = 1.0;
+    }
+    else
+    {
+        _processor.imgdata.params.gamm[0] = 1.0 / 2.4;
+        _processor.imgdata.params.gamm[1] = 12.92;
+    }
+
     // Handle special cases
     if (bitmap->channelSize() == 1)
         _processor.imgdata.params.output_bps = 8;
