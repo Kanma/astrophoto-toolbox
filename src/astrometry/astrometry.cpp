@@ -1,4 +1,5 @@
 #include <astrophoto-toolbox/astrometry/astrometry.h>
+#include <astrophoto-toolbox/images/helpers.h>
 #include <filesystem>
 
 extern "C" {
@@ -65,12 +66,7 @@ bool Astrometry::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
     if (!bitmap)
         return false;
 
-    FloatGrayBitmap* grayBitmap = dynamic_cast<FloatGrayBitmap*>(bitmap);
-    if (!grayBitmap || (grayBitmap->range() != RANGE_BYTE) ||
-        (grayBitmap->bytesPerRow() > grayBitmap->width() * grayBitmap->bytesPerPixel()))
-    {
-        grayBitmap = new FloatGrayBitmap(bitmap, RANGE_BYTE);
-    }
+    FloatGrayBitmap* grayBitmap = requiresFormat<FloatGrayBitmap>(bitmap, RANGE_BYTE);
 
     simplexy_t params = { 0 };
     simplexy_fill_in_defaults(&params);
@@ -82,6 +78,8 @@ bool Astrometry::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
     stars.clear();
 
     int res = image2xy_run(&params, 2, 3);
+
+    params.image = nullptr;
 
     if (grayBitmap != bitmap)
         delete grayBitmap;
@@ -111,6 +109,8 @@ bool Astrometry::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
 
     if (cut)
         this->cut();
+
+    simplexy_free_contents(&params);
 
     return true;
 }
