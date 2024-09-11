@@ -41,6 +41,22 @@ bool Astrometry::run(Bitmap* bitmap, double minWidth, double maxWidth)
 
 //-----------------------------------------------------------------------------
 
+bool Astrometry::run(
+    const star_list_t& stars, const size2d_t& imageSize, double minWidth, double maxWidth
+)
+{
+    setStarList(stars, imageSize);
+
+    if (!uniformize())
+        return false;
+
+    cut();
+
+    return solve(minWidth, maxWidth);
+}
+
+//-----------------------------------------------------------------------------
+
 bool Astrometry::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
 {
     coordinates = Coordinates();
@@ -81,24 +97,14 @@ bool Astrometry::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
     for (int i = 0; i < params.npeaks; ++i)
     {
         int index = sortedIndices[i];
-        dest->x = params.x[index];
-        dest->y = params.y[index];
-        dest->flux = params.flux[index];
-        dest->background = params.background[index];
+        dest->position.x = params.x[index];
+        dest->position.y = params.y[index];
+        dest->intensity = params.flux[index];
         ++dest;
     }
 
-    detectionInfo.imageWidth = bitmap->width();
-    detectionInfo.imageHeight = bitmap->height();
-    detectionInfo.estimatedSourceVariance = params.sigma;
-    detectionInfo.gaussianPsfWidth = params.dpsf;
-    detectionInfo.significanceLimit = params.plim;
-    detectionInfo.distanceLimit = params.dlim;
-    detectionInfo.saddleDifference = params.saddle;
-    detectionInfo.maxNbPeaksPerObject = params.maxper;
-    detectionInfo.maxNbPeaksTotal = params.maxnpeaks;
-    detectionInfo.maxSize = params.maxsize;
-    detectionInfo.slidingSkyWindowHalfSize = params.halfbox;
+    imageSize.width = bitmap->width();
+    imageSize.height = bitmap->height();
 
     if (uniformize)
         this->uniformize();
@@ -117,21 +123,19 @@ bool Astrometry::uniformize(unsigned int nbBoxes)
         return true;
 
     // Determine the actual number of boxes
-    float maxX = stars[0].x;
-    float maxY = stars[0].y;
-    float minX = stars[0].x;
-    float minY = stars[0].y;
+    point_t max = stars[0].position;
+    point_t min = stars[0].position;
 
     for (const auto& star : stars)
     {
-        maxX = std::max(maxX, star.x);
-        maxY = std::max(maxY, star.y);
-        minX = std::min(minX, star.x);
-        minY = std::min(minY, star.y);
+        max.x = std::max(max.x, star.position.x);
+        max.y = std::max(max.y, star.position.y);
+        min.x = std::min(min.x, star.position.x);
+        min.y = std::min(min.y, star.position.y);
     }
 
-    float width = maxX - minX;
-    float height = maxY - minY;
+    float width = max.x - min.x;
+    float height = max.y - min.y;
 
     if ((width < 1e-6f) || (height < 1e-6f))
         return false;
@@ -146,8 +150,8 @@ bool Astrometry::uniformize(unsigned int nbBoxes)
     {
         const auto& star = stars[i];
 
-        int x = std::clamp(std::floorf((star.x - minX) / width * nbX), 0.0f, nbX - 1.0f);
-        int y = std::clamp(std::floorf((star.y - minY) / height * nbY), 0.0f, nbY - 1.0f);
+        int x = std::clamp(std::floorf((star.position.x - min.x) / width * nbX), 0.0f, nbX - 1.0f);
+        int y = std::clamp(std::floorf((star.position.y - min.y) / height * nbY), 0.0f, nbY - 1.0f);
 
         unsigned int index = y * nbX + x;
         bins[index].push_back(i);
@@ -198,7 +202,7 @@ bool Astrometry::solve(double minWidth, double maxWidth)
     coordinates = Coordinates();
     pixelScale = 0.0;
 
-    if (stars.empty() || (detectionInfo.imageWidth == 0) || (detectionInfo.imageHeight == 0) ||
+    if (stars.empty() || (imageSize.width == 0) || (imageSize.height == 0) ||
         indexes.empty())
     {
         return false;
@@ -208,11 +212,11 @@ bool Astrometry::solve(double minWidth, double maxWidth)
 
     solver->pixel_xscale = 0.0;
 
-    solver->field_maxx = double(detectionInfo.imageWidth);
-    solver->field_maxy = double(detectionInfo.imageHeight);
+    solver->field_maxx = double(imageSize.width);
+    solver->field_maxy = double(imageSize.height);
 
-    solver->funits_lower = deg2arcsec(minWidth) / detectionInfo.imageWidth;
-    solver->funits_upper = deg2arcsec(maxWidth) / detectionInfo.imageWidth;
+    solver->funits_lower = deg2arcsec(minWidth) / imageSize.width;
+    solver->funits_upper = deg2arcsec(maxWidth) / imageSize.width;
 
     solver->logratio_toprint = log(1e6);
     solver->logratio_tokeep = log(1e9);
@@ -228,7 +232,7 @@ bool Astrometry::solve(double minWidth, double maxWidth)
     solver->tweak_aborder = 2;
     solver->tweak_abporder = 2;
 
-    solver->quadsize_min = 0.1 * std::min(detectionInfo.imageWidth, detectionInfo.imageHeight);
+    solver->quadsize_min = 0.1 * std::min(imageSize.width, imageSize.height);
 
 
     std::vector<index_t*> indexes = filterIndexes(minWidth, maxWidth);
@@ -257,8 +261,8 @@ bool Astrometry::solve(double minWidth, double maxWidth)
     {
         const auto& star = stars[i];
 
-        fieldxy->x[i] = star.x;
-        fieldxy->y[i] = star.y;
+        fieldxy->x[i] = star.position.x;
+        fieldxy->y[i] = star.position.y;
     }
 
     solver_set_field(solver, fieldxy);
@@ -386,15 +390,15 @@ std::vector<int> Astrometry::sort(const simplexy_t& params, bool ascending)
 
 std::vector<index_t*> Astrometry::filterIndexes(float minWidth, float maxWidth)
 {
-    if ((detectionInfo.imageWidth == 0) || (detectionInfo.imageHeight == 0))
+    if ((imageSize.width == 0) || (imageSize.height == 0))
         return std::vector<index_t*>();
 
-    double scaleMin = deg2arcsec(minWidth) / detectionInfo.imageWidth;
-    double scaleMax = deg2arcsec(maxWidth) / detectionInfo.imageWidth;
+    double scaleMin = deg2arcsec(minWidth) / imageSize.width;
+    double scaleMax = deg2arcsec(maxWidth) / imageSize.width;
 
     // range of quad sizes that could be found in the field, in arcsec.
-    double quadsize_min = 0.1 * std::min(detectionInfo.imageWidth, detectionInfo.imageHeight);
-    double fmax = hypot(detectionInfo.imageWidth, detectionInfo.imageHeight) * scaleMax;
+    double quadsize_min = 0.1 * std::min(imageSize.width, imageSize.height);
+    double fmax = hypot(imageSize.width, imageSize.height) * scaleMax;
     double fmin = quadsize_min * scaleMin;
 
     std::vector<index_t*> result;

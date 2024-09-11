@@ -5,7 +5,7 @@
 
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/fits.h>
-#include <astrophoto-toolbox/astrometry/astrometry.h>
+#include <astrophoto-toolbox/stacking/registration.h>
 #include <astrophoto-toolbox/images/raw.h>
 
 using namespace std;
@@ -22,9 +22,6 @@ enum
     OPT_RAW,
     OPT_FITS,
     OPT_OUTPUT,
-    OPT_UNIFORMIZE,
-    OPT_OBJS,
-    OPT_NO_AN_KEYWORDS,
 };
 
 
@@ -36,11 +33,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_RAW,              "--raw",            SO_NONE },
     { OPT_FITS,             "--fits",           SO_NONE },
     { OPT_OUTPUT,            "-o",              SO_REQ_SEP },
-    { OPT_UNIFORMIZE,       "-u",               SO_NONE },
-    { OPT_UNIFORMIZE,       "--uniformize",     SO_NONE },
-    { OPT_OBJS,             "--objs",           SO_REQ_SEP },
-    { OPT_NO_AN_KEYWORDS,   "--no-an-keywords", SO_NONE },
-    
+
     SO_END_OF_OPTIONS
 };
 
@@ -49,10 +42,10 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 
 void showUsage(const std::string& strApplicationName)
 {
-    cout << "detect-stars" << endl
+    cout << "register" << endl
          << "Usage: " << strApplicationName << "[options] <--fits | --raw> <image>" << endl
          << endl
-         << "Detect the stars in a FITS or RAW image." << endl
+         << "Register a FITS or RAW image." << endl
          << endl
          << "Options:" << endl
          << "    --help, -h        Display this help" << endl
@@ -60,9 +53,6 @@ void showUsage(const std::string& strApplicationName)
          << "    --fits            Indicates that the image is a FITS one" << endl
          << "    --raw             Indicates that the image is a RAW one" << endl
          << "    -o FILE           FITS file into which write the coordinates (default: the input FITS image if applicable)" << endl
-         << "    --uniformize, -u  Uniformize the coordinates" << endl
-         << "    -objs NB          Only keep the NB brightest objects" << endl
-         << "    --no-an-keywords  Do not write astrometry.net specific keywords in the file (included by default, for compatibilty)" << endl
          << endl;
 }
 
@@ -73,8 +63,6 @@ int main(int argc, char** argv)
     bool verbose = false;
     bool isRaw = false;
     bool isFits = false;
-    bool uniformize = false;
-    int nbObjs = -1;
     bool includeANKeywords = true;
 
     // Parse the command-line parameters
@@ -103,18 +91,6 @@ int main(int argc, char** argv)
 
                 case OPT_OUTPUT:
                     outputFileName = args.OptionArg();
-                    break;
-
-                case OPT_UNIFORMIZE:
-                    uniformize = true;
-                    break;
-
-                case OPT_OBJS:
-                    nbObjs = stoi(args.OptionArg());
-                    break;
-
-                case OPT_NO_AN_KEYWORDS:
-                    includeANKeywords = false;
                     break;
             }
         }
@@ -193,51 +169,16 @@ int main(int argc, char** argv)
         }
     }
 
-    // Convert it to float & keep the first channel
-    if (bitmap->channels() == 3)
-    {
-        auto converted = new FloatColorBitmap(bitmap, RANGE_BYTE);
-        auto channel = converted->channel(0);
-        delete bitmap;
-        delete converted;
-        bitmap = channel;
-    }
-    else
-    {
-        auto converted = new FloatGrayBitmap(bitmap, RANGE_BYTE);
-        delete bitmap;
-        bitmap = converted;
-    }
+    // Registration
+    stacking::Registration registration;
+    star_list_t stars = registration.registerBitmap(bitmap);
 
-    // Star detection
-    Astrometry astrometry;
-    if (!astrometry.detectStars(bitmap))
-    {
-        cerr << "Failed to detect the stars" << endl;
-        delete bitmap;
-        return 1;
-    }
+    size2d_t imageSize(bitmap->width(), bitmap->height());
 
     delete bitmap;
 
     if (verbose)
-    {
-        cout << astrometry.getStarList().size() << " star(s) detected" << endl;
-    }
-
-    // If necessary, uniformize the coordinates
-    if (uniformize)
-    {
-        if (!astrometry.uniformize())
-        {
-            cerr << "Failed to uniformize the coordinates" << endl;
-            return 1;
-        }
-    }
-
-    // If necessary, only keep the brightest objects
-    if (nbObjs > 0)
-        astrometry.cut(nbObjs);
+        cout << stars.size() << " star(s) detected" << endl;
 
     // Save the coordinates
     FITS* dest = (isFits ? &fitsImage : nullptr);
@@ -253,20 +194,13 @@ int main(int argc, char** argv)
         dest = &output;
     }
 
-    if (!dest->write(astrometry.getStarList(), astrometry.getImageSize(), "STARS", true))
+    if (!dest->write(stars, imageSize, "STARS", true))
     {
         cerr << "Failed to save the coordinates in the FITS file" << endl;
         return 1;
     }
 
-    if (includeANKeywords)
-    {
-        if (!dest->writeAstrometryNetKeywords(astrometry.getImageSize()))
-        {
-            cerr << "Failed to write the keywords specific to astrometry.net" << endl;
-            return 1;
-        }
-    }
+    dest->writeAstrometryNetKeywords(imageSize);
 
     return 0;
 }

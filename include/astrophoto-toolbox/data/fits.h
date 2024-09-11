@@ -1,7 +1,8 @@
 #pragma once
 
 #include <astrophoto-toolbox/images/bitmap.h>
-#include <astrophoto-toolbox/astrometry/starlist.h>
+#include <astrophoto-toolbox/data/star.h>
+#include <astrophoto-toolbox/data/size.h>
 #include <fitsio.h>
 #include <string>
 
@@ -60,19 +61,19 @@ namespace astrophototoolbox {
         /// @brief  Add a list of stars into the FITS file
         //--------------------------------------------------------------------------------
         bool write(
-            const star_list_t& stars, const star_detection_info_t& infos,
+            const star_list_t& stars, const size2d_t& imageSize,
             const std::string& name = "STARS", bool overwrite = false
         );
 
         //--------------------------------------------------------------------------------
         /// @brief  Add the keywords needed by astrometry.net's 'astrometry-engine'
-        ///         executable
+        ///         executable, that performs plate solving.
         ///
         /// Only make sense in a file containing a list of stars, ready to be solved.
         ///
         /// For maximum compatibility.
         //--------------------------------------------------------------------------------
-        bool writeAstrometryNetKeywords(unsigned int imageWidth, unsigned int imageHeight);
+        bool writeAstrometryNetKeywords(const size2d_t& imageSize);
 
         //--------------------------------------------------------------------------------
         /// @brief  Read the bitmap with the given name from the FITS file
@@ -87,19 +88,19 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Read the bitmap with the given name from the FITS file
         //--------------------------------------------------------------------------------
-        star_list_t readStarList(
-            const std::string& name, star_detection_info_t* infos = nullptr
+        star_list_t readStars(
+            const std::string& name, size2d_t* imageSize = nullptr
         );
 
         //--------------------------------------------------------------------------------
         /// @brief  Read the n-th bitmap from the FITS file
         //--------------------------------------------------------------------------------
-        star_list_t readStarList(int index = 0, star_detection_info_t* infos = nullptr);
+        star_list_t readStars(int index = 0, size2d_t* imageSize = nullptr);
 
 
     private:
         Bitmap* readBitmapFromCurrentHDU();
-        star_list_t readStarListFromCurrentHDU(star_detection_info_t* infos = nullptr);
+        star_list_t readStarsFromCurrentHDU(size2d_t* imageSize = nullptr);
 
         bool gotoHDU(const std::string& name, int type);
         bool gotoHDU(int index, int type);

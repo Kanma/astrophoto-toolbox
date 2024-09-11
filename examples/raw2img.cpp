@@ -22,6 +22,7 @@ enum
     OPT_WB,
     OPT_SRGB,
     OPT_GRAY,
+    OPT_LUMINANCE,
     OPT_CHANNEL,
 };
 
@@ -35,6 +36,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_WB,           "--wb",         SO_NONE },
     { OPT_SRGB,         "--srgb",       SO_NONE },
     { OPT_GRAY,         "--gray",       SO_NONE },
+    { OPT_LUMINANCE,    "--luminance",  SO_NONE },
     { OPT_CHANNEL,      "--channel",    SO_REQ_SEP },
 
     SO_END_OF_OPTIONS
@@ -57,6 +59,7 @@ void showUsage(const std::string& strApplicationName)
          << "    --wb             Use camera white balance" << endl
          << "    --srgb           Apply sRGB gamma correction" << endl
          << "    --gray           Convert the image to grayscale" << endl
+         << "    --luminance      Extract the luminance of the image" << endl
          << "    --channel INDEX  Only save the given channel (0-2)" << endl
          << endl;
 }
@@ -74,6 +77,7 @@ int main(int argc, char** argv)
     bool useCameraWB = false;
     bool sRGB = false;
     bool gray = false;
+    bool luminance = false;
     int channel = -1;
 
     // Parse the command-line parameters
@@ -119,6 +123,10 @@ int main(int argc, char** argv)
 
                 case OPT_GRAY:
                     gray = true;
+                    break;
+
+                case OPT_LUMINANCE:
+                    luminance = true;
                     break;
 
                 case OPT_CHANNEL:
@@ -195,6 +203,14 @@ int main(int argc, char** argv)
 
         delete bitmap;
         bitmap = portion;
+    }
+
+    // If necessary: compute the luminance of the image
+    if (luminance)
+    {
+        astrophototoolbox::DoubleGrayBitmap* luminance = computeLuminanceBitmap(bitmap);
+        delete bitmap;
+        bitmap = luminance;
     }
 
     // If necessary: convert the image to grayscale

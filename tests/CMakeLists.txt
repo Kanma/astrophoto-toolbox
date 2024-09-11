@@ -2,6 +2,9 @@ add_executable(unittests
     main.cpp
     coordinates.cpp
 
+    algorithms/histogram.cpp
+    algorithms/math.cpp
+
     astrometry/astrometry.cpp
 
     data/fits_helpers.h
@@ -21,6 +24,9 @@ add_executable(unittests
     images/bitmap_float_gray.cpp
     images/pnm.cpp
     images/raw.cpp
+
+    stacking/registration.cpp
+    stacking/starmatcher.cpp
 )
 
 target_include_directories(unittests

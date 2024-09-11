@@ -219,12 +219,10 @@ bool FITS::write(Bitmap* bitmap, const std::string& name)
 //-----------------------------------------------------------------------------
 
 bool FITS::write(
-    const star_list_t& stars, const star_detection_info_t& infos, const std::string& name,
+    const star_list_t& stars, const size2d_t& imageSize, const std::string& name,
     bool overwrite
 )
 {
-    assert(!stars.empty());
-
     int status = 0;
     bool tableExisting = false;
 
@@ -254,12 +252,12 @@ bool FITS::write(
     // Creates the table if necessary
     if (!tableExisting)
     {
-        const char* ttype[] = {"X", "Y", "FLUX", "BACKGROUND"};
-        const char* tform[] = {"E", "E", "E", "E"};
-        const char* tunit[] = {"pix", "pix", "unknown", "unknown"};
+        const char* ttype[] = {"X", "Y", "INTENSITY", "QUALITY", "MEANRADIUS"};
+        const char* tform[] = {"D", "D", "E", "E", "E"};
+        const char* tunit[] = {"pix", "pix", "unknown", "unknown", "pix"};
 
         fits_create_tbl(
-            _file, BINARY_TBL, stars.size(), 4, (char**) ttype, (char**) tform, (char**) tunit,
+            _file, BINARY_TBL, stars.size(), 5, (char**) ttype, (char**) tform, (char**) tunit,
             (name.empty() ? nullptr : name.c_str()), &status
         );
     }
@@ -268,32 +266,24 @@ bool FITS::write(
     const star_t* src = stars.data();
     for (size_t i = 1; i <= stars.size(); ++i)
     {
-        fits_write_col(_file, TFLOAT, 1, i, 1, 1, (void*) &src->x, &status);
-        fits_write_col(_file, TFLOAT, 2, i, 1, 1, (void*) &src->y, &status);
-        fits_write_col(_file, TFLOAT, 3, i, 1, 1, (void*) &src->flux, &status);
-        fits_write_col(_file, TFLOAT, 4, i, 1, 1, (void*) &src->background, &status);
+        fits_write_col(_file, TDOUBLE, 1, i, 1, 1, (void*) &src->position.x, &status);
+        fits_write_col(_file, TDOUBLE, 2, i, 1, 1, (void*) &src->position.y, &status);
+        fits_write_col(_file, TDOUBLE, 3, i, 1, 1, (void*) &src->intensity, &status);
+        fits_write_col(_file, TDOUBLE, 4, i, 1, 1, (void*) &src->quality, &status);
+        fits_write_col(_file, TDOUBLE, 4, i, 1, 1, (void*) &src->meanRadius, &status);
         ++src;
     }
 
     // Save the other data
-    fits_update_key(_file, TINT, "IMAGEW", (void*) &infos.imageWidth, "Width of the image", &status);
-    fits_update_key(_file, TINT, "IMAGEH", (void*) &infos.imageHeight, "Height of the image", &status);
-    fits_update_key(_file, TFLOAT, "ESTSIGMA", (void*) &infos.estimatedSourceVariance, "Estimated source image variance", &status);
-    fits_update_key(_file, TFLOAT, "DPSF", (void*) &infos.gaussianPsfWidth, "Assumed gaussian psf width", &status);
-    fits_update_key(_file, TFLOAT, "PLIM", (void*) &infos.significanceLimit, "Significance to keep", &status);
-    fits_update_key(_file, TFLOAT, "DLIM", (void*) &infos.distanceLimit, "Closest two peaks can be", &status);
-    fits_update_key(_file, TFLOAT, "SADDLE", (void*) &infos.saddleDifference, "Saddle difference (in sig)", &status);
-    fits_update_key(_file, TINT, "MAXPER", (void*) &infos.maxNbPeaksPerObject, "Max num of peaks per object", &status);
-    fits_update_key(_file, TINT, "MAXPEAKS", (void*) &infos.maxNbPeaksTotal, "Max num of peaks total", &status);
-    fits_update_key(_file, TINT, "MAXSIZE", (void*) &infos.maxSize, "Max size for extended objects", &status);
-    fits_update_key(_file, TINT, "HALFBOX", (void*) &infos.slidingSkyWindowHalfSize, "Half-size for sliding sky window", &status);
+    fits_update_key(_file, TINT, "IMAGEW", (void*) &imageSize.width, "Width of the image", &status);
+    fits_update_key(_file, TINT, "IMAGEH", (void*) &imageSize.height, "Height of the image", &status);
 
     return (status == 0);
 }
 
 //-----------------------------------------------------------------------------
 
-bool FITS::writeAstrometryNetKeywords(unsigned int imageWidth, unsigned int imageHeight)
+bool FITS::writeAstrometryNetKeywords(const size2d_t& imageSize)
 {
     if (!gotoHDU(0, ANY_HDU))
         return false;
@@ -304,8 +294,8 @@ bool FITS::writeAstrometryNetKeywords(unsigned int imageWidth, unsigned int imag
     const int sFALSE = 0;
     const int tweak = 2;
 
-    fits_update_key(_file, TINT, "IMAGEW", (void*) &imageWidth, "image width", &status);
-    fits_update_key(_file, TINT, "IMAGEH", (void*) &imageHeight, "image height", &status);
+    fits_update_key(_file, TINT, "IMAGEW", (void*) &imageSize.width, "image width", &status);
+    fits_update_key(_file, TINT, "IMAGEH", (void*) &imageSize.height, "image height", &status);
     fits_update_key(_file, TLOGICAL, "ANRUN", (void*) &sTRUE, "Solve this field!", &status);
     fits_update_key(_file, TLOGICAL, "ANVERUNI", (void*) &sTRUE, "Uniformize field during verification", &status);
     fits_update_key(_file, TLOGICAL, "ANVERDUP", (void*) &sFALSE, "Deduplicate field during verification", &status);
@@ -337,24 +327,24 @@ Bitmap* FITS::readBitmap(int index)
 
 //-----------------------------------------------------------------------------
 
-star_list_t FITS::readStarList(
-    const std::string& name, star_detection_info_t* infos
+star_list_t FITS::readStars(
+    const std::string& name, size2d_t* imageSize
 )
 {
     if (!gotoHDU(name, BINARY_TBL))
         return star_list_t();
 
-    return readStarListFromCurrentHDU(infos);
+    return readStarsFromCurrentHDU(imageSize);
 }
 
 //-----------------------------------------------------------------------------
 
-star_list_t FITS::readStarList(int index, star_detection_info_t* infos)
+star_list_t FITS::readStars(int index, size2d_t* imageSize)
 {
     if (!gotoHDU(index, BINARY_TBL))
         return star_list_t();
 
-    return readStarListFromCurrentHDU(infos);
+    return readStarsFromCurrentHDU(imageSize);
 }
 
 //-----------------------------------------------------------------------------
@@ -505,7 +495,7 @@ Bitmap* FITS::readBitmapFromCurrentHDU()
 
 //-----------------------------------------------------------------------------
 
-star_list_t FITS::readStarListFromCurrentHDU(star_detection_info_t* infos)
+star_list_t FITS::readStarsFromCurrentHDU(size2d_t* imageSize)
 {
     int status = 0;
     star_list_t stars;
@@ -521,27 +511,19 @@ star_list_t FITS::readStarListFromCurrentHDU(star_detection_info_t* infos)
     const star_t* dst = stars.data();
     for (size_t i = 1; i <= stars.size(); ++i)
     {
-        fits_read_col(_file, TFLOAT, 1, i, 1, 1, nullptr, (void*) &dst->x, nullptr, &status);
-        fits_read_col(_file, TFLOAT, 2, i, 1, 1, nullptr, (void*) &dst->y, nullptr, &status);
-        fits_read_col(_file, TFLOAT, 3, i, 1, 1, nullptr, (void*) &dst->flux, nullptr, &status);
-        fits_read_col(_file, TFLOAT, 4, i, 1, 1, nullptr, (void*) &dst->background, nullptr, &status);
+        fits_read_col(_file, TDOUBLE, 1, i, 1, 1, nullptr, (void*) &dst->position.x, nullptr, &status);
+        fits_read_col(_file, TDOUBLE, 2, i, 1, 1, nullptr, (void*) &dst->position.y, nullptr, &status);
+        fits_read_col(_file, TDOUBLE, 3, i, 1, 1, nullptr, (void*) &dst->intensity, nullptr, &status);
+        fits_read_col(_file, TDOUBLE, 4, i, 1, 1, nullptr, (void*) &dst->quality, nullptr, &status);
+        fits_read_col(_file, TDOUBLE, 4, i, 1, 1, nullptr, (void*) &dst->meanRadius, nullptr, &status);
         ++dst;
     }
 
     // Load the other data
-    if (infos)
+    if (imageSize)
     {
-        fits_read_key(_file, TINT, "IMAGEW", (void*) &infos->imageWidth, nullptr, &status);
-        fits_read_key(_file, TINT, "IMAGEH", (void*) &infos->imageHeight, nullptr, &status);
-        fits_read_key(_file, TFLOAT, "ESTSIGMA", (void*) &infos->estimatedSourceVariance, nullptr, &status);
-        fits_read_key(_file, TFLOAT, "DPSF", (void*) &infos->gaussianPsfWidth, nullptr, &status);
-        fits_read_key(_file, TFLOAT, "PLIM", (void*) &infos->significanceLimit, nullptr, &status);
-        fits_read_key(_file, TFLOAT, "DLIM", (void*) &infos->distanceLimit, nullptr, &status);
-        fits_read_key(_file, TFLOAT, "SADDLE", (void*) &infos->saddleDifference, nullptr, &status);
-        fits_read_key(_file, TINT, "MAXPER", (void*) &infos->maxNbPeaksPerObject, nullptr, &status);
-        fits_read_key(_file, TINT, "MAXPEAKS", (void*) &infos->maxNbPeaksTotal, nullptr, &status);
-        fits_read_key(_file, TINT, "MAXSIZE", (void*) &infos->maxSize, nullptr, &status);
-        fits_read_key(_file, TINT, "HALFBOX", (void*) &infos->slidingSkyWindowHalfSize, nullptr, &status);
+        fits_read_key(_file, TINT, "IMAGEW", (void*) &imageSize->width, nullptr, &status);
+        fits_read_key(_file, TINT, "IMAGEH", (void*) &imageSize->height, nullptr, &status);
     }
 
     return stars;

@@ -43,26 +43,22 @@ TEST_CASE("Star detection", "[Astrometry]")
 
     REQUIRE(stars.size() == 3);
 
-    REQUIRE(stars[0].x == Approx(45.78783f));
-    REQUIRE(stars[0].y == Approx(59.32189f));
-    REQUIRE(stars[0].flux == Approx(175.77803f));
-    REQUIRE(stars[0].background == Approx(48.87514f));
+    REQUIRE(stars[0].position.x == Approx(45.78783f));
+    REQUIRE(stars[0].position.y == Approx(59.32189f));
+    REQUIRE(stars[0].intensity == Approx(175.77803f));
 
-    REQUIRE(stars[1].x == Approx(61.18722f));
-    REQUIRE(stars[1].y == Approx(39.89201f));
-    REQUIRE(stars[1].flux == Approx(166.55237f));
-    REQUIRE(stars[1].background == Approx(48.88011f));
+    REQUIRE(stars[1].position.x == Approx(61.18722f));
+    REQUIRE(stars[1].position.y == Approx(39.89201f));
+    REQUIRE(stars[1].intensity == Approx(166.55237f));
 
-    REQUIRE(stars[2].x == Approx(57.18385f));
-    REQUIRE(stars[2].y == Approx(91.79505f));
-    REQUIRE(stars[2].flux == Approx(44.6794f));
-    REQUIRE(stars[2].background == Approx(48.83362f));
+    REQUIRE(stars[2].position.x == Approx(57.18385f));
+    REQUIRE(stars[2].position.y == Approx(91.79505f));
+    REQUIRE(stars[2].intensity == Approx(44.6794f));
 
-    auto info = astrometry.getDetectionInfo();
+    auto imageSize = astrometry.getImageSize();
 
-    REQUIRE(info.imageWidth == 120);
-    REQUIRE(info.imageHeight == 120);
-    REQUIRE(info.estimatedSourceVariance == Approx(13.72017f));
+    REQUIRE(imageSize.width == 120);
+    REQUIRE(imageSize.height == 120);
 
     delete channel;
     delete bitmap;
@@ -74,40 +70,38 @@ TEST_CASE("Star uniformization", "[Astrometry]")
     star_list_t list;
 
     star_t star;
-    star.x = 100.0f;
-    star.y = 10.0f;
+    star.position.x = 100.0f;
+    star.position.y = 10.0f;
     list.push_back(star);
 
-    star.x = 80.0f;
-    star.y = 20.0f;
+    star.position.x = 80.0f;
+    star.position.y = 20.0f;
     list.push_back(star);
 
-    star.x = 10.0f;
-    star.y = 20.0f;
+    star.position.x = 10.0f;
+    star.position.y = 20.0f;
     list.push_back(star);
 
-    star.x = 20.0f;
-    star.y = 15.0f;
+    star.position.x = 20.0f;
+    star.position.y = 15.0f;
     list.push_back(star);
 
-    star.x = 100.0f;
-    star.y = 50.0f;
+    star.position.x = 100.0f;
+    star.position.y = 50.0f;
     list.push_back(star);
 
-    star.x = 80.0f;
-    star.y = 40.0f;
+    star.position.x = 80.0f;
+    star.position.y = 40.0f;
     list.push_back(star);
 
-    star.x = 10.0f;
-    star.y = 45.0f;
+    star.position.x = 10.0f;
+    star.position.y = 45.0f;
     list.push_back(star);
 
-    star_detection_info_t info;
-    info.imageWidth = 120;
-    info.imageHeight = 60;
+    size2d_t imageSize(120, 60);
 
     Astrometry astrometry;
-    astrometry.setStarList(list, info);
+    astrometry.setStarList(list, imageSize);
     
     REQUIRE(astrometry.uniformize(4));
 
@@ -115,26 +109,26 @@ TEST_CASE("Star uniformization", "[Astrometry]")
 
     REQUIRE(stars.size() == 7);
 
-    REQUIRE(stars[0].x == Approx(100.0f));
-    REQUIRE(stars[0].y == Approx(10.0));
+    REQUIRE(stars[0].position.x == Approx(100.0f));
+    REQUIRE(stars[0].position.y == Approx(10.0));
 
-    REQUIRE(stars[1].x == Approx(10.0f));
-    REQUIRE(stars[1].y == Approx(20.0f));
+    REQUIRE(stars[1].position.x == Approx(10.0f));
+    REQUIRE(stars[1].position.y == Approx(20.0f));
 
-    REQUIRE(stars[2].x == Approx(80.0f));
-    REQUIRE(stars[2].y == Approx(20.0f));
+    REQUIRE(stars[2].position.x == Approx(80.0f));
+    REQUIRE(stars[2].position.y == Approx(20.0f));
 
-    REQUIRE(stars[3].x == Approx(20.0f));
-    REQUIRE(stars[3].y == Approx(15.0f));
+    REQUIRE(stars[3].position.x == Approx(20.0f));
+    REQUIRE(stars[3].position.y == Approx(15.0f));
 
-    REQUIRE(stars[4].x == Approx(100.0f));
-    REQUIRE(stars[4].y == Approx(50.0f));
+    REQUIRE(stars[4].position.x == Approx(100.0f));
+    REQUIRE(stars[4].position.y == Approx(50.0f));
 
-    REQUIRE(stars[5].x == Approx(10.0f));
-    REQUIRE(stars[5].y == Approx(45.0f));
+    REQUIRE(stars[5].position.x == Approx(10.0f));
+    REQUIRE(stars[5].position.y == Approx(45.0f));
 
-    REQUIRE(stars[6].x == Approx(80.0f));
-    REQUIRE(stars[6].y == Approx(40.0f));
+    REQUIRE(stars[6].position.x == Approx(80.0f));
+    REQUIRE(stars[6].position.y == Approx(40.0f));
 }
 
 
@@ -145,17 +139,15 @@ TEST_CASE("Star list cut", "[Astrometry]")
     star_t star;
     for (unsigned int i = 0; i < 20; ++i)
     {
-        star.x = float(i);
-        star.y = float(i * 2);
+        star.position.x = float(i);
+        star.position.y = float(i * 2);
         list.push_back(star);
     }
 
-    star_detection_info_t info;
-    info.imageWidth = 120;
-    info.imageHeight = 60;
+    size2d_t imageSize(120, 60);
 
     Astrometry astrometry;
-    astrometry.setStarList(list, info);
+    astrometry.setStarList(list, imageSize);
     
     astrometry.cut(10);
 
@@ -165,8 +157,8 @@ TEST_CASE("Star list cut", "[Astrometry]")
 
     for (unsigned int i = 0; i < 10; ++i)
     {
-        REQUIRE(stars[i].x == Approx(list[i].x));
-        REQUIRE(stars[i].y == Approx(list[i].y));
+        REQUIRE(stars[i].position.x == Approx(list[i].position.x));
+        REQUIRE(stars[i].position.y == Approx(list[i].position.y));
     }
 }
 
@@ -193,13 +185,13 @@ TEST_CASE("Plate solving", "[Astrometry]")
 
     REQUIRE(input.open(DATA_DIR "starfield.axy"));
 
-    star_detection_info_t info;
-    star_list_t stars = input.readStarList(0, &info);
+    size2d_t imageSize;
+    star_list_t stars = input.readStars(0, &imageSize);
 
     REQUIRE(!stars.empty());
 
     Astrometry astrometry;
-    astrometry.setStarList(stars, info);
+    astrometry.setStarList(stars, imageSize);
 
     REQUIRE(astrometry.loadIndexes(DATA_DIR "downloads"));
 
@@ -219,13 +211,13 @@ TEST_CASE("Fail to do plate solving without index files", "[Astrometry]")
 
     REQUIRE(input.open(DATA_DIR "starfield.axy"));
 
-    star_detection_info_t info;
-    star_list_t stars = input.readStarList(0, &info);
+    size2d_t imageSize;
+    star_list_t stars = input.readStars(0, &imageSize);
 
     REQUIRE(!stars.empty());
 
     Astrometry astrometry;
-    astrometry.setStarList(stars, info);
+    astrometry.setStarList(stars, imageSize);
 
     REQUIRE(!astrometry.solve(0.5, 2.0));
 

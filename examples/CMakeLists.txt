@@ -12,3 +12,8 @@ target_link_libraries(detect-stars PRIVATE astrophoto-toolbox)
 add_executable(find-coordinates find-coordinates.cpp)
 target_link_libraries(find-coordinates PRIVATE astrophoto-toolbox)
 
+add_executable(register register.cpp)
+target_link_libraries(register PRIVATE astrophoto-toolbox)
+
+add_executable(compute-transformation compute-transformation.cpp)
+target_link_libraries(compute-transformation PRIVATE astrophoto-toolbox)

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <astrophoto-toolbox/images/bitmap.h>
-#include <astrophoto-toolbox/astrometry/starlist.h>
+#include <astrophoto-toolbox/data/star.h>
+#include <astrophoto-toolbox/data/size.h>
 #include <astrophoto-toolbox/coordinates.h>
 #include <string>
 
@@ -44,6 +45,19 @@ namespace astrophototoolbox {
         bool run(Bitmap* bitmap, double minWidth = 0.1, double maxWidth = 180.0);
 
         //--------------------------------------------------------------------------------
+        /// @brief  Perform plate solving on a list of stars
+        ///
+        /// This is a shortcut to execute all the operations needed for plate solving,
+        /// available individually as methods of this class.
+        ///
+        /// The method 'loadIndexes()' must have been called before this one.
+        //--------------------------------------------------------------------------------
+        bool run(
+            const star_list_t& stars, const size2d_t& imageSize, double minWidth = 0.1,
+            double maxWidth = 180.0
+        );
+
+        //--------------------------------------------------------------------------------
         /// @brief  Detect the stars in the provided bitmap
         ///
         /// The result can be retrieved with 'getStarList()'. The detected stars are
@@ -68,7 +82,7 @@ namespace astrophototoolbox {
         /// stars in a grid, and sort them using a "first star in each cell, second star
         /// in each cell, ..." method.
         ///
-        /// It is assumed that the stars are already sorted by their flux (this is done
+        /// It is assumed that the stars are already sorted by their flux (this is done by
         /// 'detectStars()').
         ///
         /// This function is a reimplementation of astrometry.net's "uniformize.py".
@@ -96,10 +110,10 @@ namespace astrophototoolbox {
         ///
         /// In the 'infos' struct, only the image width and height are required.
         //--------------------------------------------------------------------------------
-        inline void setStarList(const star_list_t list, const star_detection_info_t& infos)
+        inline void setStarList(const star_list_t stars, const size2d_t& imageSize)
         {
-            stars = list;
-            detectionInfo = infos;
+            this->stars = stars;
+            this->imageSize = imageSize;
 
             coordinates = Coordinates();
             pixelScale = 0.0;
@@ -118,9 +132,9 @@ namespace astrophototoolbox {
         ///
         /// Mainly needed to maintain compatibility with astrometry.net.
         //--------------------------------------------------------------------------------
-        inline const star_detection_info_t& getDetectionInfo() const
+        inline const size2d_t& getImageSize() const
         {
-            return detectionInfo;
+            return imageSize;
         }
 
         //--------------------------------------------------------------------------------
@@ -170,7 +184,7 @@ namespace astrophototoolbox {
         //_____ Attributes __________
     private:
         star_list_t stars;
-        star_detection_info_t detectionInfo = { 0 };
+        size2d_t imageSize;
 
         Coordinates coordinates;
         double pixelScale = 0.0;    // in arcsec/pixel
