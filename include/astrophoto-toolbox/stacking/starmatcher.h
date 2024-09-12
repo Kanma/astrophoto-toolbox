@@ -24,6 +24,8 @@ namespace stacking {
             Transformation& transformation
         );
 
+        std::vector<std::tuple<point_t, point_t>> pairs() const;
+
     private:
         bool computeLargeTriangleTransformation(Transformation& transforms);
 

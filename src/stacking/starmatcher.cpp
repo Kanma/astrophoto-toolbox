@@ -42,6 +42,23 @@ bool StarMatcher::computeTransformation(
 
 //-----------------------------------------------------------------------------
 
+std::vector<std::tuple<point_t, point_t>> StarMatcher::pairs() const
+{
+    std::vector<std::tuple<point_t, point_t>> pairs;
+
+    for (const auto& pair : votedPairs)
+    {
+        const auto& ref = references[pair.refStar];
+        const auto& target = targets[pair.targetStar];
+
+        pairs.push_back({ point_t(ref.x, ref.y), point_t(target.x, target.y) });
+    }
+
+    return pairs;
+}
+
+//-----------------------------------------------------------------------------
+
 bool StarMatcher::computeLargeTriangleTransformation(Transformation& transforms)
 {
     bool result = false;
