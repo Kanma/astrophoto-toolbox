@@ -1,6 +1,6 @@
 include_directories(
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>/include
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>/dependencies
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>/include
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>/dependencies
 )
 
 add_executable(raw2img raw2img.cpp)

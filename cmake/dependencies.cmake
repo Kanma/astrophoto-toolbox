@@ -1,6 +1,8 @@
 include(FetchContent)
 
-cmake_policy(SET CMP0169 OLD)
+if (POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)
+endif()
 
 # LibRaw configuration
 set(BUILD_SHARED_LIBS OFF)

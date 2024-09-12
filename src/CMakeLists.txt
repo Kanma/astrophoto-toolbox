@@ -17,32 +17,34 @@ set(SRC_FILES
     stacking/starmatcher.cpp
 )
 
+set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+
 set(HEADER_FILES
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/coordinates.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/algorithms/histogram.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/algorithms/math.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/astrometry/astrometry.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/data/fits.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/data/point.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/data/rect.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/data/size.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/data/star.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/data/transformation.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/bitmap.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/helpers.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/pnm.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/images/raw.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/stacking/registration.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/stacking/starmatcher.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/stacking/starsdistance.h
-    ${CMAKE_SOURCE_DIR}/include/astrophoto-toolbox/stacking/votingpair.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/coordinates.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/algorithms/histogram.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/algorithms/math.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/astrometry/astrometry.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/data/fits.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/data/point.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/data/rect.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/data/size.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/data/star.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/data/transformation.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/images/bitmap.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/images/helpers.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/images/pnm.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/images/raw.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/stacking/registration.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/stacking/starmatcher.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/stacking/starsdistance.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/stacking/votingpair.h
 )
 
 add_library(astrophoto-toolbox ${SRC_FILES} ${HEADER_FILES})
 
 target_include_directories(astrophoto-toolbox
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>/include
+        ${INCLUDE_DIR}
     PRIVATE
         ${FETCHCONTENT_BASE_DIR}/eigen3-src/
 )

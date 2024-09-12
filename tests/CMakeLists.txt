@@ -31,7 +31,7 @@ add_executable(unittests
 
 target_include_directories(unittests
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>/include
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>/include
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
 )
 
