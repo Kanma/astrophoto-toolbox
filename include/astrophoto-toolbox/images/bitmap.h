@@ -55,7 +55,7 @@ namespace astrophototoolbox {
     class Bitmap
     {
         //_____ Construction / Destruction __________
-    public: 
+    public:
         Bitmap() = delete;
         virtual ~Bitmap() = default;
 
@@ -524,7 +524,7 @@ namespace astrophototoolbox {
                  _defaultRange)
         {
             _space = (space >= SPACE_SOURCE ? SPACE_LINEAR : space);
-            set((uint8_t*) data, width, height, range);
+            set((uint8_t*) data, width, height);
         }
 
         //--------------------------------------------------------------------------------
@@ -558,7 +558,7 @@ namespace astrophototoolbox {
                  range, _defaultRange)
         {
             _space = (space >= SPACE_SOURCE ? SPACE_LINEAR : space);
-            set((uint8_t*) data, width, height, bytesPerRow, range);
+            set((uint8_t*) data, width, height, bytesPerRow);
         }
 
         //--------------------------------------------------------------------------------

@@ -29,16 +29,19 @@ namespace astrophototoolbox {
     /// The caller must free the returned bitmap if it is different than the provided one.
     //------------------------------------------------------------------------------------
     template<class BITMAPTYPE>
-    BITMAPTYPE* requiresFormat(Bitmap* bitmap, range_t range = RANGE_DEST)
+    BITMAPTYPE* requiresFormat(
+        Bitmap* bitmap, range_t range = RANGE_DEST, space_t space = SPACE_DEST
+    )
     {
         if ((bitmap->isFloatingPoint() == BITMAPTYPE::FloatingPoint) &&
             (bitmap->channelSize() == BITMAPTYPE::ChannelSize) &&
-            (bitmap->range() == (range != RANGE_DEST ? range : BITMAPTYPE::DefaultRange)))
+            (bitmap->range() == (range != RANGE_DEST ? range : BITMAPTYPE::DefaultRange)) &&
+            (bitmap->space() == (space != SPACE_DEST ? space : bitmap->space())))
         {
             return dynamic_cast<BITMAPTYPE*>(bitmap);
         }
 
-        return new BITMAPTYPE(bitmap, range);
+        return new BITMAPTYPE(bitmap, range, space);
     }
 
 }
