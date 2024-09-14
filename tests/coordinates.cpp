@@ -384,7 +384,7 @@ TEST_CASE("Coordinates created with invalid strings", "[Coordinates]")
         Coordinates coords("invalid", "20°00'00\"");
 
         REQUIRE(coords.isNull());
-        REQUIRE(isinf(coords.getRA()));
+        REQUIRE(std::isinf(coords.getRA()));
         REQUIRE(coords.getDEC() == Approx(20.0));
     }
 
@@ -394,7 +394,7 @@ TEST_CASE("Coordinates created with invalid strings", "[Coordinates]")
 
         REQUIRE(coords.isNull());
         REQUIRE(coords.getRA() == Approx(15.0));
-        REQUIRE(isinf(coords.getDEC()));
+        REQUIRE(std::isinf(coords.getDEC()));
     }
 }
 

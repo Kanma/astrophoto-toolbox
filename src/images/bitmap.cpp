@@ -1,5 +1,7 @@
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/images/helpers.h>
+#include <string.h>
+#include <assert.h>
 
 using namespace astrophototoolbox;
 

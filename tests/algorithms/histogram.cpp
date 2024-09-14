@@ -1,5 +1,6 @@
 #include <catch.hpp>
 #include <astrophoto-toolbox/algorithms/histogram.h>
+#include <string.h>
 
 using namespace astrophototoolbox;
 

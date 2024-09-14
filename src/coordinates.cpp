@@ -83,7 +83,7 @@ void Coordinates::set(const std::string& ra, const std::string& dec)
         }
     }
 
-    if (!isinf(this->ra))
+    if (!std::isinf(this->ra))
     {
         while (this->ra < 0.0)
             this->ra += 360.0;
@@ -119,7 +119,7 @@ void Coordinates::set(const std::string& ra, const std::string& dec)
         }
     }
 
-    if (!isinf(this->dec))
+    if (!std::isinf(this->dec))
         this->dec = fmax(-90.0, fmin(90.0, this->dec));
 }
 
@@ -275,7 +275,7 @@ double Coordinates::parseDMS(const std::smatch& match)
     }
 
     bool negative = deg < 0;
-    deg = abs(deg);
+    deg = std::abs(deg);
 
     double angle = double(deg) + double(minutes) / 60.0 + seconds / 3600.0;
 
@@ -296,18 +296,18 @@ double Coordinates::parseHMS(const std::smatch& match)
 
 std::string Coordinates::getAngleAsDMS(double angle) const
 {
-    double absoluteAngle = abs(angle);
+    double absoluteAngle = std::abs(angle);
 
-    int deg = int(floor(absoluteAngle));
+    int deg = int(std::floor(absoluteAngle));
     double remainder = (absoluteAngle - double(deg)) * 60.0;
 
-    int minutes = int(floor(remainder));
+    int minutes = int(std::floor(remainder));
     double remainder2 = (remainder - double(minutes)) * 60.0;
 
-    int seconds = int(floor(remainder2));
+    int seconds = int(std::floor(remainder2));
     double remainder3 = (remainder2 - double(seconds)) * 1000.0;
 
-    int milliseconds = int(round(remainder3));
+    int milliseconds = int(std::round(remainder3));
     if (milliseconds == 1000)
     {
         milliseconds = 0;

@@ -1,5 +1,6 @@
 #include <astrophoto-toolbox/images/pnm.h>
 #include <iostream>
+#include <assert.h>
 
 namespace astrophototoolbox {
 namespace pnm {

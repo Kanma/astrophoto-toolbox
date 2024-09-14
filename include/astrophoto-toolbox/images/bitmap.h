@@ -3,6 +3,7 @@
 #include <astrophoto-toolbox/images/bitmapinfo.h>
 #include <vector>
 #include <cmath>
+#include <stdint.h>
 
 
 namespace astrophototoolbox {

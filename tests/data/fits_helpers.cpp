@@ -37,13 +37,13 @@ void checkHeaderEntry(const std::string& header, const std::string& key, double 
     int pos = getHeaderEntryPosition(header, key);
     REQUIRE(pos >= 0);
 
-    char buffer[10] = { 0 };
+    char buffer[512] = { 0 };
 
-    snprintf(buffer, 10, " %f ", value);
+    snprintf(buffer, 512, " %f ", value);
     int pos2 = header.find(buffer, pos);
     if (pos2 == -1)
     {
-        snprintf(buffer, 10, " %ld. ", long(value));
+        snprintf(buffer, 512, " %ld. ", long(value));
         pos2 = header.find(buffer, pos);
     }
 

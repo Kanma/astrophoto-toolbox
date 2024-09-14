@@ -1,4 +1,5 @@
 #include <astrophoto-toolbox/data/fits.h>
+#include <assert.h>
 
 using namespace astrophototoolbox;
 

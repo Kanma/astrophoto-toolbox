@@ -1,6 +1,7 @@
 #include <astrophoto-toolbox/astrometry/astrometry.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <filesystem>
+#include <cmath>
 
 extern "C" {
     #include <astrometry/image2xy.h>
@@ -140,7 +141,7 @@ bool Astrometry::uniformize(unsigned int nbBoxes)
     if ((width < 1e-6f) || (height < 1e-6f))
         return false;
 
-    int nbX = int(std::max(1.0f, std::round(width / std::sqrtf(width * height / float(nbBoxes)))));
+    int nbX = int(std::max(1.0f, std::round(width / std::sqrt(width * height / float(nbBoxes)))));
     int nbY = int(std::max(1.0f, std::round(float(nbBoxes) / float(nbX) - 1e-6f)));
 
     // Determine in which box each star belongs
@@ -150,8 +151,8 @@ bool Astrometry::uniformize(unsigned int nbBoxes)
     {
         const auto& star = stars[i];
 
-        int x = std::clamp(std::floorf((star.position.x - min.x) / width * nbX), 0.0f, nbX - 1.0f);
-        int y = std::clamp(std::floorf((star.position.y - min.y) / height * nbY), 0.0f, nbY - 1.0f);
+        int x = std::clamp((float) std::floor((star.position.x - min.x) / width * nbX), 0.0f, nbX - 1.0f);
+        int y = std::clamp((float) std::floor((star.position.y - min.y) / height * nbY), 0.0f, nbY - 1.0f);
 
         unsigned int index = y * nbX + x;
         bins[index].push_back(i);

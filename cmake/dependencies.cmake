@@ -4,10 +4,53 @@ if (POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
 
-# LibRaw configuration
-set(BUILD_SHARED_LIBS OFF)
-set(ENABLE_JASPER OFF)
-set(LIBRAW_PATH "${FETCHCONTENT_BASE_DIR}/libraw-src/")
+
+# Disable install commands, because it causes problems between zlib and cfitsio
+macro (install)
+endmacro()
+
+
+# Disable building shared libraries (several dependencies use this setting)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+
+#################################################
+# zlib
+set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    zlib
+    GIT_REPOSITORY https://github.com/madler/zlib.git
+    GIT_TAG "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf" # aka "v1.3.1"
+    OVERRIDE_FIND_PACKAGE
+)
+
+FetchContent_MakeAvailable(zlib)
+
+add_library(ZLIB::ZLIB ALIAS zlibstatic)
+target_include_directories(zlibstatic INTERFACE ${zlib_BINARY_DIR} ${zlib_SOURCE_DIR})
+
+
+#################################################
+# Eigen3
+FetchContent_Declare(
+    eigen3
+    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+    GIT_TAG "3147391d946bb4b6c68edd901f2add6ac1f31f8c" # aka "3.4.0"
+)
+
+# We do it manually to avoid its compilation: we only need the headers
+FetchContent_GetProperties(eigen3)
+if (NOT eigen3_POPULATED)
+    FetchContent_Populate(eigen3)
+endif()
+
+
+#################################################
+# Other dependencies that don't require special care
+set(ENABLE_JASPER OFF CACHE BOOL "" FORCE)
+set(LIBRAW_PATH "${FETCHCONTENT_BASE_DIR}/libraw-src/" CACHE STRING "" FORCE)
+
 
 # Fetch the repositories
 FetchContent_Declare(
@@ -28,36 +71,15 @@ FetchContent_Declare(
     GIT_TAG "6ba7e3319c02c0831c860c37212f37f37a726cce" # aka "cfitsio4_4_1_20240617"
 )
 
-FetchContent_Declare(
-    astrometry-net
-    GIT_REPOSITORY https://github.com/dstndstn/astrometry.net.git
-    GIT_TAG "fbca48ebec403d4f954c97bc83d260ea40643577" # aka "0.95"
-)
-
-FetchContent_Declare(
-    eigen3
-    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-    GIT_TAG "3147391d946bb4b6c68edd901f2add6ac1f31f8c" # aka 3.4.0"
-)
-
-FetchContent_MakeAvailable(LibRaw LibRaw-cmake cfitsio astrometry-net)
-
-FetchContent_GetProperties(eigen3)
-if (NOT eigen3_POPULATED)
-    FetchContent_Populate(eigen3)
-endif()
+FetchContent_MakeAvailable(LibRaw LibRaw-cmake cfitsio)
 
 
-# Disable warnings in LibRaw
-target_compile_options(raw PRIVATE "-Wno-deprecated-declarations")
-target_compile_options(raw_r PRIVATE "-Wno-deprecated-declarations")
+# Tell cfitsio where to find zlib
+target_include_directories(cfitsio PRIVATE ${zlib_BINARY_DIR} ${zlib_SOURCE_DIR})
+target_link_libraries(cfitsio zlibstatic)
 
-# Disable warnings in cfitsio
-target_compile_options(cfitsio
-    PRIVATE
-        "-Wno-pointer-bool-conversion"
-        "-Wno-incompatible-pointer-types-discards-qualifiers"
-        "-Wno-comment"
-        "-Wno-format"
-        "-Wno-unused-value"
-)
+
+# Disable warnings in our dependencies
+target_compile_options(raw PRIVATE "-w")
+target_compile_options(raw_r PRIVATE "-w")
+target_compile_options(cfitsio PRIVATE "-w")
