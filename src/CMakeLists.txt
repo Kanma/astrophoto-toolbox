@@ -3,8 +3,6 @@ set(SRC_FILES
 
     algorithms/histogram.cpp
 
-    astrometry/astrometry.cpp
-
     data/fits.cpp
     data/transformation.cpp
 
@@ -12,6 +10,8 @@ set(SRC_FILES
     images/helpers.cpp
     images/pnm.cpp
     images/raw.cpp
+
+    platesolving/platesolver.cpp
 
     stacking/registration.cpp
     stacking/starmatcher.cpp
@@ -23,7 +23,6 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/astrophoto-toolbox/coordinates.h
     ${INCLUDE_DIR}/astrophoto-toolbox/algorithms/histogram.h
     ${INCLUDE_DIR}/astrophoto-toolbox/algorithms/math.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/astrometry/astrometry.h
     ${INCLUDE_DIR}/astrophoto-toolbox/data/fits.h
     ${INCLUDE_DIR}/astrophoto-toolbox/data/point.h
     ${INCLUDE_DIR}/astrophoto-toolbox/data/rect.h
@@ -34,6 +33,7 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/astrophoto-toolbox/images/helpers.h
     ${INCLUDE_DIR}/astrophoto-toolbox/images/pnm.h
     ${INCLUDE_DIR}/astrophoto-toolbox/images/raw.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/platesolving/platesolver.h
     ${INCLUDE_DIR}/astrophoto-toolbox/stacking/registration.h
     ${INCLUDE_DIR}/astrophoto-toolbox/stacking/starmatcher.h
     ${INCLUDE_DIR}/astrophoto-toolbox/stacking/starsdistance.h

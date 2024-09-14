@@ -1,4 +1,4 @@
-#include <astrophoto-toolbox/astrometry/astrometry.h>
+#include <astrophoto-toolbox/platesolving/platesolver.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <filesystem>
 #include <cmath>
@@ -11,6 +11,7 @@ extern "C" {
 }
 
 using namespace astrophototoolbox;
+using namespace astrophototoolbox::platesolving;
 
 
 static anbool match_callback(MatchObj* mo, void* userdata)
@@ -21,13 +22,13 @@ static anbool match_callback(MatchObj* mo, void* userdata)
 
 /**************************** CONSTRUCTION / DESTRUCTION *******************************/
 
-Astrometry::Astrometry()
+PlateSolver::PlateSolver()
 {
 }
 
 //-----------------------------------------------------------------------------
 
-Astrometry::~Astrometry()
+PlateSolver::~PlateSolver()
 {
     clearIndexes();
 }
@@ -35,7 +36,7 @@ Astrometry::~Astrometry()
 
 /************************************** METHODS ****************************************/
 
-bool Astrometry::run(Bitmap* bitmap, double minWidth, double maxWidth)
+bool PlateSolver::run(Bitmap* bitmap, double minWidth, double maxWidth)
 {
     return detectStars(bitmap, true, true) &&
            solve(minWidth, maxWidth);
@@ -43,7 +44,7 @@ bool Astrometry::run(Bitmap* bitmap, double minWidth, double maxWidth)
 
 //-----------------------------------------------------------------------------
 
-bool Astrometry::run(
+bool PlateSolver::run(
     const star_list_t& stars, const size2d_t& imageSize, double minWidth, double maxWidth
 )
 {
@@ -59,7 +60,7 @@ bool Astrometry::run(
 
 //-----------------------------------------------------------------------------
 
-bool Astrometry::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
+bool PlateSolver::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
 {
     coordinates = Coordinates();
     pixelScale = 0.0;
@@ -118,7 +119,7 @@ bool Astrometry::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
 
 //-----------------------------------------------------------------------------
 
-bool Astrometry::uniformize(unsigned int nbBoxes)
+bool PlateSolver::uniformize(unsigned int nbBoxes)
 {
     if (stars.empty())
         return true;
@@ -190,7 +191,7 @@ bool Astrometry::uniformize(unsigned int nbBoxes)
 
 //-----------------------------------------------------------------------------
 
-void Astrometry::cut(unsigned int nb)
+void PlateSolver::cut(unsigned int nb)
 {
     if (stars.size() > nb)
         stars.resize(nb);
@@ -198,7 +199,7 @@ void Astrometry::cut(unsigned int nb)
 
 //-----------------------------------------------------------------------------
 
-bool Astrometry::solve(double minWidth, double maxWidth)
+bool PlateSolver::solve(double minWidth, double maxWidth)
 {
     coordinates = Coordinates();
     pixelScale = 0.0;
@@ -287,7 +288,7 @@ bool Astrometry::solve(double minWidth, double maxWidth)
 
 //-----------------------------------------------------------------------------
 
-bool Astrometry::loadIndexes(const std::string& folder)
+bool PlateSolver::loadIndexes(const std::string& folder)
 {
     // Find all index files in the folder
     std::vector<std::string> files;
@@ -326,7 +327,7 @@ bool Astrometry::loadIndexes(const std::string& folder)
 
 //-----------------------------------------------------------------------------
 
-void Astrometry::clearIndexes()
+void PlateSolver::clearIndexes()
 {
     for (index_t* index : indexes)
         index_free(index);
@@ -337,7 +338,7 @@ void Astrometry::clearIndexes()
 
 /********************************** PRIVATE METHODS ************************************/
 
-std::vector<int> Astrometry::sort(const simplexy_t& params, bool ascending)
+std::vector<int> PlateSolver::sort(const simplexy_t& params, bool ascending)
 {
     if (params.npeaks <= 1)
         return std::vector<int>();
@@ -389,7 +390,7 @@ std::vector<int> Astrometry::sort(const simplexy_t& params, bool ascending)
 
 //-----------------------------------------------------------------------------
 
-std::vector<index_t*> Astrometry::filterIndexes(float minWidth, float maxWidth)
+std::vector<index_t*> PlateSolver::filterIndexes(float minWidth, float maxWidth)
 {
     if ((imageSize.width == 0) || (imageSize.height == 0))
         return std::vector<index_t*>();

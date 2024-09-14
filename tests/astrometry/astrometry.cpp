@@ -1,21 +1,24 @@
 #include <catch.hpp>
-#include <astrophoto-toolbox/astrometry/astrometry.h>
+#include <astrophoto-toolbox/platesolving/platesolver.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include "../images/bitmap_helpers.h"
+
+using namespace astrophototoolbox;
+using namespace astrophototoolbox::platesolving;
 
 
 TEST_CASE("No star at creation", "[Astrometry]")
 {
-    Astrometry astrometry;
-    auto stars = astrometry.getStarList();
+    PlateSolver solver;
+    auto stars = solver.getStarList();
     REQUIRE(stars.size() == 0);
 }
 
 
 TEST_CASE("Fail to detect stars without image", "[Astrometry]")
 {
-    Astrometry astrometry;
-    REQUIRE(!astrometry.detectStars(nullptr));
+    PlateSolver solver;
+    REQUIRE(!solver.detectStars(nullptr));
 }
 
 
@@ -23,8 +26,8 @@ TEST_CASE("Fail to detect stars in black image", "[Astrometry]")
 {
     FloatGrayBitmap bitmap(100, 100);
 
-    Astrometry astrometry;
-    REQUIRE(astrometry.detectStars(&bitmap));
+    PlateSolver solver;
+    REQUIRE(solver.detectStars(&bitmap));
 }
 
 
@@ -36,10 +39,10 @@ TEST_CASE("Star detection", "[Astrometry]")
     Bitmap* bitmap = fits.readBitmap();
     Bitmap* channel = bitmap->channel(0);
 
-    Astrometry astrometry;
-    REQUIRE(astrometry.detectStars(channel));
+    PlateSolver solver;
+    REQUIRE(solver.detectStars(channel));
 
-    auto stars = astrometry.getStarList();
+    auto stars = solver.getStarList();
 
     REQUIRE(stars.size() == 3);
 
@@ -55,7 +58,7 @@ TEST_CASE("Star detection", "[Astrometry]")
     REQUIRE(stars[2].position.y == Approx(91.79505f));
     REQUIRE(stars[2].intensity == Approx(44.6794f));
 
-    auto imageSize = astrometry.getImageSize();
+    auto imageSize = solver.getImageSize();
 
     REQUIRE(imageSize.width == 120);
     REQUIRE(imageSize.height == 120);
@@ -100,12 +103,12 @@ TEST_CASE("Star uniformization", "[Astrometry]")
 
     size2d_t imageSize(120, 60);
 
-    Astrometry astrometry;
-    astrometry.setStarList(list, imageSize);
+    PlateSolver solver;
+    solver.setStarList(list, imageSize);
     
-    REQUIRE(astrometry.uniformize(4));
+    REQUIRE(solver.uniformize(4));
 
-    auto stars = astrometry.getStarList();
+    auto stars = solver.getStarList();
 
     REQUIRE(stars.size() == 7);
 
@@ -146,12 +149,12 @@ TEST_CASE("Star list cut", "[Astrometry]")
 
     size2d_t imageSize(120, 60);
 
-    Astrometry astrometry;
-    astrometry.setStarList(list, imageSize);
+    PlateSolver solver;
+    solver.setStarList(list, imageSize);
     
-    astrometry.cut(10);
+    solver.cut(10);
 
-    auto stars = astrometry.getStarList();
+    auto stars = solver.getStarList();
 
     REQUIRE(stars.size() == 10);
 
@@ -167,14 +170,14 @@ TEST_CASE("Fail to load index files", "[Astrometry]")
 {
     SECTION("from folder without index file")
     {
-        Astrometry astrometry;
-        REQUIRE(!astrometry.loadIndexes(TEMP_DIR "empty"));
+        PlateSolver solver;
+        REQUIRE(!solver.loadIndexes(TEMP_DIR "empty"));
     }
 
     SECTION("from inexistent folder")
     {
-        Astrometry astrometry;
-        REQUIRE(!astrometry.loadIndexes(DATA_DIR "unknown"));
+        PlateSolver solver;
+        REQUIRE(!solver.loadIndexes(DATA_DIR "unknown"));
     }
 }
 
@@ -190,18 +193,18 @@ TEST_CASE("Plate solving", "[Astrometry]")
 
     REQUIRE(!stars.empty());
 
-    Astrometry astrometry;
-    astrometry.setStarList(stars, imageSize);
+    PlateSolver solver;
+    solver.setStarList(stars, imageSize);
 
-    REQUIRE(astrometry.loadIndexes(DATA_DIR "downloads"));
+    REQUIRE(solver.loadIndexes(DATA_DIR "downloads"));
 
-    REQUIRE(astrometry.solve(0.5, 2.0));
+    REQUIRE(solver.solve(0.5, 2.0));
 
-    Coordinates coordinates = astrometry.getCoordinates();
+    Coordinates coordinates = solver.getCoordinates();
     REQUIRE(coordinates.getRA() == Approx(282.654));
     REQUIRE(coordinates.getDEC() == Approx(-12.9414));
 
-    REQUIRE(astrometry.getPixelSize() == Approx(1.1736878371));
+    REQUIRE(solver.getPixelSize() == Approx(1.1736878371));
 }
 
 
@@ -216,11 +219,11 @@ TEST_CASE("Fail to do plate solving without index files", "[Astrometry]")
 
     REQUIRE(!stars.empty());
 
-    Astrometry astrometry;
-    astrometry.setStarList(stars, imageSize);
+    PlateSolver solver;
+    solver.setStarList(stars, imageSize);
 
-    REQUIRE(!astrometry.solve(0.5, 2.0));
+    REQUIRE(!solver.solve(0.5, 2.0));
 
-    Coordinates coordinates = astrometry.getCoordinates();
+    Coordinates coordinates = solver.getCoordinates();
     REQUIRE(coordinates.isNull());
 }

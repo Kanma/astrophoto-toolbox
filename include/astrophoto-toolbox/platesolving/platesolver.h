@@ -13,9 +13,10 @@ extern "C" {
 
 
 namespace astrophototoolbox {
+namespace platesolving {
 
     //------------------------------------------------------------------------------------
-    /// @brief  Allows to perform all the astrometry operations
+    /// @brief  Allows to perform all the plate solving operations
     ///
     /// The goal of this class is to perform 'plate solving', which is determining the
     /// celestial coordinates of an image containing stars.
@@ -24,12 +25,12 @@ namespace astrophototoolbox {
     /// (which require external programs and Python scripts). Astronomy.net's software
     /// remains more complete and versatile, only a subset of its features are supported. 
     //------------------------------------------------------------------------------------
-    class Astrometry
+    class PlateSolver
     {
         //_____ Construction / Destruction __________
     public:
-        Astrometry();
-        ~Astrometry();
+        PlateSolver();
+        ~PlateSolver();
 
 
         //_____ Methods __________
@@ -192,4 +193,5 @@ namespace astrophototoolbox {
         std::vector<index_t*> indexes;
     };
 
+}
 }

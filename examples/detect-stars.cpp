@@ -5,11 +5,12 @@
 
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/fits.h>
-#include <astrophoto-toolbox/astrometry/astrometry.h>
+#include <astrophoto-toolbox/platesolving/platesolver.h>
 #include <astrophoto-toolbox/images/raw.h>
 
 using namespace std;
 using namespace astrophototoolbox;
+using namespace astrophototoolbox::platesolving;
 
 
 /**************************** COMMAND-LINE PARSING ****************************/
@@ -210,8 +211,8 @@ int main(int argc, char** argv)
     }
 
     // Star detection
-    Astrometry astrometry;
-    if (!astrometry.detectStars(bitmap))
+    PlateSolver solver;
+    if (!solver.detectStars(bitmap))
     {
         cerr << "Failed to detect the stars" << endl;
         delete bitmap;
@@ -222,13 +223,13 @@ int main(int argc, char** argv)
 
     if (verbose)
     {
-        cout << astrometry.getStarList().size() << " star(s) detected" << endl;
+        cout << solver.getStarList().size() << " star(s) detected" << endl;
     }
 
     // If necessary, uniformize the coordinates
     if (uniformize)
     {
-        if (!astrometry.uniformize())
+        if (!solver.uniformize())
         {
             cerr << "Failed to uniformize the coordinates" << endl;
             return 1;
@@ -237,7 +238,7 @@ int main(int argc, char** argv)
 
     // If necessary, only keep the brightest objects
     if (nbObjs > 0)
-        astrometry.cut(nbObjs);
+        solver.cut(nbObjs);
 
     // Save the coordinates
     FITS* dest = (isFits ? &fitsImage : nullptr);
@@ -253,7 +254,7 @@ int main(int argc, char** argv)
         dest = &output;
     }
 
-    if (!dest->write(astrometry.getStarList(), astrometry.getImageSize(), "STARS", true))
+    if (!dest->write(solver.getStarList(), solver.getImageSize(), "STARS", true))
     {
         cerr << "Failed to save the coordinates in the FITS file" << endl;
         return 1;
@@ -261,7 +262,7 @@ int main(int argc, char** argv)
 
     if (includeANKeywords)
     {
-        if (!dest->writeAstrometryNetKeywords(astrometry.getImageSize()))
+        if (!dest->writeAstrometryNetKeywords(solver.getImageSize()))
         {
             cerr << "Failed to write the keywords specific to astrometry.net" << endl;
             return 1;

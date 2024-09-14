@@ -5,11 +5,12 @@
 
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/fits.h>
-#include <astrophoto-toolbox/astrometry/astrometry.h>
+#include <astrophoto-toolbox/platesolving/platesolver.h>
 #include <astrophoto-toolbox/images/raw.h>
 
 using namespace std;
 using namespace astrophototoolbox;
+using namespace astrophototoolbox::platesolving;
 
 
 /**************************** COMMAND-LINE PARSING ****************************/
@@ -191,7 +192,7 @@ int main(int argc, char** argv)
     }
 
 
-    Astrometry astrometry;
+    PlateSolver solver;
 
     // Process the bitmap if one was loaded
     if (bitmap)
@@ -213,14 +214,14 @@ int main(int argc, char** argv)
         }
 
         // Plate solving
-        if (!astrometry.loadIndexes(indexesFolder))
+        if (!solver.loadIndexes(indexesFolder))
         {
             cerr << "Failed to load the index files from '" << indexesFolder << "'" << endl;
             delete bitmap;
             return 1;
         }
 
-        if (!astrometry.run(bitmap, minScale, maxScale))
+        if (!solver.run(bitmap, minScale, maxScale))
         {
             cerr << "Failed to determine the coordinates" << endl;
             delete bitmap;
@@ -232,18 +233,18 @@ int main(int argc, char** argv)
     else
     {
         // Plate solving
-        if (!astrometry.loadIndexes(indexesFolder))
+        if (!solver.loadIndexes(indexesFolder))
         {
             cerr << "Failed to load the index files from '" << indexesFolder << "'" << endl;
             delete bitmap;
             return 1;
         }
 
-        astrometry.setStarList(stars, imageSize);
-        astrometry.uniformize();
-        astrometry.cut();
+        solver.setStarList(stars, imageSize);
+        solver.uniformize();
+        solver.cut();
 
-        if (!astrometry.solve(minScale, maxScale))
+        if (!solver.solve(minScale, maxScale))
         {
             cerr << "Failed to determine the coordinates" << endl;
             return 1;
@@ -253,16 +254,16 @@ int main(int argc, char** argv)
 
     if (verbose)
     {
-        cout << astrometry.getStarList().size() << " star(s) detected" << endl;
+        cout << solver.getStarList().size() << " star(s) detected" << endl;
     }
 
-    Coordinates coordinates = astrometry.getCoordinates();
+    Coordinates coordinates = solver.getCoordinates();
 
     cout << "Coordinates:" << endl;
     cout << "  * " << coordinates.getRADECasHMSDMS() << endl;
     cout << "  * " << coordinates.getRA() << "°, " << coordinates.getDEC() << "°" << endl;
     cout << endl;
-    cout << "Pixel size: " << astrometry.getPixelSize() << " arcsec" << endl;
+    cout << "Pixel size: " << solver.getPixelSize() << " arcsec" << endl;
     cout << endl;
 
     return 0;
