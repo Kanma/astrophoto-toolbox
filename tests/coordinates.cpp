@@ -1,5 +1,5 @@
 #include <catch.hpp>
-#include <astrophoto-toolbox/coordinates.h>
+#include <astrophoto-toolbox/data/coordinates.h>
 
 using namespace astrophototoolbox;
 

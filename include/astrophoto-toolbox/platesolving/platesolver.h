@@ -3,7 +3,7 @@
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/star.h>
 #include <astrophoto-toolbox/data/size.h>
-#include <astrophoto-toolbox/coordinates.h>
+#include <astrophoto-toolbox/data/coordinates.h>
 #include <string>
 
 extern "C" {

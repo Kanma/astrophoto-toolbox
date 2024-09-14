@@ -1,8 +1,7 @@
 set(SRC_FILES
-    coordinates.cpp
-
     algorithms/histogram.cpp
 
+    data/coordinates.cpp
     data/fits.cpp
     data/transformation.cpp
 
@@ -20,9 +19,9 @@ set(SRC_FILES
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 
 set(HEADER_FILES
-    ${INCLUDE_DIR}/astrophoto-toolbox/coordinates.h
     ${INCLUDE_DIR}/astrophoto-toolbox/algorithms/histogram.h
     ${INCLUDE_DIR}/astrophoto-toolbox/algorithms/math.h
+    ${INCLUDE_DIR}/astrophoto-toolbox/data/coordinates.h
     ${INCLUDE_DIR}/astrophoto-toolbox/data/fits.h
     ${INCLUDE_DIR}/astrophoto-toolbox/data/point.h
     ${INCLUDE_DIR}/astrophoto-toolbox/data/rect.h

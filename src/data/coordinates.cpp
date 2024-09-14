@@ -1,4 +1,4 @@
-#include <astrophoto-toolbox/coordinates.h>
+#include <astrophoto-toolbox/data/coordinates.h>
 #include <sstream>
 #include <iomanip>
 
