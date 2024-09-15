@@ -9,12 +9,12 @@ TEST_CASE("Matching stars", "[StarMatcher]")
 {
     FITS input;
 
-    REQUIRE(input.open(DATA_DIR "matching_stars1.fits"));
+    REQUIRE(input.open(DATA_DIR "stars/matching_stars1.fits"));
     size2d_t imageSize;
     star_list_t stars1 = input.readStars(0, &imageSize);
     input.close();
 
-    REQUIRE(input.open(DATA_DIR "matching_stars2.fits"));
+    REQUIRE(input.open(DATA_DIR "stars/matching_stars2.fits"));
     star_list_t stars2 = input.readStars();
     input.close();
 

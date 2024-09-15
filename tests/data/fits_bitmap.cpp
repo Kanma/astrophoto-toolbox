@@ -301,7 +301,7 @@ TEST_CASE("Save double color bitmap as FITS", "[FITS]")
 TEST_CASE("Retrieve infos about 8-bits gray FITS image file", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "gray8bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/gray8bits.fits"));
 
     REQUIRE(input.nbHDUs() == 1);
     REQUIRE(input.nbImages() == 1);
@@ -312,7 +312,7 @@ TEST_CASE("Retrieve infos about 8-bits gray FITS image file", "[FITS]")
 TEST_CASE("Read 8-bits gray FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "gray8bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/gray8bits.fits"));
 
     Bitmap* ref = createUInt8Bitmap(false, 32, 8);
 
@@ -330,7 +330,7 @@ TEST_CASE("Read 8-bits gray FITS image", "[FITS]")
 TEST_CASE("Read 16-bits gray FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "gray16bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/gray16bits.fits"));
 
     Bitmap* ref = createUInt16Bitmap(false, 256, 8);
 
@@ -348,7 +348,7 @@ TEST_CASE("Read 16-bits gray FITS image", "[FITS]")
 TEST_CASE("Read 32-bits gray FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "gray32bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/gray32bits.fits"));
 
     Bitmap* ref = createUInt32Bitmap(false, 256, 8);
 
@@ -366,7 +366,7 @@ TEST_CASE("Read 32-bits gray FITS image", "[FITS]")
 TEST_CASE("Read float gray FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "grayfloat.fits"));
+    REQUIRE(input.open(DATA_DIR "images/grayfloat.fits"));
 
     Bitmap* ref = createFloatBitmap(false, 100, 8, 0.05f, 1.0f);
 
@@ -384,7 +384,7 @@ TEST_CASE("Read float gray FITS image", "[FITS]")
 TEST_CASE("Read double gray FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "graydouble.fits"));
+    REQUIRE(input.open(DATA_DIR "images/graydouble.fits"));
 
     Bitmap* ref = createDoubleBitmap(false, 100, 8, 0.05, 1.0);
 
@@ -402,7 +402,7 @@ TEST_CASE("Read double gray FITS image", "[FITS]")
 TEST_CASE("Read 8-bits color FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "color8bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/color8bits.fits"));
 
     Bitmap* ref = createUInt8Bitmap(true, 32, 8);
 
@@ -420,7 +420,7 @@ TEST_CASE("Read 8-bits color FITS image", "[FITS]")
 TEST_CASE("Read 16-bits color FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "color16bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/color16bits.fits"));
 
     Bitmap* ref = createUInt16Bitmap(true, 256, 8);
 
@@ -438,7 +438,7 @@ TEST_CASE("Read 16-bits color FITS image", "[FITS]")
 TEST_CASE("Read 32-bits color FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "color32bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/color32bits.fits"));
 
     Bitmap* ref = createUInt32Bitmap(true, 256, 8);
 
@@ -456,7 +456,7 @@ TEST_CASE("Read 32-bits color FITS image", "[FITS]")
 TEST_CASE("Read float color FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "colorfloat.fits"));
+    REQUIRE(input.open(DATA_DIR "images/colorfloat.fits"));
 
     Bitmap* ref = createFloatBitmap(true, 100, 8, 0.05f, 1.0f);
 
@@ -474,7 +474,7 @@ TEST_CASE("Read float color FITS image", "[FITS]")
 TEST_CASE("Read double color FITS image", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "colordouble.fits"));
+    REQUIRE(input.open(DATA_DIR "images/colordouble.fits"));
 
     Bitmap* ref = createDoubleBitmap(true, 100, 8, 0.05, 1.0);
 
@@ -492,7 +492,7 @@ TEST_CASE("Read double color FITS image", "[FITS]")
 TEST_CASE("Read FITS image with invalid index", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "gray8bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/gray8bits.fits"));
 
     Bitmap* bitmap = input.readBitmap(10);
     REQUIRE(!bitmap);
@@ -502,7 +502,7 @@ TEST_CASE("Read FITS image with invalid index", "[FITS]")
 TEST_CASE("Read FITS image with valid name", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "namedgray8bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/namedgray8bits.fits"));
 
     Bitmap* bitmap = input.readBitmap("image");
     REQUIRE(bitmap);
@@ -513,7 +513,7 @@ TEST_CASE("Read FITS image with valid name", "[FITS]")
 TEST_CASE("Read FITS image with invalid name", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "gray8bits.fits"));
+    REQUIRE(input.open(DATA_DIR "images/gray8bits.fits"));
 
     Bitmap* bitmap = input.readBitmap("unknown");
     REQUIRE(!bitmap);

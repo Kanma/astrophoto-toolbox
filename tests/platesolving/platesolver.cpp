@@ -7,7 +7,7 @@ using namespace astrophototoolbox;
 using namespace astrophototoolbox::platesolving;
 
 
-TEST_CASE("No star at creation", "[Astrometry]")
+TEST_CASE("No star at creation", "[PlateSolver]")
 {
     PlateSolver solver;
     auto stars = solver.getStarList();
@@ -15,14 +15,14 @@ TEST_CASE("No star at creation", "[Astrometry]")
 }
 
 
-TEST_CASE("Fail to detect stars without image", "[Astrometry]")
+TEST_CASE("Fail to detect stars without image", "[PlateSolver]")
 {
     PlateSolver solver;
     REQUIRE(!solver.detectStars(nullptr));
 }
 
 
-TEST_CASE("Fail to detect stars in black image", "[Astrometry]")
+TEST_CASE("Fail to detect stars in black image", "[PlateSolver]")
 {
     FloatGrayBitmap bitmap(100, 100);
 
@@ -31,10 +31,10 @@ TEST_CASE("Fail to detect stars in black image", "[Astrometry]")
 }
 
 
-TEST_CASE("Star detection", "[Astrometry]")
+TEST_CASE("Star detection", "[PlateSolver]")
 {
     FITS fits;
-    fits.open(DATA_DIR "stars.fits");
+    fits.open(DATA_DIR "images/stars.fits");
 
     Bitmap* bitmap = fits.readBitmap();
     Bitmap* channel = bitmap->channel(0);
@@ -68,7 +68,7 @@ TEST_CASE("Star detection", "[Astrometry]")
 }
 
 
-TEST_CASE("Star uniformization", "[Astrometry]")
+TEST_CASE("Star uniformization", "[PlateSolver]")
 {
     star_list_t list;
 
@@ -135,7 +135,7 @@ TEST_CASE("Star uniformization", "[Astrometry]")
 }
 
 
-TEST_CASE("Star list cut", "[Astrometry]")
+TEST_CASE("Star list cut", "[PlateSolver]")
 {
     star_list_t list;
 
@@ -166,7 +166,7 @@ TEST_CASE("Star list cut", "[Astrometry]")
 }
 
 
-TEST_CASE("Fail to load index files", "[Astrometry]")
+TEST_CASE("Fail to load index files", "[PlateSolver]")
 {
     SECTION("from folder without index file")
     {
@@ -182,11 +182,11 @@ TEST_CASE("Fail to load index files", "[Astrometry]")
 }
 
 
-TEST_CASE("Plate solving", "[Astrometry]")
+TEST_CASE("Plate solving", "[PlateSolver]")
 {
     FITS input;
 
-    REQUIRE(input.open(DATA_DIR "starfield.axy"));
+    REQUIRE(input.open(DATA_DIR "stars/starfield.axy"));
 
     size2d_t imageSize;
     star_list_t stars = input.readStars(0, &imageSize);
@@ -208,11 +208,11 @@ TEST_CASE("Plate solving", "[Astrometry]")
 }
 
 
-TEST_CASE("Fail to do plate solving without index files", "[Astrometry]")
+TEST_CASE("Fail to do plate solving without index files", "[PlateSolver]")
 {
     FITS input;
 
-    REQUIRE(input.open(DATA_DIR "starfield.axy"));
+    REQUIRE(input.open(DATA_DIR "stars/starfield.axy"));
 
     size2d_t imageSize;
     star_list_t stars = input.readStars(0, &imageSize);

@@ -23,7 +23,7 @@ TEST_CASE("Registration of a bitmap", "[Registration]")
     REQUIRE(stars.size() == 41);
 
     FITS input;
-    REQUIRE(input.open(DATA_DIR "starfield_stars.fits"));
+    REQUIRE(input.open(DATA_DIR "stars/starfield_stars.fits"));
 
     star_list_t ref = input.readStars();
 

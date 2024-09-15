@@ -8,7 +8,7 @@ using namespace astrophototoolbox;
 void checkFile(const std::string& filename)
 {
     std::ifstream tested(TEMP_DIR + filename, std::ios_base::in | std::ios_base::binary);
-    std::ifstream ref(DATA_DIR + filename, std::ios_base::in | std::ios_base::binary);
+    std::ifstream ref(DATA_DIR "images/" + filename, std::ios_base::in | std::ios_base::binary);
 
     REQUIRE(tested.is_open());
     REQUIRE(ref.is_open());

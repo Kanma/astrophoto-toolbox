@@ -1,12 +1,10 @@
 add_executable(unittests
     main.cpp
-    coordinates.cpp
 
     algorithms/histogram.cpp
     algorithms/math.cpp
 
-    astrometry/astrometry.cpp
-
+    data/coordinates.cpp
     data/fits_helpers.h
     data/fits_helpers.cpp
     data/fits_bitmap.cpp
@@ -24,6 +22,8 @@ add_executable(unittests
     images/bitmap_float_gray.cpp
     images/pnm.cpp
     images/raw.cpp
+
+    platesolving/platesolver.cpp
 
     stacking/registration.cpp
     stacking/starmatcher.cpp

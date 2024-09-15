@@ -186,7 +186,7 @@ TEST_CASE("Save astrometry.net keywords", "[FITS]")
 TEST_CASE("Retrieve infos about FITS file containing stars", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "starlist.fits"));
+    REQUIRE(input.open(DATA_DIR "stars/starlist.fits"));
 
     REQUIRE(input.nbHDUs() == 2);
     REQUIRE(input.nbImages() == 1);
@@ -197,7 +197,7 @@ TEST_CASE("Retrieve infos about FITS file containing stars", "[FITS]")
 TEST_CASE("Load stars", "[FITS]")
 {
     FITS input;
-    REQUIRE(input.open(DATA_DIR "starlist.fits"));
+    REQUIRE(input.open(DATA_DIR "stars/starlist.fits"));
 
     size2d_t imageSize;
     star_list_t stars = input.readStars(0, &imageSize);
@@ -223,7 +223,7 @@ TEST_CASE("Fail to load inexistent stars", "[FITS]")
     SECTION("from image file")
     {
         FITS input;
-        REQUIRE(input.open(DATA_DIR "color8bits.fits"));
+        REQUIRE(input.open(DATA_DIR "images/color8bits.fits"));
 
         star_list_t stars = input.readStars(0);
         REQUIRE(stars.empty());
@@ -232,7 +232,7 @@ TEST_CASE("Fail to load inexistent stars", "[FITS]")
     SECTION("using invalid index")
     {
         FITS input;
-        REQUIRE(input.open(DATA_DIR "starlist.fits"));
+        REQUIRE(input.open(DATA_DIR "stars/starlist.fits"));
 
         star_list_t stars = input.readStars(1);
         REQUIRE(stars.empty());
