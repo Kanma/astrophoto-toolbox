@@ -9,7 +9,7 @@ using namespace stacking;
 
 bool StarMatcher::computeTransformation(
     const star_list_t& fromStars, const star_list_t& toStars, const size2d_t& imageSize,
-    Transformation& transformation
+    Transformation& transformation, double minDistance
 )
 {
 	if ((toStars.size() <= 4) || ((toStars.size() < fromStars.size() / 5) && (toStars.size() < 30)))
@@ -26,16 +26,49 @@ bool StarMatcher::computeTransformation(
     references.clear();
     targets.clear();
 
-    for (size_t i = 0; i < std::min(sortedFromStars.size(), size_t(100)); ++i)
-        references.emplace_back(sortedFromStars[i].position);
-
     for (size_t i = 0; i < std::min(sortedToStars.size(), size_t(100)); ++i)
-        targets.emplace_back(sortedToStars[i].position);
+        references.emplace_back(sortedToStars[i].position);
+
+    for (size_t i = 0; i < std::min(sortedFromStars.size(), size_t(100)); ++i)
+        targets.emplace_back(sortedFromStars[i].position);
 
     bool result = false;
 
-    if ((references.size() >= 8) && (targets.size() >= 8))
+    while (!result && ((references.size() >= 8) && (targets.size() >= 8)))
+    {
         result = computeLargeTriangleTransformation(transformation);
+
+        // Check the minimum distance
+        if (result)
+        {
+            double dx, dy;
+            transformation.offsets(dx, dy);
+
+            if (dx * dx + dy * dy < minDistance * minDistance)
+            {
+                auto pairs = votedPairs;
+                while (!pairs.empty())
+                {
+                    const auto& pair = pairs[0];
+                    references.erase(references.begin() + pair.refStar);
+                    targets.erase(targets.begin() + pair.targetStar);
+
+                    for (size_t i = 1; i < pairs.size(); ++i)
+                    {
+                        auto& pair2 = pairs[i];
+                        if (pair2.refStar >= pair.refStar)
+                            pair2.refStar -= 1;
+                        if (pair2.targetStar >= pair.targetStar)
+                            pair2.targetStar -= 1;
+                    }
+
+                    pairs.erase(pairs.begin());
+                }
+
+                result = false;
+            }
+        }
+    }
 
     return result;
 }
@@ -62,6 +95,9 @@ std::vector<std::tuple<point_t, point_t>> StarMatcher::pairs() const
 bool StarMatcher::computeLargeTriangleTransformation(Transformation& transforms)
 {
     bool result = false;
+
+    referenceIndices.clear();
+    targetIndices.clear();
 
     // Compute the distances between the stars
     computeStarDistances(references, referenceDistances);
@@ -499,63 +535,6 @@ bool StarMatcher::computeTransformation(
     transforms.b3 = B(3, 0);
 
     return true;
-
-
-
-    // typedef math::matrix<double> DMATRIX;
-
-    // transforms.xWidth = imageSize.width;
-    // transforms.yWidth = imageSize.height;
-
-    // DMATRIX M(votingPairs.size(), 4);
-    // DMATRIX X(votingPairs.size(), 1);
-    // DMATRIX Y(votingPairs.size(), 1);
-
-    // for (int i = 0; i < votingPairs.size(); ++i)
-    // {
-    //     point_t& star = references[votingPairs[i].refStar];
-    //     X(i, 0) = star.x / transforms.xWidth;
-    //     Y(i, 0) = star.y / transforms.yWidth;
-    // }
-
-    // for (int i = 0; i < votingPairs.size(); ++i)
-    // {
-    //     point_t& star = targets[votingPairs[i].targetStar];
-    //     double X = star.x / transforms.xWidth;
-    //     double Y = star.y / transforms.yWidth;
-
-    //     M(i, 0) = 1.0;
-    //     M(i, 1) = X;
-    //     M(i, 2) = Y;
-    //     M(i, 3) = X * Y;
-    // };
-
-    // DMATRIX MT = ~M;
-    // DMATRIX TM = MT * M;
-
-    // try
-    // {
-    //     if (!TM.IsSingular())
-    //     {
-    //         DMATRIX A = !TM * MT * X;
-    //         DMATRIX B = !TM * MT * Y;
-
-    //         transforms.a0 = A(0, 0);
-    //         transforms.a1 = A(1, 0);
-    //         transforms.a2 = A(2, 0);
-    //         transforms.a3 = A(3, 0);
-    //         transforms.b0 = B(0, 0);
-    //         transforms.b1 = B(1, 0);
-    //         transforms.b2 = B(2, 0);
-    //         transforms.b3 = B(3, 0);
-    //     }
-    // }
-    // catch(math::matrix_error const&)
-    // {
-    //     return false;
-    // }
-
-    // return true;
 }
 
 //-----------------------------------------------------------------------------

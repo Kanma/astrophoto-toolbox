@@ -19,9 +19,25 @@ namespace stacking {
     class StarMatcher
     {
     public:
+        //------------------------------------------------------------------------------------
+        /// @brief  Compute the transformation between two list of stars
+        ///
+        /// Originally, this algorithm expects images to have been processed using flats &
+        /// darks. In those cases, hot pixels are supposed to have been removed from the
+        /// images, and not be present in the star lists.
+        ///
+        /// Should you want to process images with hot pixels in them, the tranformation will
+        /// most likely be almost 0 (since hot pixels are at the same position in each image).
+        ///
+        /// To avoid that, you can provide a minimum distance estimate to this method. Then,
+        /// when a transformation smaller that that is computed, the "stars" using to compute
+        /// it are discarded as begin hot pixels, and a new computation occurs, until either
+        /// a good transformation (bigger than the minimum distance) is found, or it is not
+        /// possible to find one anymore.
+        //------------------------------------------------------------------------------------
         bool computeTransformation(
             const star_list_t& fromStars, const star_list_t& toStars, const size2d_t& imageSize,
-            Transformation& transformation
+            Transformation& transformation, double minDistance = 0.0
         );
 
         std::vector<std::tuple<point_t, point_t>> pairs() const;
