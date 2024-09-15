@@ -51,13 +51,15 @@ target_compile_definitions(unittests
 add_subdirectory(assets)
 
 # Run the unit tests
-add_custom_target(run-unittests
-    ALL
-    ${CMAKE_COMMAND} -E rm -rf ${TESTS_TEMP_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${TESTS_TEMP_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${TESTS_TEMP_DIR}/empty
-    COMMAND unittests
-    DEPENDS unittests
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMENT "Unit testing..." VERBATIM
-)
+if (ASTROPHOTOTOOLBOX_RUN_TESTS)
+    add_custom_target(run-unittests
+        ALL
+        ${CMAKE_COMMAND} -E rm -rf ${TESTS_TEMP_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${TESTS_TEMP_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${TESTS_TEMP_DIR}/empty
+        COMMAND unittests
+        DEPENDS unittests
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Unit testing..." VERBATIM
+    )
+endif()

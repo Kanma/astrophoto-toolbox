@@ -12,75 +12,76 @@ set(ASTROMETRY_NET_SRC_DIR "${FETCHCONTENT_BASE_DIR}/astrometry-net-src")
 
 # Configure GSL
 # Note: all the definitions in the config file aren't used
-include(CheckSymbolExists)
-include(CheckIncludeFile)
-include(CheckCSourceRuns)
-include(CheckCSourceCompiles)
+if (NOT IS_READABLE ${CMAKE_BINARY_DIR}/generated/astrometry/config.h)
+    include(CheckSymbolExists)
+    include(CheckIncludeFile)
+    include(CheckCSourceRuns)
+    include(CheckCSourceCompiles)
 
-function(check_math_function_exists FUNC DEFINITION)
-    set(CMAKE_REQUIRED_LIBRARIES "m")
+    function(check_math_function_exists FUNC DEFINITION)
+        set(CMAKE_REQUIRED_LIBRARIES "m")
 
-    check_c_source_compiles(
-        "
+        check_c_source_compiles(
+            "
 #include <math.h>
 int main(void)
 {
     double a = ${FUNC}(1.0);
     return 0;
 }"
-        ${DEFINITION}
-    )
+            ${DEFINITION}
+        )
 
-    if(${DEFINITION})
-        add_definitions(-D${DEFINITION})
-    endif()
+        if(${DEFINITION})
+            add_definitions(-D${DEFINITION})
+        endif()
 
-    unset(CMAKE_REQUIRED_LIBRARIES)
-endfunction()
+        unset(CMAKE_REQUIRED_LIBRARIES)
+    endfunction()
 
 
-function(check_math_function_exists2 FUNC PARAMS DEFINITION)
-    set(CMAKE_REQUIRED_LIBRARIES "m")
+    function(check_math_function_exists2 FUNC PARAMS DEFINITION)
+        set(CMAKE_REQUIRED_LIBRARIES "m")
 
-    check_c_source_compiles(
-        "
+        check_c_source_compiles(
+            "
 #include <math.h>
 int main(void)
 {
     double a = ${FUNC}(${PARAMS});
     return 0;
 }"
-        ${DEFINITION}
-    )
+            ${DEFINITION}
+        )
 
-    if(${DEFINITION})
-        add_definitions(-D${DEFINITION})
+        if(${DEFINITION})
+            add_definitions(-D${DEFINITION})
+        endif()
+
+        unset(CMAKE_REQUIRED_LIBRARIES)
+    endfunction()
+
+
+    check_math_function_exists(acosh HAVE_DECL_ACOSH)
+    check_math_function_exists(asinh HAVE_DECL_ASINH)
+    check_math_function_exists(atanh HAVE_DECL_ATANH)
+    check_math_function_exists(expm1 HAVE_DECL_EXPM1)
+    check_math_function_exists(finite HAVE_DECL_FINITE)
+    check_math_function_exists2(frexp "1.0, NULL" HAVE_DECL_FREXP)
+    check_math_function_exists2(hypot "1.0, 0.5" HAVE_DECL_HYPOT)
+    check_math_function_exists(isfinite HAVE_DECL_ISFINITE)
+    check_math_function_exists(isinf HAVE_DECL_ISINF)
+    check_math_function_exists(isnan HAVE_DECL_ISNAN)
+    check_math_function_exists2(ldexp "1.0, 1" HAVE_DECL_LDEXP)
+    check_math_function_exists(log1p HAVE_DECL_LOG1P)
+
+    check_include_file("ieeefp.h" HAVE_IEEEFP_H)
+    if(HAVE_IEEEFP_H)
+        add_definitions(-DHAVE_IEEEFP_H)
     endif()
 
-    unset(CMAKE_REQUIRED_LIBRARIES)
-endfunction()
-
-
-check_math_function_exists(acosh HAVE_DECL_ACOSH)
-check_math_function_exists(asinh HAVE_DECL_ASINH)
-check_math_function_exists(atanh HAVE_DECL_ATANH)
-check_math_function_exists(expm1 HAVE_DECL_EXPM1)
-check_math_function_exists(finite HAVE_DECL_FINITE)
-check_math_function_exists2(frexp "1.0, NULL" HAVE_DECL_FREXP)
-check_math_function_exists2(hypot "1.0, 0.5" HAVE_DECL_HYPOT)
-check_math_function_exists(isfinite HAVE_DECL_ISFINITE)
-check_math_function_exists(isinf HAVE_DECL_ISINF)
-check_math_function_exists(isnan HAVE_DECL_ISNAN)
-check_math_function_exists2(ldexp "1.0, 1" HAVE_DECL_LDEXP)
-check_math_function_exists(log1p HAVE_DECL_LOG1P)
-
-check_include_file("ieeefp.h" HAVE_IEEEFP_H)
-if(HAVE_IEEEFP_H)
-    add_definitions(-DHAVE_IEEEFP_H)
-endif()
-
-check_c_source_runs(
-    "
+    check_c_source_runs(
+        "
 #include <math.h>
 int main(void)
 {
@@ -90,14 +91,14 @@ int main(void)
     status = (nan == nan);
     exit (status);
 }"
-    HAVE_IEEE_COMPARISONS
-)
-if(HAVE_IEEE_COMPARISONS)
-    add_definitions(-DHAVE_IEEE_COMPARISONS)
-endif()
+        HAVE_IEEE_COMPARISONS
+    )
+    if(HAVE_IEEE_COMPARISONS)
+        add_definitions(-DHAVE_IEEE_COMPARISONS)
+    endif()
 
-check_c_source_runs(
-    "
+    check_c_source_runs(
+        "
 extern inline double foo (double x) { return x + 1.0; }
 
 int main()
@@ -105,28 +106,28 @@ int main()
     foo(1.0);
     return 0;
 }"
-    HAVE_INLINE
-)
-if(HAVE_INLINE)
-    add_definitions(-DHAVE_INLINE)
-endif()
+        HAVE_INLINE
+    )
+    if(HAVE_INLINE)
+        add_definitions(-DHAVE_INLINE)
+    endif()
 
-check_c_source_runs(
-    "
+    check_c_source_runs(
+        "
 int main()
 {
     static int test_array [1 - 2 * !(((char) -1) < 0)];
     test_array [0] = 0;
     return 0;
 }"
-    __CHAR_UNSIGNED__
-)
-if(__CHAR_UNSIGNED__ AND NOT CMAKE_COMPILER_IS_GNUC)
-    add_definitions(-D__CHAR_UNSIGNED__)
-endif()
+        __CHAR_UNSIGNED__
+    )
+    if(__CHAR_UNSIGNED__ AND NOT CMAKE_COMPILER_IS_GNUC)
+        add_definitions(-D__CHAR_UNSIGNED__)
+    endif()
 
-check_c_source_compiles(
-    "
+    check_c_source_compiles(
+        "
 #include <stdlib.h>
 
 int main()
@@ -134,71 +135,72 @@ int main()
     size_t a = 0;
     return a;
 }"
-    HAVE_SIZE_T
-)
+        HAVE_SIZE_T
+    )
 
-check_c_source_runs(
-    "
+    check_c_source_runs(
+        "
 int main()
 {
     volatile int a = 0;
     return a;
 }"
-    HAVE_VOLATILE
-)
+        HAVE_VOLATILE
+    )
 
-file(READ ${ASTROMETRY_NET_SRC_DIR}/gsl-an/config.h.in FILE_CONTENTS)
+    file(READ ${ASTROMETRY_NET_SRC_DIR}/gsl-an/config.h.in FILE_CONTENTS)
 
-foreach (DEF_NAME
-    "HAVE_C99_INLINE"
-    "HAVE_IEEE_COMPARISONS"
-    "HAVE_IEEE_DENORMALS"
-    "HAVE_INLINE"
-    "HIDE_INLINE_STATIC"
-    "HAVE_PRINTF_LONGDOUBLE"
-    "HAVE_GNUSPARC_IEEE_INTERFACE"
-    "HAVE_GNUM68K_IEEE_INTERFACE"
-    "HAVE_GNUPPC_IEEE_INTERFACE"
-    "HAVE_GNUX86_IEEE_INTERFACE"
-    "HAVE_SUNOS4_IEEE_INTERFACE"
-    "HAVE_SOLARIS_IEEE_INTERFACE"
-    "HAVE_HPUX11_IEEE_INTERFACE"
-    "HAVE_HPUX_IEEE_INTERFACE"
-    "HAVE_TRU64_IEEE_INTERFACE"
-    "HAVE_IRIX_IEEE_INTERFACE"
-    "HAVE_AIX_IEEE_INTERFACE"
-    "HAVE_FREEBSD_IEEE_INTERFACE"
-    "HAVE_OS2EMX_IEEE_INTERFACE"
-    "HAVE_NETBSD_IEEE_INTERFACE"
-    "HAVE_OPENBSD_IEEE_INTERFACE"
-    "HAVE_DARWIN_IEEE_INTERFACE"
-    "HAVE_DARWIN86_IEEE_INTERFACE"
-)
-    string(REPLACE "#undef ${DEF_NAME}" "#cmakedefine ${DEF_NAME}" FILE_CONTENTS "${FILE_CONTENTS}")
-endforeach()
+    foreach (DEF_NAME
+        "HAVE_C99_INLINE"
+        "HAVE_IEEE_COMPARISONS"
+        "HAVE_IEEE_DENORMALS"
+        "HAVE_INLINE"
+        "HIDE_INLINE_STATIC"
+        "HAVE_PRINTF_LONGDOUBLE"
+        "HAVE_GNUSPARC_IEEE_INTERFACE"
+        "HAVE_GNUM68K_IEEE_INTERFACE"
+        "HAVE_GNUPPC_IEEE_INTERFACE"
+        "HAVE_GNUX86_IEEE_INTERFACE"
+        "HAVE_SUNOS4_IEEE_INTERFACE"
+        "HAVE_SOLARIS_IEEE_INTERFACE"
+        "HAVE_HPUX11_IEEE_INTERFACE"
+        "HAVE_HPUX_IEEE_INTERFACE"
+        "HAVE_TRU64_IEEE_INTERFACE"
+        "HAVE_IRIX_IEEE_INTERFACE"
+        "HAVE_AIX_IEEE_INTERFACE"
+        "HAVE_FREEBSD_IEEE_INTERFACE"
+        "HAVE_OS2EMX_IEEE_INTERFACE"
+        "HAVE_NETBSD_IEEE_INTERFACE"
+        "HAVE_OPENBSD_IEEE_INTERFACE"
+        "HAVE_DARWIN_IEEE_INTERFACE"
+        "HAVE_DARWIN86_IEEE_INTERFACE"
+    )
+        string(REPLACE "#undef ${DEF_NAME}" "#cmakedefine ${DEF_NAME}" FILE_CONTENTS "${FILE_CONTENTS}")
+    endforeach()
 
-string(REPLACE "#undef" "#cmakedefine01" FILE_CONTENTS "${FILE_CONTENTS}")
-string(REPLACE "# undef" "#cmakedefine01" FILE_CONTENTS "${FILE_CONTENTS}")
+    string(REPLACE "#undef" "#cmakedefine01" FILE_CONTENTS "${FILE_CONTENTS}")
+    string(REPLACE "# undef" "#cmakedefine01" FILE_CONTENTS "${FILE_CONTENTS}")
 
-string(REPLACE "#cmakedefine01 inline" "/* #undef inline */" FILE_CONTENTS "${FILE_CONTENTS}")
+    string(REPLACE "#cmakedefine01 inline" "/* #undef inline */" FILE_CONTENTS "${FILE_CONTENTS}")
 
-if(HAVE_SIZE_T)
-    string(REPLACE "#cmakedefine01 size_t" "/* #undef size_t */" FILE_CONTENTS "${FILE_CONTENTS}")
-else()
-    string(REPLACE "#cmakedefine01 size_t" "#define size_t unsigned int" FILE_CONTENTS "${FILE_CONTENTS}")
+    if(HAVE_SIZE_T)
+        string(REPLACE "#cmakedefine01 size_t" "/* #undef size_t */" FILE_CONTENTS "${FILE_CONTENTS}")
+    else()
+        string(REPLACE "#cmakedefine01 size_t" "#define size_t unsigned int" FILE_CONTENTS "${FILE_CONTENTS}")
+    endif()
+
+    if(HAVE_VOLATILE)
+        string(REPLACE "#cmakedefine01 volatile" "/* #undef volatile */" FILE_CONTENTS "${FILE_CONTENTS}")
+    else()
+        string(REPLACE "#cmakedefine01 volatile" "#define volatile" FILE_CONTENTS "${FILE_CONTENTS}")
+    endif()
+
+    file(WRITE ${CMAKE_BINARY_DIR}/generated/astrometry/config.h.in "${FILE_CONTENTS}")
+
+    configure_file(${CMAKE_BINARY_DIR}/generated/astrometry/config.h.in ${CMAKE_BINARY_DIR}/generated/astrometry/config.h)
+
+    file(WRITE ${CMAKE_BINARY_DIR}/generated/astrometry/os-features-config.h)
 endif()
-
-if(HAVE_VOLATILE)
-    string(REPLACE "#cmakedefine01 volatile" "/* #undef volatile */" FILE_CONTENTS "${FILE_CONTENTS}")
-else()
-    string(REPLACE "#cmakedefine01 volatile" "#define volatile" FILE_CONTENTS "${FILE_CONTENTS}")
-endif()
-
-file(WRITE ${CMAKE_BINARY_DIR}/generated/astrometry/config.h.in "${FILE_CONTENTS}")
-
-configure_file(${CMAKE_BINARY_DIR}/generated/astrometry/config.h.in ${CMAKE_BINARY_DIR}/generated/astrometry/config.h)
-
-file(WRITE ${CMAKE_BINARY_DIR}/generated/astrometry/os-features-config.h)
 
 
 # Compile the library
