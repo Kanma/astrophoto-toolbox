@@ -18,14 +18,16 @@ enum
 {
     OPT_HELP,
     OPT_VERBOSE,
+    OPT_MIN_DISTANCE,
 };
 
 
 const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
-    { OPT_HELP,     "-h",           SO_NONE },
-    { OPT_HELP,     "--help",       SO_NONE },
-    { OPT_VERBOSE,  "-v",           SO_NONE },
-    { OPT_VERBOSE,  "--verbose",    SO_NONE },
+    { OPT_HELP,         "-h",               SO_NONE },
+    { OPT_HELP,         "--help",           SO_NONE },
+    { OPT_VERBOSE,      "-v",               SO_NONE },
+    { OPT_VERBOSE,      "--verbose",        SO_NONE },
+    { OPT_MIN_DISTANCE, "--min-distance",   SO_REQ_SEP },
     
     SO_END_OF_OPTIONS
 };
@@ -43,6 +45,7 @@ void showUsage(const std::string& strApplicationName)
          << "Options:" << endl
          << "    --help, -h        Display this help" << endl
          << "    --verbose, -v     Display more details" << endl
+         << "    --min-distance    Minimal distance to consider between the two files (default: 0)" << endl
          << endl;
 }
 
@@ -51,6 +54,7 @@ int main(int argc, char** argv)
 {
     std::string outputFileName;
     bool verbose = false;
+    double minDistance = 0.0;
 
     // Parse the command-line parameters
     CSimpleOpt args(argc, argv, COMMAND_LINE_OPTIONS);
@@ -66,6 +70,10 @@ int main(int argc, char** argv)
 
                 case OPT_VERBOSE:
                     verbose = true;
+                    break;
+
+                case OPT_MIN_DISTANCE:
+                    minDistance = std::stod(args.OptionArg());
                     break;
             }
         }
@@ -120,7 +128,7 @@ int main(int argc, char** argv)
     // Compute the transformation
     Transformation transformation;
     stacking::StarMatcher matcher;
-    if (!matcher.computeTransformation(sourceStars, targetStars, imageSize, transformation))
+    if (!matcher.computeTransformation(sourceStars, targetStars, imageSize, transformation, minDistance))
     {
         cerr << "Failed to compute the transformation" << endl;
         return 1;

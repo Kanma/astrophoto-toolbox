@@ -43,7 +43,7 @@ namespace stacking {
         std::vector<std::tuple<point_t, point_t>> pairs() const;
 
     private:
-        bool computeLargeTriangleTransformation(Transformation& transforms);
+        bool computeLargeTriangleTransformation(Transformation& transforms, double minDistance);
 
         void computeStarDistances(const point_list_t& stars, stars_distance_list_t& distances);
 

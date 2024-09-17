@@ -34,41 +34,8 @@ bool StarMatcher::computeTransformation(
 
     bool result = false;
 
-    while (!result && ((references.size() >= 8) && (targets.size() >= 8)))
-    {
-        result = computeLargeTriangleTransformation(transformation);
-
-        // Check the minimum distance
-        if (result)
-        {
-            double dx, dy;
-            transformation.offsets(dx, dy);
-
-            if (dx * dx + dy * dy < minDistance * minDistance)
-            {
-                auto pairs = votedPairs;
-                while (!pairs.empty())
-                {
-                    const auto& pair = pairs[0];
-                    references.erase(references.begin() + pair.refStar);
-                    targets.erase(targets.begin() + pair.targetStar);
-
-                    for (size_t i = 1; i < pairs.size(); ++i)
-                    {
-                        auto& pair2 = pairs[i];
-                        if (pair2.refStar >= pair.refStar)
-                            pair2.refStar -= 1;
-                        if (pair2.targetStar >= pair.targetStar)
-                            pair2.targetStar -= 1;
-                    }
-
-                    pairs.erase(pairs.begin());
-                }
-
-                result = false;
-            }
-        }
-    }
+    if ((references.size() >= 8) && (targets.size() >= 8))
+        result = computeLargeTriangleTransformation(transformation, minDistance);
 
     return result;
 }
@@ -92,7 +59,9 @@ std::vector<std::tuple<point_t, point_t>> StarMatcher::pairs() const
 
 //-----------------------------------------------------------------------------
 
-bool StarMatcher::computeLargeTriangleTransformation(Transformation& transforms)
+bool StarMatcher::computeLargeTriangleTransformation(
+    Transformation& transforms, double minDistance
+)
 {
     bool result = false;
 
@@ -218,6 +187,28 @@ bool StarMatcher::computeLargeTriangleTransformation(Transformation& transforms)
             j++;
         else
             i++;
+    }
+
+    // If a minimum distance was specified, nullify the pairs that didn't moved at least that much
+    if (minDistance > 0.0)
+    {
+        for (auto& pair : votingPairs)
+        {
+            if ((pair.nbVotes > 0) && (references[pair.refStar].distance(targets[pair.targetStar]) < minDistance))
+            {
+                pair.nbVotes = 0;
+                pair.setActive(false);
+
+                for (auto& pair2 : votingPairs)
+                {
+                    if ((pair2.refStar == pair.refStar) || (pair2.targetStar == pair.targetStar))
+                    {
+                        pair.nbVotes = 0;
+                        pair.setActive(false);
+                    }
+                }
+            }
+        }
     }
 
     // Sort voting pairs in descending order

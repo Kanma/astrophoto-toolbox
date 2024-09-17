@@ -2,10 +2,6 @@
 #include <astrophoto-toolbox/images/helpers.h>
 #include <array>
 
-#include <astrophoto-toolbox/images/pnm.h>
-
-#include <iostream>
-
 using namespace astrophototoolbox;
 using namespace stacking;
 
