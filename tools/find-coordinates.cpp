@@ -7,6 +7,7 @@
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/platesolving/platesolver.h>
 #include <astrophoto-toolbox/images/raw.h>
+#include <astrophoto-toolbox/images/helpers.h>
 
 using namespace std;
 using namespace astrophototoolbox;
@@ -189,6 +190,8 @@ int main(int argc, char** argv)
             delete bitmap;
             return 1;
         }
+
+        removeHotPixels(bitmap);
     }
 
 

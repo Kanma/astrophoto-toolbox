@@ -76,4 +76,65 @@ double computeMedian(DoubleGrayBitmap* bitmap)
     return double(index) / 65535.0;
 }
 
+//-----------------------------------------------------------------------------
+
+void removeHotPixels(Bitmap* bitmap)
+{
+    const double hotFactor = 4.0;
+
+    // Ensure the bitmap is in the correct format
+    DoubleColorBitmap* color = nullptr;
+    DoubleGrayBitmap* gray = nullptr;
+    double* data = nullptr;
+    unsigned int rowSize;
+
+    if (bitmap->channels() == 3)
+    {
+        color = requiresFormat<DoubleColorBitmap>(bitmap, RANGE_ONE);
+        data = color->data();
+        rowSize = color->bytesPerRow() / color->channelSize();
+    }
+    else
+    {
+        gray = requiresFormat<DoubleGrayBitmap>(bitmap, RANGE_ONE);
+        data = gray->data();
+        rowSize = gray->bytesPerRow() / gray->channelSize();
+    }
+
+    // Remove the hot pixels
+    for (unsigned int y = 1; y < bitmap->height() - 1; ++y)
+    {
+        for (unsigned int x = 1; x < bitmap->width() - 1; ++x)
+        {
+            size_t offset = y * rowSize + x * bitmap->channels();
+
+            for (unsigned int c = 0; c < bitmap->channels(); ++c)
+            {
+                double testValue = data[offset];
+
+                if ((testValue > hotFactor * data[offset - bitmap->channels()]) &&
+                    (testValue > hotFactor * data[offset + bitmap->channels()]) &&
+                    (testValue > hotFactor * data[offset - rowSize]) &&
+                    (testValue > hotFactor * data[offset + rowSize]))
+                {
+                    data[offset] = 0.0;
+                }
+
+                ++offset;
+            }
+        }
+    }
+
+    if (color && (color != bitmap))
+    {
+        bitmap->set(color);
+        delete color;
+    }
+    else if (gray && (gray != bitmap))
+    {
+        bitmap->set(gray);
+        delete gray;
+    }
+}
+
 }

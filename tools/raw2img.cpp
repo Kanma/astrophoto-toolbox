@@ -21,6 +21,7 @@ enum
     OPT_RECT,
     OPT_WB,
     OPT_SRGB,
+    OPT_REMOVE_HOT_PIXELS,
     OPT_GRAY,
     OPT_LUMINANCE,
     OPT_CHANNEL,
@@ -28,16 +29,17 @@ enum
 
 
 const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
-    { OPT_HELP,         "-h",           SO_NONE },
-    { OPT_HELP,         "--help",       SO_NONE },
-    { OPT_INFO,         "-i",           SO_NONE },
-    { OPT_INFO,         "--info",       SO_NONE },
-    { OPT_RECT,         "--rect",       SO_MULTI },
-    { OPT_WB,           "--wb",         SO_NONE },
-    { OPT_SRGB,         "--srgb",       SO_NONE },
-    { OPT_GRAY,         "--gray",       SO_NONE },
-    { OPT_LUMINANCE,    "--luminance",  SO_NONE },
-    { OPT_CHANNEL,      "--channel",    SO_REQ_SEP },
+    { OPT_HELP,                 "-h",                   SO_NONE },
+    { OPT_HELP,                 "--help",               SO_NONE },
+    { OPT_INFO,                 "-i",                   SO_NONE },
+    { OPT_INFO,                 "--info",               SO_NONE },
+    { OPT_RECT,                 "--rect",               SO_MULTI },
+    { OPT_WB,                   "--wb",                 SO_NONE },
+    { OPT_SRGB,                 "--srgb",               SO_NONE },
+    { OPT_REMOVE_HOT_PIXELS,    "--remove-hot-pixels",  SO_NONE },
+    { OPT_GRAY,                 "--gray",               SO_NONE },
+    { OPT_LUMINANCE,            "--luminance",          SO_NONE },
+    { OPT_CHANNEL,              "--channel",            SO_REQ_SEP },
 
     SO_END_OF_OPTIONS
 };
@@ -53,14 +55,15 @@ void showUsage(const std::string& strApplicationName)
          << "This program convert a RAW image file into a FITS, PPM or PGM one." << endl
          << endl
          << "Options:" << endl
-         << "    --help, -h       Display this help" << endl
-         << "    --info, -i       Display informations about the image" << endl
-         << "    --rect X Y W H   Extract the portion of the image defined by this rectangle" << endl
-         << "    --wb             Use camera white balance" << endl
-         << "    --srgb           Apply sRGB gamma correction" << endl
-         << "    --gray           Convert the image to grayscale" << endl
-         << "    --luminance      Extract the luminance of the image" << endl
-         << "    --channel INDEX  Only save the given channel (0-2)" << endl
+         << "    --help, -h             Display this help" << endl
+         << "    --info, -i             Display informations about the image" << endl
+         << "    --rect X Y W H         Extract the portion of the image defined by this rectangle" << endl
+         << "    --wb                   Use camera white balance" << endl
+         << "    --srgb                 Apply sRGB gamma correction" << endl
+         << "    --remove-hot-pixels    Remove the hot pixels" << endl
+         << "    --gray                 Convert the image to grayscale" << endl
+         << "    --luminance            Extract the luminance of the image" << endl
+         << "    --channel INDEX        Only save the given channel (0-2)" << endl
          << endl;
 }
 
@@ -76,6 +79,7 @@ int main(int argc, char** argv)
     unsigned int rect_h;
     bool useCameraWB = false;
     bool sRGB = false;
+    bool mustRemoveHotPixels = false;
     bool gray = false;
     bool luminance = false;
     int channel = -1;
@@ -119,6 +123,10 @@ int main(int argc, char** argv)
 
                 case OPT_SRGB:
                     sRGB = true;
+                    break;
+
+                case OPT_REMOVE_HOT_PIXELS:
+                    mustRemoveHotPixels = true;
                     break;
 
                 case OPT_GRAY:
@@ -205,6 +213,10 @@ int main(int argc, char** argv)
         bitmap = portion;
     }
 
+    // If necessary: remove the hot pixels
+    if (mustRemoveHotPixels)
+        removeHotPixels(bitmap);
+
     // If necessary: compute the luminance of the image
     if (luminance)
     {
@@ -274,6 +286,12 @@ int main(int argc, char** argv)
             delete bitmap;
             return 1;
         }
+    }
+    else
+    {
+        cerr << "Unknown file format: '" << args.File(1) << "'" << endl;
+        delete bitmap;
+        return 1;
     }
 
     delete bitmap;

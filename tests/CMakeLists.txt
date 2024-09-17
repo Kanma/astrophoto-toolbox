@@ -20,6 +20,7 @@ add_executable(unittests
     images/bitmap_uint32_gray.cpp
     images/bitmap_float_color.cpp
     images/bitmap_float_gray.cpp
+    images/helpers.cpp
     images/pnm.cpp
     images/raw.cpp
 

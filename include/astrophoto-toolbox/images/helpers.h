@@ -24,6 +24,12 @@ namespace astrophototoolbox {
 
 
     //------------------------------------------------------------------------------------
+    /// @brief  Remove hot pixels in a bitmap
+    //------------------------------------------------------------------------------------
+    void removeHotPixels(Bitmap* bitmap);
+
+
+    //------------------------------------------------------------------------------------
     /// @brief  Ensure that a bitmap has the required format, or create a copy that does
     ///
     /// The caller must free the returned bitmap if it is different than the provided one.
