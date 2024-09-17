@@ -6,6 +6,7 @@
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/stacking/registration.h>
+#include <astrophoto-toolbox/platesolving/platesolver.h>
 #include <astrophoto-toolbox/images/raw.h>
 
 using namespace std;
@@ -22,6 +23,10 @@ enum
     OPT_RAW,
     OPT_FITS,
     OPT_OUTPUT,
+    OPT_PLATESOLVING,
+    OPT_UNIFORMIZE,
+    OPT_OBJS,
+    OPT_NO_AN_KEYWORDS,
 };
 
 
@@ -32,7 +37,12 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_VERBOSE,          "--verbose",        SO_NONE },
     { OPT_RAW,              "--raw",            SO_NONE },
     { OPT_FITS,             "--fits",           SO_NONE },
-    { OPT_OUTPUT,            "-o",              SO_REQ_SEP },
+    { OPT_OUTPUT,           "-o",               SO_REQ_SEP },
+    { OPT_PLATESOLVING,     "--platesolving",   SO_NONE },
+    { OPT_UNIFORMIZE,       "-u",               SO_NONE },
+    { OPT_UNIFORMIZE,       "--uniformize",     SO_NONE },
+    { OPT_OBJS,             "--objs",           SO_REQ_SEP },
+    { OPT_NO_AN_KEYWORDS,   "--no-an-keywords", SO_NONE },
 
     SO_END_OF_OPTIONS
 };
@@ -45,14 +55,26 @@ void showUsage(const std::string& strApplicationName)
     cout << "register" << endl
          << "Usage: " << strApplicationName << "[options] <--fits | --raw> <image>" << endl
          << endl
-         << "Register a FITS or RAW image." << endl
+         << "Detect the stars in a FITS or RAW image." << endl
+         << endl
+         << "By default, stars are detected using algorithm tailored for image stacking." << endl
+         << "Another detection algorithm is available, adapted to plate solving. It can be selected" << endl
+         << "with the --platesolving option." << endl
          << endl
          << "Options:" << endl
          << "    --help, -h        Display this help" << endl
          << "    --verbose, -v     Display more details" << endl
          << "    --fits            Indicates that the image is a FITS one" << endl
          << "    --raw             Indicates that the image is a RAW one" << endl
-         << "    -o FILE           FITS file into which write the coordinates (default: the input FITS image if applicable)" << endl
+         << "    -o FILE           FITS file into which write the coordinates (default: the input FITS" << endl
+         << "                      image if applicable)" << endl
+         << "    --no-an-keywords  Do not write astrometry.net specific keywords in the file (included " << endl
+         << "                      default, for compatibility)" << endl
+         << "    --platesolving    Use the plate solving detection algorithm" << endl
+         << endl
+         << "When --platesolving is used:" << endl
+         << "    --uniformize, -u  Uniformize the coordinates" << endl
+         << "    -objs NB          Only keep the NB brightest objects" << endl
          << endl;
 }
 
@@ -63,6 +85,9 @@ int main(int argc, char** argv)
     bool verbose = false;
     bool isRaw = false;
     bool isFits = false;
+    bool usePlateSolvingDetection = false;
+    bool uniformize = false;
+    int nbObjs = -1;
     bool includeANKeywords = true;
 
     // Parse the command-line parameters
@@ -91,6 +116,22 @@ int main(int argc, char** argv)
 
                 case OPT_OUTPUT:
                     outputFileName = args.OptionArg();
+                    break;
+
+                case OPT_PLATESOLVING:
+                    usePlateSolvingDetection = true;
+                    break;
+
+                case OPT_UNIFORMIZE:
+                    uniformize = true;
+                    break;
+
+                case OPT_OBJS:
+                    nbObjs = stoi(args.OptionArg());
+                    break;
+
+                case OPT_NO_AN_KEYWORDS:
+                    includeANKeywords = false;
                     break;
             }
         }
@@ -170,10 +211,64 @@ int main(int argc, char** argv)
     }
 
     // Registration
-    stacking::Registration registration;
-    star_list_t stars = registration.registerBitmap(bitmap);
-
+    star_list_t stars;
     size2d_t imageSize(bitmap->width(), bitmap->height());
+
+    if (!usePlateSolvingDetection)
+    {
+        stacking::Registration registration;
+        stars = registration.registerBitmap(bitmap);
+
+        if (stars.empty())
+        {
+            cerr << "Failed to detect the stars" << endl;
+            delete bitmap;
+            return 1;
+        }
+    }
+    else
+    {
+        // Convert the bitmap to float & keep the first channel
+        if (bitmap->channels() == 3)
+        {
+            auto converted = new FloatColorBitmap(bitmap, RANGE_BYTE);
+            auto channel = converted->channel(0);
+            delete bitmap;
+            delete converted;
+            bitmap = channel;
+        }
+        else
+        {
+            auto converted = new FloatGrayBitmap(bitmap, RANGE_BYTE);
+            delete bitmap;
+            bitmap = converted;
+        }
+
+        // Star detection
+        platesolving::PlateSolver solver;
+        if (!solver.detectStars(bitmap))
+        {
+            cerr << "Failed to detect the stars" << endl;
+            delete bitmap;
+            return 1;
+        }
+
+        // If necessary, uniformize the coordinates
+        if (uniformize)
+        {
+            if (!solver.uniformize())
+            {
+                cerr << "Failed to uniformize the coordinates" << endl;
+                return 1;
+            }
+        }
+
+        // If necessary, only keep the brightest objects
+        if (nbObjs > 0)
+            solver.cut(nbObjs);
+
+        stars = solver.getStars();
+    }
 
     delete bitmap;
 
@@ -200,7 +295,15 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    dest->writeAstrometryNetKeywords(imageSize);
+    // Include the astrometry.net keywords if necessary
+    if (includeANKeywords)
+    {
+        if (!dest->writeAstrometryNetKeywords(imageSize))
+        {
+            cerr << "Failed to write the keywords specific to astrometry.net" << endl;
+            return 1;
+        }
+    }
 
     return 0;
 }

@@ -108,10 +108,8 @@ namespace platesolving {
         /// @brief  Set the list of detected stars
         ///
         /// Useful if you loaded it from a file.
-        ///
-        /// In the 'infos' struct, only the image width and height are required.
         //--------------------------------------------------------------------------------
-        inline void setStarList(const star_list_t stars, const size2d_t& imageSize)
+        inline void setStars(const star_list_t stars, const size2d_t& imageSize)
         {
             this->stars = stars;
             this->imageSize = imageSize;
@@ -123,7 +121,7 @@ namespace platesolving {
         //--------------------------------------------------------------------------------
         /// @brief  Retrieve the list of detected stars 
         //--------------------------------------------------------------------------------
-        inline const star_list_t& getStarList() const
+        inline const star_list_t& getStars() const
         {
             return stars;
         }

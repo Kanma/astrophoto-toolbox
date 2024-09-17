@@ -240,7 +240,7 @@ int main(int argc, char** argv)
             return 1;
         }
 
-        solver.setStarList(stars, imageSize);
+        solver.setStars(stars, imageSize);
         solver.uniformize();
         solver.cut();
 
@@ -254,7 +254,7 @@ int main(int argc, char** argv)
 
     if (verbose)
     {
-        cout << solver.getStarList().size() << " star(s) detected" << endl;
+        cout << solver.getStars().size() << " star(s) detected" << endl;
     }
 
     Coordinates coordinates = solver.getCoordinates();

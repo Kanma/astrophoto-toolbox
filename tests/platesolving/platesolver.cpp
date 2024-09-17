@@ -10,7 +10,7 @@ using namespace astrophototoolbox::platesolving;
 TEST_CASE("No star at creation", "[PlateSolver]")
 {
     PlateSolver solver;
-    auto stars = solver.getStarList();
+    auto stars = solver.getStars();
     REQUIRE(stars.size() == 0);
 }
 
@@ -42,7 +42,7 @@ TEST_CASE("Star detection", "[PlateSolver]")
     PlateSolver solver;
     REQUIRE(solver.detectStars(channel));
 
-    auto stars = solver.getStarList();
+    auto stars = solver.getStars();
 
     REQUIRE(stars.size() == 3);
 
@@ -104,11 +104,11 @@ TEST_CASE("Star uniformization", "[PlateSolver]")
     size2d_t imageSize(120, 60);
 
     PlateSolver solver;
-    solver.setStarList(list, imageSize);
+    solver.setStars(list, imageSize);
     
     REQUIRE(solver.uniformize(4));
 
-    auto stars = solver.getStarList();
+    auto stars = solver.getStars();
 
     REQUIRE(stars.size() == 7);
 
@@ -150,11 +150,11 @@ TEST_CASE("Star list cut", "[PlateSolver]")
     size2d_t imageSize(120, 60);
 
     PlateSolver solver;
-    solver.setStarList(list, imageSize);
+    solver.setStars(list, imageSize);
     
     solver.cut(10);
 
-    auto stars = solver.getStarList();
+    auto stars = solver.getStars();
 
     REQUIRE(stars.size() == 10);
 
@@ -194,7 +194,7 @@ TEST_CASE("Plate solving", "[PlateSolver]")
     REQUIRE(!stars.empty());
 
     PlateSolver solver;
-    solver.setStarList(stars, imageSize);
+    solver.setStars(stars, imageSize);
 
     REQUIRE(solver.loadIndexes(DATA_DIR "downloads"));
 
@@ -220,7 +220,7 @@ TEST_CASE("Fail to do plate solving without index files", "[PlateSolver]")
     REQUIRE(!stars.empty());
 
     PlateSolver solver;
-    solver.setStarList(stars, imageSize);
+    solver.setStars(stars, imageSize);
 
     REQUIRE(!solver.solve(0.5, 2.0));
 

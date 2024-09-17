@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24.0)
 project(astrophoto-toolbox VERSION 0.1.0 LANGUAGES C CXX)
 
-option(ASTROPHOTOTOOLBOX_BUILD_EXAMPLES     "Build the examples         (default=ON)"   ON)
+option(ASTROPHOTOTOOLBOX_BUILD_TOOLS        "Build the tools            (default=ON)"   ON)
 option(ASTROPHOTOTOOLBOX_BUILD_TESTS        "Build the tests            (default=ON)"   ON)
 option(ASTROPHOTOTOOLBOX_RUN_TESTS          "Run the tests during build (default=ON)"   ON)
 
@@ -19,8 +19,8 @@ include(cmake/astrometry.net.cmake)
 
 add_subdirectory(src)
 
-if (ASTROPHOTOTOOLBOX_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+if (ASTROPHOTOTOOLBOX_BUILD_TOOLS)
+    add_subdirectory(tools)
 endif()
 
 if (ASTROPHOTOTOOLBOX_BUILD_TESTS)

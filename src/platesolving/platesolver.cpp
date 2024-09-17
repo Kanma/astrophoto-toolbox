@@ -48,7 +48,7 @@ bool PlateSolver::run(
     const star_list_t& stars, const size2d_t& imageSize, double minWidth, double maxWidth
 )
 {
-    setStarList(stars, imageSize);
+    setStars(stars, imageSize);
 
     if (!uniformize())
         return false;
