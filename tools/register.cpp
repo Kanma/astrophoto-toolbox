@@ -6,9 +6,12 @@
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/stacking/registration.h>
-#include <astrophoto-toolbox/platesolving/platesolver.h>
 #include <astrophoto-toolbox/images/raw.h>
 #include <astrophoto-toolbox/images/helpers.h>
+
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
+    #include <astrophoto-toolbox/platesolving/platesolver.h>
+#endif
 
 using namespace std;
 using namespace astrophototoolbox;
@@ -24,10 +27,13 @@ enum
     OPT_RAW,
     OPT_FITS,
     OPT_OUTPUT,
+    OPT_NO_AN_KEYWORDS,
+
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
     OPT_PLATESOLVING,
     OPT_UNIFORMIZE,
     OPT_OBJS,
-    OPT_NO_AN_KEYWORDS,
+#endif
 };
 
 
@@ -39,11 +45,14 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_RAW,              "--raw",            SO_NONE },
     { OPT_FITS,             "--fits",           SO_NONE },
     { OPT_OUTPUT,           "-o",               SO_REQ_SEP },
+    { OPT_NO_AN_KEYWORDS,   "--no-an-keywords", SO_NONE },
+
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
     { OPT_PLATESOLVING,     "--platesolving",   SO_NONE },
     { OPT_UNIFORMIZE,       "-u",               SO_NONE },
     { OPT_UNIFORMIZE,       "--uniformize",     SO_NONE },
     { OPT_OBJS,             "--objs",           SO_REQ_SEP },
-    { OPT_NO_AN_KEYWORDS,   "--no-an-keywords", SO_NONE },
+#endif
 
     SO_END_OF_OPTIONS
 };
@@ -58,10 +67,14 @@ void showUsage(const std::string& strApplicationName)
          << endl
          << "Detect the stars in a FITS or RAW image." << endl
          << endl
+
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
          << "By default, stars are detected using algorithm tailored for image stacking." << endl
          << "Another detection algorithm is available, adapted to plate solving. It can be selected" << endl
          << "with the --platesolving option." << endl
          << endl
+#endif
+
          << "Options:" << endl
          << "    --help, -h        Display this help" << endl
          << "    --verbose, -v     Display more details" << endl
@@ -71,11 +84,14 @@ void showUsage(const std::string& strApplicationName)
          << "                      image if applicable)" << endl
          << "    --no-an-keywords  Do not write astrometry.net specific keywords in the file (included " << endl
          << "                      default, for compatibility)" << endl
+
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
          << "    --platesolving    Use the plate solving detection algorithm" << endl
          << endl
          << "When --platesolving is used:" << endl
          << "    --uniformize, -u  Uniformize the coordinates" << endl
          << "    -objs NB          Only keep the NB brightest objects" << endl
+#endif
          << endl;
 }
 
@@ -86,10 +102,13 @@ int main(int argc, char** argv)
     bool verbose = false;
     bool isRaw = false;
     bool isFits = false;
+    bool includeANKeywords = true;
+
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
     bool usePlateSolvingDetection = false;
     bool uniformize = false;
     int nbObjs = -1;
-    bool includeANKeywords = true;
+#endif
 
     // Parse the command-line parameters
     CSimpleOpt args(argc, argv, COMMAND_LINE_OPTIONS);
@@ -119,6 +138,11 @@ int main(int argc, char** argv)
                     outputFileName = args.OptionArg();
                     break;
 
+                case OPT_NO_AN_KEYWORDS:
+                    includeANKeywords = false;
+                    break;
+
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
                 case OPT_PLATESOLVING:
                     usePlateSolvingDetection = true;
                     break;
@@ -130,10 +154,7 @@ int main(int argc, char** argv)
                 case OPT_OBJS:
                     nbObjs = stoi(args.OptionArg());
                     break;
-
-                case OPT_NO_AN_KEYWORDS:
-                    includeANKeywords = false;
-                    break;
+#endif
             }
         }
         else
@@ -217,8 +238,10 @@ int main(int argc, char** argv)
     star_list_t stars;
     size2d_t imageSize(bitmap->width(), bitmap->height());
 
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
     if (!usePlateSolvingDetection)
     {
+#endif
         stacking::Registration registration;
         stars = registration.registerBitmap(bitmap);
 
@@ -228,6 +251,7 @@ int main(int argc, char** argv)
             delete bitmap;
             return 1;
         }
+#ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING
     }
     else
     {
@@ -272,6 +296,7 @@ int main(int argc, char** argv)
 
         stars = solver.getStars();
     }
+#endif
 
     delete bitmap;
 

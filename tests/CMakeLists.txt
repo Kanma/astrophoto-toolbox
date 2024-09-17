@@ -1,34 +1,4 @@
-add_executable(unittests
-    main.cpp
-
-    algorithms/histogram.cpp
-    algorithms/math.cpp
-
-    data/coordinates.cpp
-    data/fits_helpers.h
-    data/fits_helpers.cpp
-    data/fits_bitmap.cpp
-    data/fits_starlist.cpp
-
-    images/bitmap_helpers.h
-    images/bitmap_helpers.cpp
-    images/bitmap_uint8_color.cpp
-    images/bitmap_uint16_color.cpp
-    images/bitmap_uint32_color.cpp
-    images/bitmap_uint8_gray.cpp
-    images/bitmap_uint16_gray.cpp
-    images/bitmap_uint32_gray.cpp
-    images/bitmap_float_color.cpp
-    images/bitmap_float_gray.cpp
-    images/helpers.cpp
-    images/pnm.cpp
-    images/raw.cpp
-
-    platesolving/platesolver.cpp
-
-    stacking/registration.cpp
-    stacking/starmatcher.cpp
-)
+add_executable(unittests main.cpp)
 
 target_include_directories(unittests
     PUBLIC
@@ -50,6 +20,15 @@ target_compile_definitions(unittests
 )
 
 add_subdirectory(assets)
+add_subdirectory(algorithms)
+add_subdirectory(data)
+add_subdirectory(images)
+add_subdirectory(stacking)
+
+if (ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING)
+    add_subdirectory(platesolving)
+endif()
+
 
 # Run the unit tests
 if (ASTROPHOTOTOOLBOX_RUN_TESTS)

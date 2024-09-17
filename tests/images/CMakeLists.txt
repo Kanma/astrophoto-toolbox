@@ -1,0 +1,16 @@
+target_sources(unittests
+    PUBLIC
+        bitmap_helpers.h
+        bitmap_helpers.cpp
+        bitmap_uint8_color.cpp
+        bitmap_uint16_color.cpp
+        bitmap_uint32_color.cpp
+        bitmap_uint8_gray.cpp
+        bitmap_uint16_gray.cpp
+        bitmap_uint32_gray.cpp
+        bitmap_float_color.cpp
+        bitmap_float_gray.cpp
+        helpers.cpp
+        pnm.cpp
+        raw.cpp
+)

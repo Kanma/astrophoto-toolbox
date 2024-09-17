@@ -1,0 +1,10 @@
+target_sources(astrophoto-toolbox
+    PUBLIC
+        coordinates.h
+        fits.h
+        point.h
+        rect.h
+        size.h
+        star.h
+        transformation.h
+)

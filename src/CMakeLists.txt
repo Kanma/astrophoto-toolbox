@@ -1,45 +1,7 @@
-set(SRC_FILES
-    algorithms/histogram.cpp
-
-    data/coordinates.cpp
-    data/fits.cpp
-    data/transformation.cpp
-
-    images/bitmap.cpp
-    images/helpers.cpp
-    images/pnm.cpp
-    images/raw.cpp
-
-    platesolving/platesolver.cpp
-
-    stacking/registration.cpp
-    stacking/starmatcher.cpp
-)
-
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 
-set(HEADER_FILES
-    ${INCLUDE_DIR}/astrophoto-toolbox/algorithms/histogram.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/algorithms/math.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/data/coordinates.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/data/fits.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/data/point.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/data/rect.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/data/size.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/data/star.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/data/transformation.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/images/bitmap.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/images/helpers.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/images/pnm.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/images/raw.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/platesolving/platesolver.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/stacking/registration.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/stacking/starmatcher.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/stacking/starsdistance.h
-    ${INCLUDE_DIR}/astrophoto-toolbox/stacking/votingpair.h
-)
 
-add_library(astrophoto-toolbox ${SRC_FILES} ${HEADER_FILES})
+add_library(astrophoto-toolbox)
 
 target_include_directories(astrophoto-toolbox
     PUBLIC
@@ -52,5 +14,20 @@ target_link_libraries(astrophoto-toolbox
     PUBLIC
         libraw::libraw
         cfitsio
-        astrometry-net
 )
+
+
+add_subdirectory(algorithms)
+add_subdirectory(data)
+add_subdirectory(images)
+add_subdirectory(stacking)
+
+
+if (ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING)
+    add_subdirectory(platesolving)
+
+    target_link_libraries(astrophoto-toolbox
+        PUBLIC
+            astrometry-net
+    )
+endif()
