@@ -1,3 +1,11 @@
+/*
+ * SPDX-FileCopyrightText: 2024 Philip Abbet <philip.abbet@gmail.com>
+ *
+ * SPDX-FileContributor: Philip Abbet <philip.abbet@gmail.com>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+*/
+
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <string.h>

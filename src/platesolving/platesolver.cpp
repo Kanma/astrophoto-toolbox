@@ -1,3 +1,15 @@
+/*
+ * SPDX-FileCopyrightText: 2024 Philip Abbet <philip.abbet@gmail.com>
+ *
+ * SPDX-FileContributor: Philip Abbet <philip.abbet@gmail.com>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * This file is essentially a reimplementation of parts of 'astrometry.net',
+ * which is released under a BSD 3-Clause license (but using GPL dependencies),
+ * Copyright (c) 2006-2015, Astrometry.net Developers.
+*/
+
 #include <astrophoto-toolbox/platesolving/platesolver.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <filesystem>
