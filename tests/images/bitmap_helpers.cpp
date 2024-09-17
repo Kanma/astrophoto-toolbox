@@ -47,6 +47,8 @@ Bitmap* createUInt8Bitmap(
         {
             if (space == SPACE_LINEAR)
                 data[x] = v;
+            else if (double(v) / 255.0 <= 0.0031308)
+                data[x] = double(v) * 12.92;
             else
                 data[x] = ((1.0 + 0.055) * pow(double(v) / 255.0, 1.0 / 2.4) - 0.055) * 255.0;
 
