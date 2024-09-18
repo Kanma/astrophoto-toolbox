@@ -433,6 +433,7 @@ bool StarMatcher::computeCoordinatesTransformation(
 
     // Try to add other pairs to refine the transformation
     Transformation transformation = goodTransformation;
+    transforms = goodTransformation;
     voting_pair_list_t tempPairs;
     int nbFails = 0;
 

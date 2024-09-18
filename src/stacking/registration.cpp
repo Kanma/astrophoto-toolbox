@@ -105,7 +105,7 @@ const star_list_t Registration::registerBitmap(Bitmap* bitmap) const
             if (it == searchGrid.end())
                 luminancyThreshold = std::min(luminancyThreshold * 2, int((1.0 - median) * 0.9 * 100.0));
             else
-                luminancyThreshold = (luminancyThreshold + it->luminancyThreshold) / 2;
+                luminancyThreshold = (luminancyThreshold + it->luminancyThreshold + 1) / 2;
         }
         else if (nbStars < 40)
         {
@@ -116,7 +116,7 @@ const star_list_t Registration::registerBitmap(Bitmap* bitmap) const
             if (prev == searchGrid.end())
                 luminancyThreshold = std::max(luminancyThreshold / 2, 0);
             else
-                luminancyThreshold = (luminancyThreshold + prev->luminancyThreshold) / 2;
+                luminancyThreshold = (luminancyThreshold + prev->luminancyThreshold + 1) / 2;
         }
 
         searchGrid.insert(searchentry);
