@@ -26,6 +26,6 @@ namespace astrophototoolbox {
     ///
     /// The bitmap is converted to grayscale if necessary.
     //------------------------------------------------------------------------------------
-     void computeHistogram(Bitmap* bitmap, histogram_t& histogram);
+    void computeHistogram(Bitmap* bitmap, histogram_t& histogram);
 
 }
