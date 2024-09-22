@@ -13,7 +13,7 @@
 
 namespace astrophototoolbox {
 
-point_t findStarInBitmapWithBahtinovMask(Bitmap* bitmap)
+point_t findStarInBitmapWithBahtinovMask(Bitmap* bitmap, double* radius)
 {
     DoubleGrayBitmap* luminance = computeLuminanceBitmap(bitmap);
 
@@ -83,7 +83,12 @@ point_t findStarInBitmapWithBahtinovMask(Bitmap* bitmap)
     if (luminance != bitmap)
         delete luminance;
 
-    return point_t((x1 + x2) / 2.0, (y1 + y2) / 2.0);
+    point_t center((x1 + x2) / 2.0, (y1 + y2) / 2.0);
+
+    if (radius)
+        *radius = std::max(x2 - center.x, y2 - center.y);
+
+    return center;
 }
 
 }

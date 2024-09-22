@@ -16,7 +16,11 @@ namespace astrophototoolbox {
 
     //------------------------------------------------------------------------------------
     /// @brief  Find the center of the star in a bitmap where a Bahtinov mask is used
+    ///
+    /// The center and the radius are roughly estimated using the maximum luminancy values
+    /// in the image, which is assumed to be mostly black with a group of luminous pixels
+    /// around the star.
     //------------------------------------------------------------------------------------
-    point_t findStarInBitmapWithBahtinovMask(Bitmap* bitmap);
+    point_t findStarInBitmapWithBahtinovMask(Bitmap* bitmap, double* radius = nullptr);
 
 }

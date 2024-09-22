@@ -21,11 +21,25 @@ TEST_CASE("Find star in image with Bahtinov mask", "[Bahtinov]")
 
     Bitmap* bitmap = input.readBitmap();
 
-    point_t position = findStarInBitmapWithBahtinovMask(bitmap);
-    delete bitmap;
+    SECTION("without radius")
+    {
+        point_t position = findStarInBitmapWithBahtinovMask(bitmap);
+        delete bitmap;
 
-    REQUIRE(position.x == 106.0);
-    REQUIRE(position.y == 190.5);
+        REQUIRE(position.x == Approx(106.0));
+        REQUIRE(position.y == Approx(190.5));
+    }
+
+    SECTION("with radius")
+    {
+        double radius;
+        point_t position = findStarInBitmapWithBahtinovMask(bitmap, &radius);
+        delete bitmap;
+
+        REQUIRE(position.x == Approx(106.0));
+        REQUIRE(position.y == Approx(190.5));
+        REQUIRE(radius == Approx(0.5));
+    }
 }
 
 
@@ -36,9 +50,23 @@ TEST_CASE("Find star in unfocused image with Bahtinov mask", "[Bahtinov]")
 
     Bitmap* bitmap = input.readBitmap();
 
-    point_t position = findStarInBitmapWithBahtinovMask(bitmap);
-    delete bitmap;
+    SECTION("without radius")
+    {
+        point_t position = findStarInBitmapWithBahtinovMask(bitmap);
+        delete bitmap;
 
-    REQUIRE(position.x == 126.5);
-    REQUIRE(position.y == 128.0);
+        REQUIRE(position.x == Approx(126.5));
+        REQUIRE(position.y == Approx(128.0));
+    }
+
+    SECTION("with radius")
+    {
+        double radius;
+        point_t position = findStarInBitmapWithBahtinovMask(bitmap, &radius);
+        delete bitmap;
+
+        REQUIRE(position.x == Approx(126.5));
+        REQUIRE(position.y == Approx(128.0));
+        REQUIRE(radius == Approx(39.5));
+    }
 }
