@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 cmake_policy(SET CMP0077 NEW)
 
 include(cmake/dependencies.cmake)
+include(cmake/catalogs.cmake)
 
 if (ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING)
     include(cmake/astrometry.net.cmake)

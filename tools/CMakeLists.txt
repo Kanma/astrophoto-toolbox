@@ -12,6 +12,9 @@ target_link_libraries(register PRIVATE astrophoto-toolbox)
 add_executable(compute-transformation compute-transformation.cpp)
 target_link_libraries(compute-transformation PRIVATE astrophoto-toolbox)
 
+add_executable(search-in-catalog search-in-catalog.cpp)
+target_link_libraries(search-in-catalog PRIVATE astrophoto-toolbox)
+
 if (ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING)
     add_executable(find-coordinates find-coordinates.cpp)
     target_link_libraries(find-coordinates PRIVATE astrophoto-toolbox)

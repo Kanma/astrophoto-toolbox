@@ -17,10 +17,12 @@ target_compile_definitions(unittests
     PRIVATE
         DATA_DIR="${CMAKE_CURRENT_LIST_DIR}/assets/"
         TEMP_DIR="${TESTS_TEMP_DIR}"
+        CATALOGS_FOLDER="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/catalogs"
 )
 
 add_subdirectory(assets)
 add_subdirectory(algorithms)
+add_subdirectory(catalogs)
 add_subdirectory(data)
 add_subdirectory(images)
 add_subdirectory(stacking)
