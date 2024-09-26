@@ -34,6 +34,7 @@ jobs:
         cmake -B ${{ steps.strings.outputs.build-output-dir }} \
           -DASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING=${{ matrix.platesolving == 'with platesolving' }} \
           -DASTROPHOTOTOOLBOX_RUN_TESTS=OFF \
+          -DENABLE_OPENMP=OFF \
           -DCMAKE_BUILD_TYPE=Release \
           -S ${{ github.workspace }}
 
@@ -41,26 +42,8 @@ jobs:
       run: |
         cmake --build ${{ steps.strings.outputs.build-output-dir }}
 
-    # For some reason, running all the tests on the Github runners (and only there)
-    # ends with a SIGSEGV (Segmentation violation signal), so we do it separately
-    - name: Run unit tests (without plate solving)
+    - name: Run unit tests
       run: |
         rm -rf ${{ steps.strings.outputs.build-output-dir }}/tests/tmp/
         mkdir -p ${{ steps.strings.outputs.build-output-dir }}/tests/tmp/empty
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[Bahtinov]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[Bitmap]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[Bitmap helpers]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[Coordinates]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[DSOCatalog]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[FITS]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[Histogram]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[Math]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[PNM]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[RAW]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[Registration]"
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[StarMatcher]"
-
-    - name: Run unit tests (plate solving)
-      if: matrix.platesolving == 'with platesolving'
-      run: |
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests "[PlateSolver]"
+        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests

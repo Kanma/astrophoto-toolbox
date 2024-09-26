@@ -255,14 +255,8 @@ bool PlateSolver::solve(double minWidth, double maxWidth)
     {
         if (!index->codekd)
         {
-            char* ifn = index->indexfn;
-            char* iname = index->indexname;
-
-            if (!index_load(index->indexfn, 0, index))
+            if (index_reload(index) != 0)
                 continue;
-
-            free(iname);
-            free(ifn);
         }
 
         solver_add_index(solver, index);
@@ -396,6 +390,8 @@ std::vector<int> PlateSolver::sort(const simplexy_t& params, bool ascending)
 
     delete[] background;
     delete[] used;
+    free(perm1);
+    free(perm2);
 
     return result;
 }

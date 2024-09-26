@@ -1,8 +1,12 @@
-# Download the code
+# Download and patch the code
+set(ASTROMETRY_NET_PATCH git apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patches/astrometry-net.patch)
+
 FetchContent_Declare(
     astrometry-net
     GIT_REPOSITORY https://github.com/dstndstn/astrometry.net.git
     GIT_TAG "fbca48ebec403d4f954c97bc83d260ea40643577" # aka "0.95"
+    PATCH_COMMAND ${ASTROMETRY_NET_PATCH}
+    UPDATE_DISCONNECTED 1
 )
 
 FetchContent_MakeAvailable(astrometry-net)

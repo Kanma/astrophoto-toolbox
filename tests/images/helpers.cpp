@@ -16,9 +16,9 @@ TEST_CASE("Hot pixels removal", "[Bitmap helpers]")
 {
     DoubleColorBitmap image(20, 10);
 
-    *(image.data(5, 10)) = 1.0;
-    *(image.data(10, 10) + 1) = 1.0;
-    *(image.data(15, 10) + 2) = 1.0;
+    *(image.data(5, 5)) = 1.0;
+    *(image.data(10, 5) + 1) = 1.0;
+    *(image.data(15, 5) + 2) = 1.0;
 
     removeHotPixels(&image);
 
