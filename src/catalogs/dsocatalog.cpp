@@ -34,7 +34,7 @@ std::vector<DSOCatalog::match_t> DSOCatalog::search(
 {
     std::vector<DSOCatalog::match_t> result;
 
-    static const std::regex regexSplit("^([a-zA-Z]+)(\\s*)([0]*)[0-9]*");
+    static const std::regex regexSplit("^([a-zA-Z]+)(\\s*)([0]*).*");
 
     std::smatch match;
     bool found = std::regex_match(pattern, match, regexSplit);
@@ -45,18 +45,18 @@ std::vector<DSOCatalog::match_t> DSOCatalog::search(
         std::string prefix = match[1];
         std::string suffix1 = match[2];
         std::string suffix2 = match[3];
-        re = prefix + "[0]+" + pattern.substr(prefix.size() + suffix1.size() + suffix2.size());
+        re = prefix + pattern.substr(prefix.size() + suffix1.size() + suffix2.size());
     }
     else
     {
-        re = "^[a-zA-Z]+[0]+" + pattern;
+        re = "^[a-zA-Z]*" + pattern;
     }
 
     for (const auto& entry : entries)
     {
         if (std::regex_search(entry.name, re))
             result.push_back(match_t{ entry.name, { entry.ra, entry.dec } });
-        
+
         if (std::regex_search(entry.messier, re))
             result.push_back(match_t{ entry.messier, { entry.ra, entry.dec } });
 
@@ -89,6 +89,9 @@ bool DSOCatalog::loadOpenNGC(const std::filesystem::path& filename)
     int messierIndex = -1;
     int maxIndex = -1;
 
+    static const std::regex regexSplit("^([a-zA-Z]+)([0]*).*");
+    std::smatch match;
+
     while (std::getline(file, line))
     {
         // Just in case
@@ -105,8 +108,27 @@ bool DSOCatalog::loadOpenNGC(const std::filesystem::path& filename)
             entry.dec = parts[decIndex];
             entry.messier = parts[messierIndex];
 
+            if (std::regex_match(entry.name, match, regexSplit))
+            {
+                std::string prefix = match[1];
+                std::string zeroes = match[2];
+                entry.name = prefix + entry.name.substr(prefix.size() + zeroes.size());
+            }
+
+            if (entry.dec.starts_with("+"))
+                entry.dec = entry.dec.substr(1);
+
             if (!entry.messier.empty())
+            {
                 entry.messier = "M" + entry.messier;
+
+                if (std::regex_match(entry.messier, match, regexSplit))
+                {
+                    std::string prefix = match[1];
+                    std::string zeroes = match[2];
+                    entry.messier = prefix + entry.messier.substr(prefix.size() + zeroes.size());
+                }
+            }
 
             if (!entry.ra.empty() && !entry.dec.empty())
                 entries.push_back(entry);

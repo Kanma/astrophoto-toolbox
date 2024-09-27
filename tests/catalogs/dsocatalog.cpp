@@ -38,8 +38,8 @@ TEST_CASE("Search for a specific object", "[DSOCatalog]")
     {
         auto result = catalog.search(name);
         REQUIRE(result.size() == 1);
-        REQUIRE(result[0].name == "M051");
-        REQUIRE(result[0].coordinates.getRADECasHMSDMS() == "13:29:52.710, 47°00'00\"");
+        REQUIRE(result[0].name == "M51");
+        REQUIRE(result[0].coordinates.getRADECasHMSDMS() == "13:29:52.710, 47°11'42.600\"");
     }
 }
 
@@ -62,10 +62,10 @@ TEST_CASE("Search for a list of objects", "[DSOCatalog]")
     REQUIRE(catalog.load(CATALOGS_FOLDER));
 
     auto result = catalog.search("NGC19");
-    REQUIRE(result.size() == 14);
+    REQUIRE(result.size() == 114);
 
     for (auto match : result)
-        REQUIRE((match.name.starts_with("NGC0019") || match.name.starts_with("NGC019")));
+        REQUIRE(match.name.starts_with("NGC19"));
 }
 
 
@@ -79,5 +79,5 @@ TEST_CASE("Search for a limited list of objects", "[DSOCatalog]")
     REQUIRE(result.size() == 5);
 
     for (auto match : result)
-        REQUIRE((match.name.starts_with("NGC0019") || match.name.starts_with("NGC019")));
+        REQUIRE(match.name.starts_with("NGC19"));
 }
