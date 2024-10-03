@@ -36,3 +36,23 @@ TEST_CASE("Standard deviation computation", "[Math]")
     REQUIRE(sigma == Approx(6.438484));
     REQUIRE(average == Approx(6.78571));
 }
+
+
+TEST_CASE("Median computation", "[Math]")
+{
+    std::vector<uint16_t> data { 
+        10, 20, 0, 5, 10, 20, 10, 5, 5, 5, 0, 0, 0, 5
+    };
+
+    SECTION("with maximum specified")
+    {
+        uint16_t median = computeMedian(data, (uint16_t) 65535);
+        REQUIRE(median == 6);
+    }
+
+    SECTION("without maximum specified")
+    {
+        uint16_t median = computeMedian(data);
+        REQUIRE(median == 5);
+    }
+}

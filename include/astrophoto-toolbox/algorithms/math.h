@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <astrophoto-toolbox/algorithms/histogram.h>
 #include <numeric>
 
 
@@ -44,6 +45,29 @@ namespace astrophototoolbox {
             result = sqrt(squareDiff / values.size());
 
         return result;
+    }
+
+    //------------------------------------------------------------------------------------
+    /// @brief  Compute the median of a vector of values
+    //------------------------------------------------------------------------------------
+    template<typename T>
+    inline T computeMedian(const std::vector<T>& values, T maxValue = T(0))
+    {
+        if (maxValue == T(0))
+            maxValue = *std::max_element(values.begin(), values.end());
+
+        // Compute the histogram of the values
+        histogram_t histogram;
+        computeHistogram(values, histogram, maxValue);
+
+        // Compute the median
+        const size_t nbTotalValues = values.size() / 2 + values.size() % 2;
+        size_t nbValues = 0;
+        size_t index = 0;
+        while (nbValues < nbTotalValues)
+            nbValues += histogram[index++];
+
+        return T(double(index) * maxValue / 65535.0);
     }
 
 }
