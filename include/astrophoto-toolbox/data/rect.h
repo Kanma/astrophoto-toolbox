@@ -43,6 +43,16 @@ namespace astrophototoolbox {
         {
             return bottom - top;
         }
+
+        inline rect_t intersection(const rect_t& other)
+        {
+            return rect_t(
+                std::max(left, other.left),
+                std::max(top, other.top),
+                std::min(right, other.right),
+                std::min(bottom, other.bottom)
+            );
+        }
     };
 
 }

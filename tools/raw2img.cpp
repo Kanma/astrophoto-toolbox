@@ -58,7 +58,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 void showUsage(const std::string& strApplicationName)
 {
     cout << "raw2img" << endl
-         << "Usage: " << strApplicationName << "<input> <output>" << endl
+         << "Usage: " << strApplicationName << " [options] <input> <output>" << endl
          << endl
          << "This program convert a RAW image file into a FITS, PPM or PGM one." << endl
          << endl

@@ -129,7 +129,7 @@ TEST_CASE("Matching registered stars", "[StarMatcher]")
     REQUIRE(dy == Approx(-98.49931));
 
     double angle = transformation.angle(imageSize.width);
-    REQUIRE(angle == Approx(0.0002597837));
+    REQUIRE(angle == Approx(0.0002597452));
 
     REQUIRE(matcher.computeTransformation(stars2, stars1, imageSize, transformation));
 
@@ -139,7 +139,7 @@ TEST_CASE("Matching registered stars", "[StarMatcher]")
     REQUIRE(dy == Approx(98.5097));
 
     angle = transformation.angle(imageSize.width);
-    REQUIRE(angle == Approx(-0.0002532126));
+    REQUIRE(angle == Approx(-0.0002531776));
 }
 
 

@@ -204,7 +204,7 @@ TEST_CASE("Plate solving", "[PlateSolver]")
     PlateSolver solver;
     solver.setStars(stars, imageSize);
 
-    REQUIRE(solver.loadIndexes(DATA_DIR "downloads"));
+    REQUIRE(solver.loadIndexes(DATA_DIR "downloads/indexes"));
 
     REQUIRE(solver.solve(0.5, 2.0));
 

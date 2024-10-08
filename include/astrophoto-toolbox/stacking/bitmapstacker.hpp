@@ -13,22 +13,25 @@
  *      Simon C. Smith, Vitali Pelenjow, Michal Schulz, Martin Toeltsch
 */
 
-#include <astrophoto-toolbox/stacking/bitmapstacker.h>
+#pragma once
+
 #include <astrophoto-toolbox/algorithms/math.h>
 #include <sstream>
 
-using namespace astrophototoolbox;
-using namespace stacking;
+namespace astrophototoolbox {
+namespace stacking {
 
 
-BitmapStacker::~BitmapStacker()
+template<class BITMAP>
+BitmapStacker<BITMAP>::~BitmapStacker()
 {
     clear();
 }
 
 //-----------------------------------------------------------------------------
 
-void BitmapStacker::setup(
+template<class BITMAP>
+void BitmapStacker<BITMAP>::setup(
     unsigned int nbBitmaps, const std::filesystem::path& tempFolder,
     unsigned long maxFileSize
 )
@@ -45,7 +48,8 @@ void BitmapStacker::setup(
 
 //-----------------------------------------------------------------------------
 
-bool BitmapStacker::addBitmap(DoubleColorBitmap* bitmap)
+template<class BITMAP>
+bool BitmapStacker<BITMAP>::addBitmap(BITMAP* bitmap)
 {
     if (partFiles.empty())
     {
@@ -79,12 +83,13 @@ bool BitmapStacker::addBitmap(DoubleColorBitmap* bitmap)
 
 //-----------------------------------------------------------------------------
 
-DoubleColorBitmap* BitmapStacker::process() const
+template<class BITMAP>
+BITMAP* BitmapStacker<BITMAP>::process() const
 {
-    DoubleColorBitmap* output = new DoubleColorBitmap(width, height, range);
+    BITMAP* output = new BITMAP(width, height, range);
 
-    const unsigned int nbRowElements = width * 3;
-    std::vector<double_t> buffer;
+    const unsigned int nbRowElements = width * BITMAP::Channels;
+    std::vector<typename BITMAP::type_t> buffer;
 
     for (const auto& part : partFiles)
     {
@@ -99,7 +104,7 @@ DoubleColorBitmap* BitmapStacker::process() const
             return nullptr;
         }
 
-        fread(buffer.data(), sizeof(double_t), bufferSize, f);
+        fread(buffer.data(), BITMAP::ChannelSize, bufferSize, f);
         fclose(f);
 
         stack(part.startRow, part.endRow, nbRowElements, buffer.data(), output);
@@ -110,21 +115,24 @@ DoubleColorBitmap* BitmapStacker::process() const
 
 //-----------------------------------------------------------------------------
 
-void BitmapStacker::clear()
+template<class BITMAP>
+void BitmapStacker<BITMAP>::clear()
 {
     for (const auto& part : partFiles)
         std::filesystem::remove(part.filename);
 
     partFiles.clear();
+    nbBitmaps = 0;
     nbAddedBitmaps = 0;
 }
 
 //-----------------------------------------------------------------------------
 
-void BitmapStacker::initPartFiles()
+template<class BITMAP>
+void BitmapStacker<BITMAP>::initPartFiles()
 {
     // Make files of maximum 50MB
-    const int lineSize = 3 * sizeof(double) * width;
+    const int lineSize = BITMAP::Channels * BITMAP::ChannelSize * width;
 
     const int nbLinesPerFile = maxFileSize / lineSize;
     int nbLines = nbLinesPerFile / nbBitmaps;
@@ -164,14 +172,15 @@ void BitmapStacker::initPartFiles()
 
 //-----------------------------------------------------------------------------
 
-void BitmapStacker::stack(
-    unsigned int startRow, unsigned int endRow, unsigned int nbRowElements, double* buffer,
-    DoubleColorBitmap* output
+template<class BITMAP>
+void BitmapStacker<BITMAP>::stack(
+    unsigned int startRow, unsigned int endRow, unsigned int nbRowElements,
+    typename BITMAP::type_t* buffer, BITMAP* output
 ) const
 {
     const int nbRows = endRow - startRow + 1;
 
-    std::vector<double*> srcRows(nbBitmaps, nullptr);
+    std::vector<typename BITMAP::type_t*> srcRows(nbBitmaps, nullptr);
 
     for (unsigned int row = startRow; row <= endRow; ++row)
     {
@@ -187,47 +196,91 @@ void BitmapStacker::stack(
 
 //-----------------------------------------------------------------------------
 
-void BitmapStacker::combine(
-    unsigned int row, const std::vector<double*>& srcRows, DoubleColorBitmap* output
-) const
+template<class BITMAP>
+void BitmapStacker<BITMAP>::combine(
+    unsigned int row, const std::vector<typename BITMAP::type_t*>& srcRows,
+    BITMAP* output
+) const requires(BITMAP::Channels == 3)
 {
-    const double maxValue = (range == RANGE_BYTE ? 255.0
-                             : (range == RANGE_USHORT ? 65535.0
-                                : (range == RANGE_UINT ? double(2^32-1)
-                                : 1.0
-                               )
-                             )
-                            );
+    const typename BITMAP::type_t maxValue = output->maxRangeValue();
 
-    std::vector<double_t> redValues;
-    std::vector<double_t> greenValues;
-    std::vector<double_t> blueValues;
+    std::vector<typename BITMAP::type_t> redValues;
+    std::vector<typename BITMAP::type_t> greenValues;
+    std::vector<typename BITMAP::type_t> blueValues;
 
     redValues.reserve(srcRows.size());
     greenValues.reserve(srcRows.size());
     blueValues.reserve(srcRows.size());
 
-    double* dest = output->data(row);
+    typename BITMAP::type_t* dest = output->data(row);
 
-    for (unsigned int i = 0; i < width; ++i)
+    sparse_histogram_t histogram;
+
+    for (unsigned int i = 0; i < output->width(); ++i)
     {
         redValues.resize(0);
         greenValues.resize(0);
         blueValues.resize(0);
 
-        for (const double* ptr : srcRows)
+        for (const typename BITMAP::type_t* ptr : srcRows)
         {
-            const double* p = ptr + i * 3;
-            redValues.push_back(p[0]);
-            greenValues.push_back(p[1]);
-            blueValues.push_back(p[2]);
+            const typename BITMAP::type_t* p = ptr + i * 3;
+
+            if (p[0])
+                redValues.push_back(p[0]);
+
+            if (p[1])
+                greenValues.push_back(p[1]);
+
+            if (p[2])
+                blueValues.push_back(p[2]);
         }
 
         // Median method
-        dest[0] = computeMedian(redValues, maxValue);
-        dest[1] = computeMedian(greenValues, maxValue);
-        dest[2] = computeMedian(blueValues, maxValue);
+        dest[0] = computeMedian(redValues, histogram, maxValue);
+        dest[1] = computeMedian(greenValues, histogram, maxValue);
+        dest[2] = computeMedian(blueValues, histogram, maxValue);
 
         dest += 3;
     }
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void BitmapStacker<BITMAP>::combine(
+    unsigned int row, const std::vector<typename BITMAP::type_t*>& srcRows,
+    BITMAP* output
+) const requires(BITMAP::Channels == 1)
+{
+    const typename BITMAP::type_t maxValue = output->maxRangeValue();
+
+    std::vector<typename BITMAP::type_t> values;
+
+    values.reserve(srcRows.size());
+
+    typename BITMAP::type_t* dest = output->data(row);
+
+    sparse_histogram_t histogram;
+
+    for (unsigned int i = 0; i < output->width(); ++i)
+    {
+        values.resize(0);
+
+        for (const typename BITMAP::type_t* ptr : srcRows)
+        {
+            const typename BITMAP::type_t* p = ptr + i;
+
+            if (*p)
+                values.push_back(*p);
+        }
+
+        // Median method
+        *dest = computeMedian(values, histogram, maxValue);
+
+        ++dest;
+    }
+}
+
+}
 }

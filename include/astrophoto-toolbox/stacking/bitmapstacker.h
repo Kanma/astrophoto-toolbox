@@ -28,6 +28,7 @@ namespace stacking {
     /// This class is a reimplementation of the relevant parts of DeepSkyStacker's
     /// 'CMultiBitmap' class, adapted to astrophoto-toolbox needs.
     //------------------------------------------------------------------------------------
+    template<class BITMAP>
     class BitmapStacker
     {
     public:
@@ -50,12 +51,12 @@ namespace stacking {
         ///
         /// Note: 'setup()' must have been called before this method.
         //--------------------------------------------------------------------------------
-        bool addBitmap(DoubleColorBitmap* bitmap);
+        bool addBitmap(BITMAP* bitmap);
 
         //--------------------------------------------------------------------------------
         /// @brief  Performs the stacking of all the images that were added
         //--------------------------------------------------------------------------------
-        DoubleColorBitmap* process() const;
+        BITMAP* process() const;
 
         //--------------------------------------------------------------------------------
         /// @brief  Delete all the temporary files
@@ -65,6 +66,23 @@ namespace stacking {
         /// Note: automatically done when the object is destroyed
         //--------------------------------------------------------------------------------
         void clear();
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Indicates if the stacker has been initialised with the 'setup()'
+        ///         method
+        //--------------------------------------------------------------------------------
+        inline bool isInitialised() const
+        {
+            return (nbBitmaps != 0);
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the number of bitmaps to be stacked
+        //--------------------------------------------------------------------------------
+        inline unsigned int nbStackedBitmaps() const
+        {
+            return nbAddedBitmaps;
+        }
 
 
     private:
@@ -79,7 +97,7 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         void stack(
             unsigned int startRow, unsigned int endRow, unsigned int nbRowElements,
-            double* buffer, DoubleColorBitmap* output
+            typename BITMAP::type_t* buffer, BITMAP* output
         ) const;
 
         //--------------------------------------------------------------------------------
@@ -87,9 +105,18 @@ namespace stacking {
         ///         'median' method)
         //--------------------------------------------------------------------------------
         void combine(
-            unsigned int row, const std::vector<double*>& srcRows,
-            DoubleColorBitmap* output
-        ) const;
+            unsigned int row, const std::vector<typename BITMAP::type_t*>& srcRows,
+            BITMAP* output
+        ) const requires(BITMAP::Channels == 3);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Stack one row by combining the provided row pointers (using the
+        ///         'median' method)
+        //--------------------------------------------------------------------------------
+        void combine(
+            unsigned int row, const std::vector<typename BITMAP::type_t*>& srcRows,
+            BITMAP* output
+        ) const requires(BITMAP::Channels == 1);
 
 
     private:
@@ -117,3 +144,6 @@ namespace stacking {
 
 }
 }
+
+
+#include <astrophoto-toolbox/stacking/bitmapstacker.hpp>

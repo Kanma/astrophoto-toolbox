@@ -212,6 +212,18 @@ namespace astrophototoolbox {
         virtual range_t defaultRange() = 0;
 
         //--------------------------------------------------------------------------------
+        /// @brief  Returns the maximum value for the range of the bitmap
+        //--------------------------------------------------------------------------------
+        inline uint32_t maxRangeValue() const
+        {
+            return (_range == RANGE_BYTE ? 255
+                    : (_range == RANGE_USHORT ? 65535
+                       : (_range == RANGE_UINT ? 0xFFFFFFFF : 1)
+                      )
+                   );
+        }
+
+        //--------------------------------------------------------------------------------
         /// @brief  Returns the color space of the bitmap
         //--------------------------------------------------------------------------------
         inline space_t space() const
@@ -408,6 +420,8 @@ namespace astrophototoolbox {
         static constexpr size_t ChannelSize = sizeof(T);
         static constexpr range_t DefaultRange = rangeof<T>();
         static constexpr bool FloatingPoint = std::is_integral_v<T>;
+        
+        typedef T type_t;
 
 
         //_____ Construction / Destruction __________

@@ -284,8 +284,117 @@ bool FITS::write(
     }
 
     // Save the other data
+    fits_update_key(_file, TSTRING, "DATATYPE", (void*) "STARS", "", &status);
     fits_update_key(_file, TINT, "IMAGEW", (void*) &imageSize.width, "Width of the image", &status);
     fits_update_key(_file, TINT, "IMAGEH", (void*) &imageSize.height, "Height of the image", &status);
+
+    return (status == 0);
+}
+
+//-----------------------------------------------------------------------------
+
+bool FITS::write(
+    const point_list_t& points, const std::string& name, bool overwrite
+)
+{
+    int status = 0;
+    bool tableExisting = false;
+
+    // Does the table already exist?
+    if (!name.empty())
+    {
+        fits_movnam_hdu(_file, BINARY_TBL, (char*) name.c_str(), 0, &status);
+        if (status == 0)
+        {
+            if (!overwrite)
+                return false;
+
+            long nrows;
+            fits_get_num_rows(_file, &nrows, &status);
+            fits_delete_rows(_file, 1, nrows, &status);
+            fits_insert_rows(_file, 0, points.size(), &status);
+
+            if (status != 0)
+                return false;
+
+            tableExisting = true;
+        }
+
+        status = 0;
+    }
+
+    // Creates the table if necessary
+    if (!tableExisting)
+    {
+        const char* ttype[] = {"X", "Y"};
+        const char* tform[] = {"D", "D"};
+        const char* tunit[] = {"pix", "pix"};
+
+        fits_create_tbl(
+            _file, BINARY_TBL, points.size(), 2, (char**) ttype, (char**) tform, (char**) tunit,
+            (name.empty() ? nullptr : name.c_str()), &status
+        );
+    }
+
+    // Save the points in the table
+    const point_t* src = points.data();
+    for (size_t i = 1; i <= points.size(); ++i)
+    {
+        fits_write_col(_file, TDOUBLE, 1, i, 1, 1, (void*) &src->x, &status);
+        fits_write_col(_file, TDOUBLE, 2, i, 1, 1, (void*) &src->y, &status);
+        ++src;
+    }
+
+    // Save the other data
+    fits_update_key(_file, TSTRING, "DATATYPE", (void*) "POINTS", "", &status);
+
+    return (status == 0);
+}
+
+//-----------------------------------------------------------------------------
+
+bool FITS::write(
+    const Transformation& transformation, const std::string& name, bool overwrite
+)
+{
+    int status = 0;
+    bool tableExisting = false;
+
+    // Does the table already exist?
+    if (!name.empty())
+    {
+        fits_movnam_hdu(_file, BINARY_TBL, (char*) name.c_str(), 0, &status);
+        if (status == 0)
+        {
+            if (!overwrite)
+                return false;
+
+            tableExisting = true;
+        }
+
+        status = 0;
+    }
+
+    // Creates the table if necessary
+    if (!tableExisting)
+    {
+        fits_create_tbl(
+            _file, BINARY_TBL, 0, 0, nullptr, nullptr, nullptr,
+            (name.empty() ? nullptr : name.c_str()), &status
+        );
+    }
+
+    fits_update_key(_file, TSTRING, "DATATYPE", (void*) "TRANSFORMS", "", &status);
+    fits_update_key(_file, TDOUBLE, "A0", (void*) &transformation.a0, "", &status);
+    fits_update_key(_file, TDOUBLE, "A1", (void*) &transformation.a1, "", &status);
+    fits_update_key(_file, TDOUBLE, "A2", (void*) &transformation.a2, "", &status);
+    fits_update_key(_file, TDOUBLE, "A3", (void*) &transformation.a3, "", &status);
+    fits_update_key(_file, TDOUBLE, "B0", (void*) &transformation.b0, "", &status);
+    fits_update_key(_file, TDOUBLE, "B1", (void*) &transformation.b1, "", &status);
+    fits_update_key(_file, TDOUBLE, "B2", (void*) &transformation.b2, "", &status);
+    fits_update_key(_file, TDOUBLE, "B3", (void*) &transformation.b3, "", &status);
+    fits_update_key(_file, TDOUBLE, "XWIDTH", (void*) &transformation.xWidth, "", &status);
+    fits_update_key(_file, TDOUBLE, "YWIDTH", (void*) &transformation.yWidth, "", &status);
 
     return (status == 0);
 }
@@ -350,10 +459,50 @@ star_list_t FITS::readStars(
 
 star_list_t FITS::readStars(int index, size2d_t* imageSize)
 {
-    if (!gotoHDU(index, BINARY_TBL))
+    if (!gotoHDU(index, BINARY_TBL, "STARS"))
         return star_list_t();
 
     return readStarsFromCurrentHDU(imageSize);
+}
+
+//-----------------------------------------------------------------------------
+
+point_list_t FITS::readPoints(const std::string& name)
+{
+    if (!gotoHDU(name, BINARY_TBL))
+        return point_list_t();
+
+    return readPointsFromCurrentHDU();
+}
+
+//-----------------------------------------------------------------------------
+
+point_list_t FITS::readPoints(int index)
+{
+    if (!gotoHDU(index, BINARY_TBL, "POINTS"))
+        return point_list_t();
+
+    return readPointsFromCurrentHDU();
+}
+
+//-----------------------------------------------------------------------------
+
+Transformation FITS::readTransformation(const std::string& name)
+{
+    if (!gotoHDU(name, BINARY_TBL))
+        return Transformation();
+
+    return readTransformationFromCurrentHDU();
+}
+
+//-----------------------------------------------------------------------------
+
+Transformation FITS::readTransformation(int index)
+{
+    if (!gotoHDU(index, BINARY_TBL, "TRANSFORMS"))
+        return Transformation();
+
+    return readTransformationFromCurrentHDU();
 }
 
 //-----------------------------------------------------------------------------
@@ -540,6 +689,54 @@ star_list_t FITS::readStarsFromCurrentHDU(size2d_t* imageSize)
 
 //-----------------------------------------------------------------------------
 
+point_list_t FITS::readPointsFromCurrentHDU()
+{
+    int status = 0;
+    point_list_t points;
+
+    long nrows;
+    fits_get_num_rows(_file, &nrows, &status);
+    if (status != 0)
+        return points;
+
+    // Load the points from the table
+    points.resize(nrows);
+
+    const point_t* dst = points.data();
+    for (size_t i = 1; i <= points.size(); ++i)
+    {
+        fits_read_col(_file, TDOUBLE, 1, i, 1, 1, nullptr, (void*) &dst->x, nullptr, &status);
+        fits_read_col(_file, TDOUBLE, 2, i, 1, 1, nullptr, (void*) &dst->y, nullptr, &status);
+        ++dst;
+    }
+
+    return points;
+}
+
+//-----------------------------------------------------------------------------
+
+Transformation FITS::readTransformationFromCurrentHDU()
+{
+    int status = 0;
+    Transformation transformation;
+
+    // Load the transformation from the hdu
+    fits_read_key(_file, TDOUBLE, "A0", (void*) &transformation.a0, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "A1", (void*) &transformation.a1, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "A2", (void*) &transformation.a2, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "A3", (void*) &transformation.a3, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "B0", (void*) &transformation.b0, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "B1", (void*) &transformation.b1, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "B2", (void*) &transformation.b2, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "B3", (void*) &transformation.b3, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "XWIDTH", (void*) &transformation.xWidth, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "YWIDTH", (void*) &transformation.yWidth, nullptr, &status);
+
+    return transformation;
+}
+
+//-----------------------------------------------------------------------------
+
 bool FITS::gotoHDU(const std::string& name, int type)
 {
     int status = 0;
@@ -572,7 +769,7 @@ bool FITS::gotoHDU(const std::string& name, int type)
 
 //-----------------------------------------------------------------------------
 
-bool FITS::gotoHDU(int index, int type)
+bool FITS::gotoHDU(int index, int type, const std::string& datatype)
 {
     int status = 0;
 
@@ -580,6 +777,7 @@ bool FITS::gotoHDU(int index, int type)
     int nb = nbHDUs();
     int nbHDUs = 0;
     int hduType = ANY_HDU;
+    char buffer[50];
 
     for (int i = 1; i <= nb; ++i)
     {
@@ -589,6 +787,16 @@ bool FITS::gotoHDU(int index, int type)
         
         if ((hduType == type) || (type == ANY_HDU))
         {
+            if (!datatype.empty())
+            {
+                fits_read_key(_file, TSTRING, "DATATYPE", (void*) buffer, nullptr, &status);
+                if (status != 0)
+                    continue;
+
+                if (datatype != buffer)
+                    continue;
+            }
+
             ++nbHDUs;
             if (nbHDUs == index + 1)
                 return true;

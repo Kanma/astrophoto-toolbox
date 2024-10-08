@@ -43,7 +43,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 void showUsage(const std::string& strApplicationName)
 {
     cout << "search-in-catalog" << endl
-         << "Usage: " << strApplicationName << "[options] <pattern>" << endl
+         << "Usage: " << strApplicationName << " [options] <pattern>" << endl
          << endl
          << "Search in the catalog of Deep-Space Objects for objects matching a pattern." << endl
          << endl

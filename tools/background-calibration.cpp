@@ -54,7 +54,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 void showUsage(const std::string& strApplicationName)
 {
     cout << "raw2img" << endl
-         << "Usage: " << strApplicationName << "<--fits | --raw> <reference> <image> <output>" << endl
+         << "Usage: " << strApplicationName << " [options] <--fits | --raw> <reference> <image> <output>" << endl
          << endl
          << "This program convert a RAW image file into a FITS, PPM or PGM one." << endl
          << endl
@@ -248,7 +248,7 @@ int main(int argc, char** argv)
     if (bitmap2 != bitmap)
         delete bitmap;
 
-    BackgroundCalibration calibration;
+    BackgroundCalibration<DoubleColorBitmap> calibration;
     calibration.setReference(reference2);
     calibration.calibrate(bitmap2);
 

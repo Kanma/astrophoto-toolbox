@@ -46,7 +46,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 void showUsage(const std::string& strApplicationName)
 {
     cout << "compute-translation" << endl
-         << "Usage: " << strApplicationName << "[options] <starlist1> <starlist2>" << endl
+         << "Usage: " << strApplicationName << " [options] <starlist1> <starlist2>" << endl
          << endl
          << "Compute the translation between two FITS files containing approximately the same stars." << endl
          << endl

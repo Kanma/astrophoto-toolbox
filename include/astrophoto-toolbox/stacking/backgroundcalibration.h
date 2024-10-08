@@ -24,28 +24,45 @@ namespace stacking {
     /// This class is a reimplementation of the relevant parts of DeepSkyStacker's
     /// 'BackgroundCalibration' class, adapted to astrophoto-toolbox needs.
     //------------------------------------------------------------------------------------
+    template<class BITMAP>
     class BackgroundCalibration
     {
     public:
         //--------------------------------------------------------------------------------
         /// @brief  Set the bitmap to use as the reference during the calibration
         //--------------------------------------------------------------------------------
-        void setReference(DoubleColorBitmap* bitmap);
+        void setReference(BITMAP* bitmap) requires(BITMAP::Channels == 3);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Set the bitmap to use as the reference during the calibration
+        //--------------------------------------------------------------------------------
+        void setReference(BITMAP* bitmap) requires(BITMAP::Channels == 1);
 
         //--------------------------------------------------------------------------------
         /// @brief  Apply background calibration to a bitmap
         ///
         /// Note that the reference must have been set!
         //--------------------------------------------------------------------------------
-        void calibrate(DoubleColorBitmap* bitmap) const;
+        void calibrate(BITMAP* bitmap) const requires(BITMAP::Channels == 3);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Apply background calibration to a bitmap
+        ///
+        /// Note that the reference must have been set!
+        //--------------------------------------------------------------------------------
+        void calibrate(BITMAP* bitmap) const requires(BITMAP::Channels == 1);
 
 
     private:
         void computeParameters(
-            DoubleColorBitmap* bitmap,
+            const BITMAP* bitmap,
             double& redBackground, double& greenBackground, double& blueBackground,
             double& redMax, double& greenMax, double& blueMax
-        ) const;
+        ) const requires(BITMAP::Channels == 3);
+
+        void computeParameters(
+            const BITMAP* bitmap, double& background, double& max
+        ) const requires(BITMAP::Channels == 1);
 
 
     private:
@@ -60,3 +77,6 @@ namespace stacking {
 
 }
 }
+
+
+#include <astrophoto-toolbox/stacking/backgroundcalibration.hpp>

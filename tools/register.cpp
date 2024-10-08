@@ -71,7 +71,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 void showUsage(const std::string& strApplicationName)
 {
     cout << "register" << endl
-         << "Usage: " << strApplicationName << "[options] <--fits | --raw> <image>" << endl
+         << "Usage: " << strApplicationName << " [options] <--fits | --raw> <image>" << endl
          << endl
          << "Detect the stars in a FITS or RAW image." << endl
          << endl
@@ -90,7 +90,7 @@ void showUsage(const std::string& strApplicationName)
          << "    --raw             Indicates that the image is a RAW one" << endl
          << "    -o FILE           FITS file into which write the coordinates (default: the input FITS" << endl
          << "                      image if applicable)" << endl
-         << "    --no-an-keywords  Do not write astrometry.net specific keywords in the file (included " << endl
+         << "    --no-an-keywords  Do not write astrometry.net specific keywords in the file (included by" << endl
          << "                      default, for compatibility)" << endl
 
 #ifdef ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING

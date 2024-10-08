@@ -29,6 +29,24 @@ astrophototoolbox::point_t Transformation::transform(const point_t& pt) const no
     return result;
 }
 
+//-----------------------------------------------------------------------------
+
+rect_t Transformation::transform(const rect_t& rect) const noexcept
+{
+    point_t p0 = transform(point_t(rect.left, rect.top));
+    point_t p1 = transform(point_t(rect.right, rect.top));
+    point_t p2 = transform(point_t(rect.left, rect.bottom));
+    point_t p3 = transform(point_t(rect.right, rect.bottom));
+
+    return rect_t(
+        std::min({ p0.x, p1.x, p2.x, p3.x }),
+        std::min({ p0.y, p1.y, p2.y, p3.y }),
+        std::max({ p0.x, p1.x, p2.x, p3.x }),
+        std::max({ p0.y, p1.y, p2.y, p3.y })
+    );
+}
+
+//-----------------------------------------------------------------------------
 
 double Transformation::angle(int width) const noexcept
 {
@@ -45,6 +63,7 @@ double Transformation::angle(int width) const noexcept
     return angle;
 }
 
+//-----------------------------------------------------------------------------
 
 void Transformation::offsets(double& dX, double& dY) const noexcept
 {

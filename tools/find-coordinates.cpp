@@ -57,7 +57,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 void showUsage(const std::string& strApplicationName)
 {
     cout << "find-coordinates" << endl
-         << "Usage: " << strApplicationName << "[options] <--fits | --raw> <file>" << endl
+         << "Usage: " << strApplicationName << " [options] <--fits | --raw> <file>" << endl
          << endl
          << "Determine the astronomical coordinates of a FITS or RAW file." << endl
          << endl

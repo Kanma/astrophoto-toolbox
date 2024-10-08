@@ -68,24 +68,6 @@ DoubleGrayBitmap* computeLuminanceBitmap(Bitmap* bitmap)
 
 //-----------------------------------------------------------------------------
 
-double computeMedian(DoubleGrayBitmap* bitmap)
-{
-    // Compute the histogram of the bitmap
-    histogram_t histogram;
-    computeHistogram(bitmap, histogram);
-
-    // Compute the median
-    const size_t nbTotalValues = bitmap->width() * bitmap->height() / 2;
-    size_t nbValues = 0;
-    size_t index = 0;
-    while (nbValues < nbTotalValues)
-        nbValues += histogram[index++];
-
-    return double(index) / 65535.0;
-}
-
-//-----------------------------------------------------------------------------
-
 void removeHotPixels(Bitmap* bitmap)
 {
     const double hotFactor = 4.0;

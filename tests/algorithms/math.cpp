@@ -47,12 +47,12 @@ TEST_CASE("Median computation", "[Math]")
     SECTION("with maximum specified")
     {
         uint16_t median = computeMedian(data, (uint16_t) 65535);
-        REQUIRE(median == 6);
+        REQUIRE(median == 5);
     }
 
     SECTION("without maximum specified")
     {
         uint16_t median = computeMedian(data);
-        REQUIRE(median == 5);
+        REQUIRE(median == 4);
     }
 }

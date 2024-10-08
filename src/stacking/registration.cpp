@@ -51,7 +51,7 @@ struct searchEntry_t {
 
 const star_list_t Registration::registerBitmap(Bitmap* bitmap) const
 {
-    DoubleGrayBitmap *luminance = computeLuminanceBitmap(bitmap);
+    DoubleGrayBitmap* luminance = computeLuminanceBitmap(bitmap);
     double median = computeMedian(luminance);
 
     const int rectSize = STARMAXSIZE * 5;
@@ -68,6 +68,7 @@ const star_list_t Registration::registerBitmap(Bitmap* bitmap) const
     int luminancyThreshold = 10;
     std::set<searchEntry_t> searchGrid;
     star_list_t stars;
+    bool found = false;
 
     while (true)
     {
@@ -97,6 +98,12 @@ const star_list_t Registration::registerBitmap(Bitmap* bitmap) const
             }
         }
 
+        if (found)
+        {
+            stars.assign(foundStars.cbegin(), foundStars.cend());
+            break;
+        }
+
         searchEntry_t searchentry{ luminancyThreshold, nbStars };
 
         if (nbStars > 100)
@@ -123,8 +130,16 @@ const star_list_t Registration::registerBitmap(Bitmap* bitmap) const
 
         if (searchentry.luminancyThreshold == luminancyThreshold)
         {
-            stars.assign(foundStars.cbegin(), foundStars.cend());
-            break;
+            if (nbStars < 20)
+            {
+                --luminancyThreshold;
+                found = true;
+            }
+            else
+            {
+                stars.assign(foundStars.cbegin(), foundStars.cend());
+                break;
+            }
         }
     }
 

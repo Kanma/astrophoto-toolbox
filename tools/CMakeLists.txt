@@ -18,6 +18,9 @@ target_link_libraries(search-in-catalog PRIVATE astrophoto-toolbox)
 add_executable(background-calibration background-calibration.cpp)
 target_link_libraries(background-calibration PRIVATE astrophoto-toolbox)
 
+add_executable(stack stack.cpp)
+target_link_libraries(stack PRIVATE astrophoto-toolbox)
+
 if (ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING)
     add_executable(find-coordinates find-coordinates.cpp)
     target_link_libraries(find-coordinates PRIVATE astrophoto-toolbox)
