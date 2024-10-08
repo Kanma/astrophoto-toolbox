@@ -51,6 +51,7 @@ endif()
 set(ENABLE_JASPER OFF CACHE BOOL "" FORCE)
 set(LIBRAW_PATH "${FETCHCONTENT_BASE_DIR}/libraw-src/" CACHE STRING "" FORCE)
 
+set(LIBRRAW_CMAKE_PATCH git apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patches/libraw-cmake.patch)
 
 # Fetch the repositories
 FetchContent_Declare(
@@ -63,6 +64,8 @@ FetchContent_Declare(
     LibRaw-cmake
     GIT_REPOSITORY https://github.com/LibRaw/LibRaw-cmake.git
     GIT_TAG "eb98e4325aef2ce85d2eb031c2ff18640ca616d3"
+    PATCH_COMMAND ${LIBRRAW_CMAKE_PATCH}
+    UPDATE_DISCONNECTED 1
 )
 
 FetchContent_Declare(
@@ -81,5 +84,4 @@ target_link_libraries(cfitsio zlibstatic)
 
 # Disable warnings in our dependencies
 target_compile_options(raw PRIVATE "-w")
-target_compile_options(raw_r PRIVATE "-w")
 target_compile_options(cfitsio PRIVATE "-w")

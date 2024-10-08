@@ -1,0 +1,299 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d3faf24..46202c2 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -532,20 +532,20 @@ set_target_properties(raw PROPERTIES COMPILE_PDB_NAME "raw")
+ 
+ # -- Dedicated libraw target to support multi-threading ---------------------------------------------
+ 
+-set(libraw_r_LIB_SRCS ${libraw_LIB_SRCS})
++# set(libraw_r_LIB_SRCS ${libraw_LIB_SRCS})
+ 
+-add_library(raw_r ${libraw_r_LIB_SRCS})
+-add_library(libraw::libraw_r ALIAS raw_r)
++# add_library(raw_r ${libraw_r_LIB_SRCS})
++# add_library(libraw::libraw_r ALIAS raw_r)
+ 
+-# Flag to export library symbols
+-if(WIN32)
+-    target_compile_definitions(raw_r PRIVATE LIBRAW_BUILDLIB)
+-endif()
++# # Flag to export library symbols
++# if(WIN32)
++#     target_compile_definitions(raw_r PRIVATE LIBRAW_BUILDLIB)
++# endif()
+ 
+-# Static builds use LIBRAW_NODLL:
+-if(NOT BUILD_SHARED_LIBS)
+-    target_compile_definitions(raw_r PUBLIC LIBRAW_NODLL)
+-endif()
++# # Static builds use LIBRAW_NODLL:
++# if(NOT BUILD_SHARED_LIBS)
++#     target_compile_definitions(raw_r PUBLIC LIBRAW_NODLL)
++# endif()
+ 
+ # Always build position-independent code (PIC), even when building Libraw as a
+ # static library so that shared libraries can link against it, not just
+@@ -553,135 +553,135 @@ endif()
+ # Use set_target_properties() not append_target_property() here as
+ # POSITION_INDEPENDENT_CODE is a binary ON/OFF switch.
+ set_target_properties(raw PROPERTIES POSITION_INDEPENDENT_CODE ON)
+-set_target_properties(raw_r PROPERTIES POSITION_INDEPENDENT_CODE ON)
+-
+-target_link_libraries(raw_r PUBLIC ${MATH_LIBRARY})
+-target_include_directories(raw_r
+-        PUBLIC
+-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libraw>
+-        $<BUILD_INTERFACE:${LIBRAW_PATH}>)
+-
+-if(WIN32)
+-    target_link_libraries(raw_r PUBLIC ws2_32)
+-endif()
+-
+-if(OPENMP_SUPPORT_CAN_BE_COMPILED)
+-    target_link_libraries(raw_r PUBLIC OpenMP::OpenMP_CXX)
+-    if(MINGW)
+-        target_compile_definitions(raw_r PRIVATE LIBRAW_FORCE_OPENMP)
+-    endif()
+-endif()
+-
+-if(LCMS_SUPPORT_CAN_BE_COMPILED)
+-    target_link_libraries(raw_r PUBLIC ${LCMS2_LIBRARIES})
+-endif()
+-
+-if(ZLIB_FOUND)
+-    target_link_libraries(raw_r PUBLIC ZLIB::ZLIB)
+-endif()
+-
+-if(JPEG8_FOUND)
+-    target_link_libraries(raw_r PUBLIC JPEG::JPEG)
+-endif()
+-
+-if(JASPER_SUPPORT_CAN_BE_COMPILED)
+-    target_link_libraries(raw_r PUBLIC ${JASPER_LIBRARIES})
+-endif()
+-
+-if(RAWSPEED_SUPPORT_CAN_BE_COMPILED)
+-    target_link_libraries(raw_r PUBLIC ${LIBXML2_LIBRARIES} Threads::Threads)
+-endif()
+-
+-set_target_properties(raw_r PROPERTIES VERSION     ${RAW_LIB_SO_VERSION_STRING})
+-set_target_properties(raw_r PROPERTIES SOVERSION   ${RAW_LIB_SO_CUR_VERSION})
+-set_target_properties(raw_r PROPERTIES OUTPUT_NAME "raw_r")
+-set_target_properties(raw_r PROPERTIES COMPILE_PDB_NAME "raw_r")
++# set_target_properties(raw_r PROPERTIES POSITION_INDEPENDENT_CODE ON)
++
++# target_link_libraries(raw_r PUBLIC ${MATH_LIBRARY})
++# target_include_directories(raw_r
++#         PUBLIC
++#         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libraw>
++#         $<BUILD_INTERFACE:${LIBRAW_PATH}>)
++
++# if(WIN32)
++#     target_link_libraries(raw_r PUBLIC ws2_32)
++# endif()
++
++# if(OPENMP_SUPPORT_CAN_BE_COMPILED)
++#     target_link_libraries(raw_r PUBLIC OpenMP::OpenMP_CXX)
++#     if(MINGW)
++#         target_compile_definitions(raw_r PRIVATE LIBRAW_FORCE_OPENMP)
++#     endif()
++# endif()
++
++# if(LCMS_SUPPORT_CAN_BE_COMPILED)
++#     target_link_libraries(raw_r PUBLIC ${LCMS2_LIBRARIES})
++# endif()
++
++# if(ZLIB_FOUND)
++#     target_link_libraries(raw_r PUBLIC ZLIB::ZLIB)
++# endif()
++
++# if(JPEG8_FOUND)
++#     target_link_libraries(raw_r PUBLIC JPEG::JPEG)
++# endif()
++
++# if(JASPER_SUPPORT_CAN_BE_COMPILED)
++#     target_link_libraries(raw_r PUBLIC ${JASPER_LIBRARIES})
++# endif()
++
++# if(RAWSPEED_SUPPORT_CAN_BE_COMPILED)
++#     target_link_libraries(raw_r PUBLIC ${LIBXML2_LIBRARIES} Threads::Threads)
++# endif()
++
++# set_target_properties(raw_r PROPERTIES VERSION     ${RAW_LIB_SO_VERSION_STRING})
++# set_target_properties(raw_r PROPERTIES SOVERSION   ${RAW_LIB_SO_CUR_VERSION})
++# set_target_properties(raw_r PROPERTIES OUTPUT_NAME "raw_r")
++# set_target_properties(raw_r PROPERTIES COMPILE_PDB_NAME "raw_r")
+ 
+ # -- Files to install -------------------------------------------------------------------------------------
+-if (LIBRAW_INSTALL)
+-    # Configure and install data file for packaging.
+-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/data/libraw.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libraw.pc @ONLY)
+-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libraw.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-
+-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/data/libraw_r.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libraw_r.pc @ONLY)
+-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libraw_r.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-
+-    # Install Shared header files.
+-    install(FILES       ${LIBRAW_PATH}/libraw/libraw.h
+-                        ${LIBRAW_PATH}/libraw/libraw_alloc.h
+-                        ${LIBRAW_PATH}/libraw/libraw_const.h
+-                        ${LIBRAW_PATH}/libraw/libraw_datastream.h
+-                        ${LIBRAW_PATH}/libraw/libraw_internal.h
+-                        ${LIBRAW_PATH}/libraw/libraw_types.h
+-                        ${LIBRAW_PATH}/libraw/libraw_version.h
+-                        ${CMAKE_CURRENT_BINARY_DIR}/libraw_config.h
+-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libraw
+-            COMPONENT   Devel
+-           )
+-
+-    # Install Shared binary files.
+-    install(TARGETS raw raw_r
+-            EXPORT ${PROJECT_NAME}Targets
+-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-           )
+-
+-
+-    if(NOT BUILD_SHARED_LIBS AND "${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
+-        message("ClangCl does not support pdb generation with static libraries")
+-    elseif(MSVC)
+-        install(FILES ${PROJECT_BINARY_DIR}/raw.pdb ${PROJECT_BINARY_DIR}/raw_r.pdb
+-                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-                CONFIGURATIONS Debug RelWithDebInfo
+-               )
+-    endif()
+-
+-    # Install find cmake script to the system for client applications.
+-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindLibRaw.cmake
+-            DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/libraw)
+-
+-    # Install doc data files.
+-    if(NOT MSVC)
+-        install(FILES       ${LIBRAW_PATH}/COPYRIGHT
+-                            ${LIBRAW_PATH}/LICENSE.CDDL
+-                            ${LIBRAW_PATH}/LICENSE.LGPL
+-                            ${LIBRAW_PATH}/Changelog.txt
+-                DESTINATION ${CMAKE_INSTALL_DOCDIR}
+-                COMPONENT main
+-               )
+-    endif()
+-
+-    # Uninstall rules
+-    if(LIBRAW_UNINSTALL_TARGET)
+-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/Uninstall.cmake ${CMAKE_BINARY_DIR}/cmake_uninstall.cmake COPYONLY)
+-        add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_BINARY_DIR}/cmake_uninstall.cmake")
+-    endif()
+-
+-    # Export the package for use from the build tree
+-    export(TARGETS raw raw_r
+-        NAMESPACE libraw:: FILE cmake/${PROJECT_NAME}Targets.cmake)
+-    export(PACKAGE ${PROJECT_NAME})
+-
+-    include(CMakePackageConfigHelpers)
+-    write_basic_package_version_file(
+-        cmake/${PROJECT_NAME}ConfigVersion.cmake
+-        VERSION ${PROJECT_VERSION}
+-        COMPATIBILITY AnyNewerVersion)
+-
+-    configure_package_config_file(
+-        cmake/${PROJECT_NAME}Config.cmake.in
+-        cmake/${PROJECT_NAME}Config.cmake
+-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/)
+-
+-    install(FILES
+-        ${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake
+-        ${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake
+-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/)
+-
+-    install(EXPORT ${PROJECT_NAME}Targets
+-        NAMESPACE libraw:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/)
+-endif(LIBRAW_INSTALL)
++# if (LIBRAW_INSTALL)
++#     # Configure and install data file for packaging.
++#     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/data/libraw.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libraw.pc @ONLY)
++#     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libraw.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
++
++#     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/data/libraw_r.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libraw_r.pc @ONLY)
++#     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libraw_r.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
++
++#     # Install Shared header files.
++#     install(FILES       ${LIBRAW_PATH}/libraw/libraw.h
++#                         ${LIBRAW_PATH}/libraw/libraw_alloc.h
++#                         ${LIBRAW_PATH}/libraw/libraw_const.h
++#                         ${LIBRAW_PATH}/libraw/libraw_datastream.h
++#                         ${LIBRAW_PATH}/libraw/libraw_internal.h
++#                         ${LIBRAW_PATH}/libraw/libraw_types.h
++#                         ${LIBRAW_PATH}/libraw/libraw_version.h
++#                         ${CMAKE_CURRENT_BINARY_DIR}/libraw_config.h
++#             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libraw
++#             COMPONENT   Devel
++#            )
++
++#     # Install Shared binary files.
++#     install(TARGETS raw raw_r
++#             EXPORT ${PROJECT_NAME}Targets
++#             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++#             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++#             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++#            )
++
++
++#     if(NOT BUILD_SHARED_LIBS AND "${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
++#         message("ClangCl does not support pdb generation with static libraries")
++#     elseif(MSVC)
++#         install(FILES ${PROJECT_BINARY_DIR}/raw.pdb ${PROJECT_BINARY_DIR}/raw_r.pdb
++#                 DESTINATION ${CMAKE_INSTALL_LIBDIR}
++#                 CONFIGURATIONS Debug RelWithDebInfo
++#                )
++#     endif()
++
++#     # Install find cmake script to the system for client applications.
++#     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindLibRaw.cmake
++#             DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/libraw)
++
++#     # Install doc data files.
++#     if(NOT MSVC)
++#         install(FILES       ${LIBRAW_PATH}/COPYRIGHT
++#                             ${LIBRAW_PATH}/LICENSE.CDDL
++#                             ${LIBRAW_PATH}/LICENSE.LGPL
++#                             ${LIBRAW_PATH}/Changelog.txt
++#                 DESTINATION ${CMAKE_INSTALL_DOCDIR}
++#                 COMPONENT main
++#                )
++#     endif()
++
++#     # Uninstall rules
++#     if(LIBRAW_UNINSTALL_TARGET)
++#         configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/Uninstall.cmake ${CMAKE_BINARY_DIR}/cmake_uninstall.cmake COPYONLY)
++#         add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_BINARY_DIR}/cmake_uninstall.cmake")
++#     endif()
++
++#     # Export the package for use from the build tree
++#     export(TARGETS raw raw_r
++#         NAMESPACE libraw:: FILE cmake/${PROJECT_NAME}Targets.cmake)
++#     export(PACKAGE ${PROJECT_NAME})
++
++#     include(CMakePackageConfigHelpers)
++#     write_basic_package_version_file(
++#         cmake/${PROJECT_NAME}ConfigVersion.cmake
++#         VERSION ${PROJECT_VERSION}
++#         COMPATIBILITY AnyNewerVersion)
++
++#     configure_package_config_file(
++#         cmake/${PROJECT_NAME}Config.cmake.in
++#         cmake/${PROJECT_NAME}Config.cmake
++#         INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/)
++
++#     install(FILES
++#         ${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake
++#         ${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake
++#         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/)
++
++#     install(EXPORT ${PROJECT_NAME}Targets
++#         NAMESPACE libraw:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/)
++# endif(LIBRAW_INSTALL)
+ 
+ # -- Compile LibRaw Examples --------------------------------------------------------------------------------
+ 
