@@ -52,6 +52,7 @@ set(ENABLE_JASPER OFF CACHE BOOL "" FORCE)
 set(LIBRAW_PATH "${FETCHCONTENT_BASE_DIR}/libraw-src/" CACHE STRING "" FORCE)
 
 set(LIBRRAW_CMAKE_PATCH git apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patches/libraw-cmake.patch)
+set(CFITSIO_PATCH git apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patches/cfitsio.patch)
 
 # Fetch the repositories
 FetchContent_Declare(
@@ -72,6 +73,8 @@ FetchContent_Declare(
     cfitsio
     GIT_REPOSITORY https://github.com/HEASARC/cfitsio.git
     GIT_TAG "6ba7e3319c02c0831c860c37212f37f37a726cce" # aka "cfitsio4_4_1_20240617"
+    PATCH_COMMAND ${CFITSIO_PATCH}
+    UPDATE_DISCONNECTED 1
 )
 
 FetchContent_MakeAvailable(LibRaw LibRaw-cmake cfitsio)
