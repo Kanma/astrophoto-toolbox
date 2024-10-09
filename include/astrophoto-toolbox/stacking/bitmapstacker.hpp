@@ -7,9 +7,9 @@
  *
  * This file is essentially a reimplementation of parts of 'DeepSkyStacker',
  * which is released under a BSD 3-Clause license,
- * Copyright (c) 2006-2019, LucCoiffier 
- * Copyright (c) 2018-2023, 
- *      David C. Partridge, Tony Cook, Mat Draper, 
+ * Copyright (c) 2006-2019, LucCoiffier
+ * Copyright (c) 2018-2023,
+ *      David C. Partridge, Tony Cook, Mat Draper,
  *      Simon C. Smith, Vitali Pelenjow, Michal Schulz, Martin Toeltsch
 */
 
@@ -180,11 +180,11 @@ void BitmapStacker<BITMAP>::stack(
 {
     const int nbRows = endRow - startRow + 1;
 
-    std::vector<typename BITMAP::type_t*> srcRows(nbBitmaps, nullptr);
+    std::vector<typename BITMAP::type_t*> srcRows(nbAddedBitmaps, nullptr);
 
     for (unsigned int row = startRow; row <= endRow; ++row)
     {
-        for (size_t k = 0, offset = (row - startRow) * nbRowElements; k < nbBitmaps; ++k)
+        for (size_t k = 0, offset = (row - startRow) * nbRowElements; k < nbAddedBitmaps; ++k)
         {
             srcRows[k] = buffer + offset;
             offset += nbRows * nbRowElements;

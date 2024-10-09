@@ -9,6 +9,7 @@
 #pragma once
 
 #include <astrophoto-toolbox/images/bitmap.h>
+#include <astrophoto-toolbox/images/raw.h>
 #include <astrophoto-toolbox/data/point.h>
 #include <astrophoto-toolbox/data/star.h>
 #include <astrophoto-toolbox/data/transformation.h>
@@ -160,10 +161,12 @@ namespace stacking {
         void invalidateDarks();
         void invalidateLights();
 
+        const std::string getCalibratedFilename(const std::string& path);
+
         BITMAP* loadBitmap(
             const std::filesystem::path& path, point_list_t* hotPixels = nullptr,
             star_list_t* stars = nullptr, Transformation* transformation = nullptr
-        ) const;
+        );
 
         bool saveBitmap(
             BITMAP* bitmap, const std::filesystem::path& path,
@@ -185,6 +188,7 @@ namespace stacking {
         bool lightFramesCalibrated = false;
         size_t nbLightFramesCalibrated = 0;
 
+        RawImage rawImage;
         BitmapStacker<BITMAP> stacker;
     };
 

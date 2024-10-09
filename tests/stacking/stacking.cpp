@@ -25,6 +25,8 @@ TEST_CASE("Stacking initialisation", "[Stacking]")
 
     REQUIRE(stacking.nbLightFrames() == 0);
     REQUIRE(!stacking.hasReference());
+
+    REQUIRE(!stacking.process());
 }
 
 

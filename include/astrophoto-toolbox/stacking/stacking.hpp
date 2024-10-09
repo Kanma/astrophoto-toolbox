@@ -7,9 +7,9 @@
  *
  * This file is essentially a reimplementation of parts of 'DeepSkyStacker',
  * which is released under a BSD 3-Clause license,
- * Copyright (c) 2006-2019, LucCoiffier 
- * Copyright (c) 2018-2023, 
- *      David C. Partridge, Tony Cook, Mat Draper, 
+ * Copyright (c) 2006-2019, LucCoiffier
+ * Copyright (c) 2018-2023,
+ *      David C. Partridge, Tony Cook, Mat Draper,
  *      Simon C. Smith, Vitali Pelenjow, Michal Schulz, Martin Toeltsch
 */
 
@@ -21,7 +21,6 @@
 #include <astrophoto-toolbox/stacking/starmatcher.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/images/helpers.h>
-#include <astrophoto-toolbox/images/raw.h>
 #include <sstream>
 #include <fstream>
 
@@ -31,15 +30,6 @@ namespace stacking {
 
 static const char* CONFIG_FILE = "stacking.txt";
 static const char* MASTER_DARK = "master_dark.fits";
-
-//-----------------------------------------------------------------------------
-
-const std::string getCalibratedFilename(const std::string& path)
-{
-    std::string filename = std::filesystem::path(path).filename().string();
-    std::string extension = std::filesystem::path(path).extension().string();
-    return filename.replace(filename.find(extension), extension.size(), ".fits");
-};
 
 
 //-----------------------------------------------------------------------------
@@ -279,10 +269,11 @@ bool Stacking<BITMAP>::processLightFrames()
 
     BITMAP* bitmap = nullptr;
     star_list_t refStars;
-    
+
     if (std::filesystem::exists(path / getCalibratedFilename(lightFrames[referenceFrame])))
     {
         bitmap = loadBitmap(path / getCalibratedFilename(lightFrames[referenceFrame]), nullptr, &refStars);
+        calibration.setReference(bitmap);
     }
     else
     {
@@ -348,9 +339,15 @@ template<class BITMAP>
 BITMAP* Stacking<BITMAP>::process(unsigned int nbExpectedLightFrames)
 {
     if (!lightFramesCalibrated)
-        processLightFrames();
+    {
+        if (!processLightFrames())
+            return nullptr;
+    }
 
     std::filesystem::path path = folder / "calibrated" / "lights";
+
+    if (nbLightFramesCalibrated == 1)
+        return loadBitmap(path / getCalibratedFilename(lightFrames[0]));
 
     if (!stacker.isInitialised())
     {
@@ -607,10 +604,20 @@ void Stacking<BITMAP>::invalidateLights()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
+const std::string Stacking<BITMAP>::getCalibratedFilename(const std::string& path)
+{
+    std::string filename = std::filesystem::path(path).filename().string();
+    std::string extension = std::filesystem::path(path).extension().string();
+    return filename.replace(filename.find(extension), extension.size(), ".fits");
+};
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
 BITMAP* Stacking<BITMAP>::loadBitmap(
     const std::filesystem::path& path, point_list_t* hotPixels, star_list_t* stars,
     Transformation* transformation
-) const
+)
 {
     Bitmap* bitmap = nullptr;
 
@@ -637,15 +644,14 @@ BITMAP* Stacking<BITMAP>::loadBitmap(
     }
     else
     {
-        RawImage image;
-        if (image.open(filename))
+        if (rawImage.open(filename))
         {
-            if (image.channels() == 3)
+            if (rawImage.channels() == 3)
                 bitmap = new UInt16ColorBitmap();
             else
                 bitmap = new UInt16GrayBitmap();
 
-            if (!image.toBitmap(bitmap, true))
+            if (!rawImage.toBitmap(bitmap, true))
             {
                 delete bitmap;
                 bitmap = nullptr;
