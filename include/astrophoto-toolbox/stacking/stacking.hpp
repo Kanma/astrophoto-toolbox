@@ -52,6 +52,7 @@ void Stacking<BITMAP>::setup(const std::filesystem::path& folder)
     referenceFrame = -1;
     lightFramesCalibrated = false;
     nbLightFramesCalibrated = 0;
+    nbLightFramesUnusable = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -59,6 +60,8 @@ void Stacking<BITMAP>::setup(const std::filesystem::path& folder)
 template<class BITMAP>
 bool Stacking<BITMAP>::load()
 {
+    loading = true;
+
     clear();
 
     darkFrames.clear();
@@ -94,6 +97,8 @@ bool Stacking<BITMAP>::load()
                 addLightFrame(line);
         }
     }
+
+    loading = false;
 
     return true;
 }
@@ -138,7 +143,8 @@ bool Stacking<BITMAP>::save() const
 template<class BITMAP>
 bool Stacking<BITMAP>::addDarkFrame(const std::string& filename)
 {
-    invalidateDarks();
+    if (!loading)
+        invalidateDarks();
 
     std::filesystem::path path(filename);
     if (!path.is_absolute())
@@ -164,6 +170,7 @@ bool Stacking<BITMAP>::computeMasterDark()
 
     invalidateLights();
 
+    if (darkFrames.size() > 1)
     {
         BitmapStacker<BITMAP> stacker;
         stacker.setup(darkFrames.size(), folder / "tmp");
@@ -179,6 +186,10 @@ bool Stacking<BITMAP>::computeMasterDark()
         }
 
         masterDark = stacker.process();
+    }
+    else
+    {
+        masterDark = loadBitmap(darkFrames[0]);
     }
 
     std::filesystem::remove(folder / "tmp");
@@ -256,8 +267,18 @@ bool Stacking<BITMAP>::processLightFrames()
     if ((referenceFrame < 0) || (referenceFrame >= lightFrames.size()))
         return false;
 
-    if (!masterDark && hasMasterDark())
-        getMasterDark();
+    if (!masterDark)
+    {
+        if (hasMasterDark())
+        {
+            getMasterDark();
+        }
+        else if (!darkFrames.empty())
+        {
+            if (!computeMasterDark())
+                return false;
+        }
+    }
 
     std::filesystem::path path = folder / "calibrated" / "lights";
     std::filesystem::create_directories(path);
@@ -355,14 +376,17 @@ BITMAP* Stacking<BITMAP>::process(unsigned int nbExpectedLightFrames)
             (nbExpectedLightFrames == 0 ? lightFrames.size() : nbExpectedLightFrames),
             folder / "tmp"
         );
+
+        outputRect = rect_t(
+            0, 0, std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()
+        );
     }
 
     Transformation transformation;
-    rect_t rect(
-        0, 0, std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()
-    );
+    size_t nbStackedFrames = stacker.nbStackedBitmaps();
 
-    for (auto it = lightFrames.begin() + stacker.nbStackedBitmaps(); it != lightFrames.end(); ++it)
+    for (auto it = lightFrames.begin() + stacker.nbStackedBitmaps() + nbLightFramesUnusable;
+         it != lightFrames.end(); ++it)
     {
         const auto filename = *it;
 
@@ -372,32 +396,55 @@ BITMAP* Stacking<BITMAP>::process(unsigned int nbExpectedLightFrames)
 
         if (bitmap)
         {
-            auto* transformed = transformation.transform(bitmap);
-            stacker.addBitmap(transformed);
-
-            rect = rect.intersection(
-                transformation.transform(rect_t{ 0, 0, (int) bitmap->width(), (int) bitmap->height() })
+            rect_t transformedRect = transformation.transform(
+                rect_t{ 0, 0, (int) bitmap->width(), (int) bitmap->height() }
             );
 
+            if ((transformedRect.left < transformedRect.right) &&
+                (transformedRect.top < transformedRect.bottom))
+            {
+                auto* transformed = transformation.transform(bitmap);
+                stacker.addBitmap(transformed);
+
+                outputRect = outputRect.intersection(transformedRect);
+
+                delete transformed;
+            }
+            else
+            {
+                ++nbLightFramesUnusable;
+            }
+
             delete bitmap;
-            delete transformed;
         }
     }
 
-    BITMAP* stacked = stacker.process();
+    std::filesystem::path resultPath = folder / "stacked.fits";
 
-    BITMAP* result = new BITMAP(rect.width(), rect.height());
-    for (unsigned int y = 0; y < result->height(); ++y)
+    if (nbStackedFrames < stacker.nbStackedBitmaps())
     {
-        typename BITMAP::type_t* src = stacked->data(rect.left, rect.top + y);
-        typename BITMAP::type_t* dest = result->data(y);
+        BITMAP* stacked = stacker.process();
 
-        memcpy(dest, src, result->bytesPerRow());
+        BITMAP* result = new BITMAP(outputRect.width(), outputRect.height());
+        for (unsigned int y = 0; y < result->height(); ++y)
+        {
+            typename BITMAP::type_t* src = stacked->data(outputRect.left, outputRect.top + y);
+            typename BITMAP::type_t* dest = result->data(y);
+
+            memcpy(dest, src, result->bytesPerRow());
+        }
+
+        delete stacked;
+
+        if (std::filesystem::exists(resultPath))
+            std::filesystem::remove(resultPath);
+
+        saveBitmap(result, resultPath);
+
+        return result;
     }
 
-    delete stacked;
-
-    return result;
+    return loadBitmap(resultPath);
 }
 
 //-----------------------------------------------------------------------------
@@ -561,6 +608,7 @@ void Stacking<BITMAP>::clear()
 
     lightFramesCalibrated = false;
     nbLightFramesCalibrated = 0;
+    nbLightFramesUnusable = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -577,11 +625,7 @@ void Stacking<BITMAP>::clearMasterDark()
 template<class BITMAP>
 void Stacking<BITMAP>::invalidateDarks()
 {
-    delete masterDark;
-    masterDark = nullptr;
-
-    hotPixels.clear();
-
+    clearMasterDark();
     invalidateLights();
 }
 
@@ -599,6 +643,7 @@ void Stacking<BITMAP>::invalidateLights()
 
     lightFramesCalibrated = false;
     nbLightFramesCalibrated = 0;
+    nbLightFramesUnusable = 0;
 }
 
 //-----------------------------------------------------------------------------

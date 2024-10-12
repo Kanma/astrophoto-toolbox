@@ -12,7 +12,7 @@ target_include_directories(astrophoto-toolbox
 
 target_link_libraries(astrophoto-toolbox
     PUBLIC
-        libraw::libraw
+        libraw::libraw_r
         cfitsio
 )
 

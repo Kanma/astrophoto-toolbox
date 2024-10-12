@@ -55,6 +55,8 @@ TEST_CASE("Live stacking initialisation", "[Stacking]")
     REQUIRE(stacking.hasMasterDark());
 
     REQUIRE(!stacking.process());
+
+    REQUIRE(!std::filesystem::exists(TEMP_DIR "livestacking/stacked.fits"));
 }
 
 
@@ -92,10 +94,12 @@ TEST_CASE("Light stacking first frame", "[Stacking]")
     point = transformation.transform(point_t(200, 100));
     REQUIRE(point.x == Approx(200.0));
     REQUIRE(point.y == Approx(100.0));
+
+    REQUIRE(!std::filesystem::exists(TEMP_DIR "livestacking/stacked.fits"));
 }
 
 
-TEST_CASE("Light stacking second frame", "[Stacking]")
+TEST_CASE("Light stacking two more frames", "[Stacking]")
 {
     REQUIRE(std::filesystem::exists(TEMP_DIR "livestacking/stacking.txt"));
     REQUIRE(std::filesystem::exists(TEMP_DIR "livestacking/calibrated/lights/light1.fits"));
@@ -107,8 +111,9 @@ TEST_CASE("Light stacking second frame", "[Stacking]")
     REQUIRE(stacking.load());
 
     stacking.addLightFrame(DATA_DIR "downloads/light2.fits");
+    stacking.addLightFrame(DATA_DIR "downloads/light3.fits");
 
-    REQUIRE(stacking.nbLightFrames() == 2);
+    REQUIRE(stacking.nbLightFrames() == 3);
     REQUIRE(stacking.hasReference());
     REQUIRE(stacking.getReference() == 0);
 
@@ -128,4 +133,13 @@ TEST_CASE("Light stacking second frame", "[Stacking]")
     point = transformation.transform(point_t(200, 100));
     REQUIRE(point.x == Approx(216.529).margin(0.001));
     REQUIRE(point.y == Approx(98.799).margin(0.001));
+
+    readFile(TEMP_DIR "livestacking/calibrated/lights/light3.fits", stars, transformation);
+    REQUIRE(stars.size() == 34);
+
+    point = transformation.transform(point_t(200, 100));
+    REQUIRE(point.x == Approx(136.686).margin(0.001));
+    REQUIRE(point.y == Approx(196.510).margin(0.001));
+
+    REQUIRE(std::filesystem::exists(TEMP_DIR "livestacking/stacked.fits"));
 }

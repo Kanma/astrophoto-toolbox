@@ -86,5 +86,5 @@ target_link_libraries(cfitsio zlibstatic)
 
 
 # Disable warnings in our dependencies
-target_compile_options(raw PRIVATE "-w")
+target_compile_options(raw_r PRIVATE "-w")
 target_compile_options(cfitsio PRIVATE "-w")
