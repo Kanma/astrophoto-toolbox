@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * This file is essentially a reimplementation of parts of 'astrometry.net',
- * which is released under a BSD 3-Clause license (but using GPL dependencies),
+ * which is released under a BSD 3-Clause license,
  * Copyright (c) 2006-2015, Astrometry.net Developers.
 */
 
@@ -14,6 +14,7 @@
 #include <astrophoto-toolbox/images/helpers.h>
 #include <filesystem>
 #include <cmath>
+#include <iostream>
 
 extern "C" {
     #include <astrometry/image2xy.h>
@@ -26,9 +27,31 @@ using namespace astrophototoolbox;
 using namespace astrophototoolbox::platesolving;
 
 
+/************************************* CALLBACKS ***************************************/
+
+struct callback_data_t
+{
+    bool started = false;
+    time_t limit = 10;
+};
+
+//-----------------------------------------------------------------------------
+
 static anbool match_callback(MatchObj* mo, void* userdata)
 {
     return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+time_t timer_callback(void* userdata)
+{
+    callback_data_t* data = (callback_data_t*) userdata;
+
+    time_t limit = data->started ? 0 : data->limit;
+    data->started = true;
+
+    return limit;
 }
 
 
@@ -48,16 +71,17 @@ PlateSolver::~PlateSolver()
 
 /************************************** METHODS ****************************************/
 
-bool PlateSolver::run(Bitmap* bitmap, double minWidth, double maxWidth)
+bool PlateSolver::run(Bitmap* bitmap, double minWidth, double maxWidth, time_t limit)
 {
     return detectStars(bitmap, true, true) &&
-           solve(minWidth, maxWidth);
+           solve(minWidth, maxWidth, limit);
 }
 
 //-----------------------------------------------------------------------------
 
 bool PlateSolver::run(
-    const star_list_t& stars, const size2d_t& imageSize, double minWidth, double maxWidth
+    const star_list_t& stars, const size2d_t& imageSize, double minWidth, double maxWidth,
+    time_t limit
 )
 {
     setStars(stars, imageSize);
@@ -67,7 +91,7 @@ bool PlateSolver::run(
 
     cut();
 
-    return solve(minWidth, maxWidth);
+    return solve(minWidth, maxWidth, limit);
 }
 
 //-----------------------------------------------------------------------------
@@ -211,7 +235,7 @@ void PlateSolver::cut(unsigned int nb)
 
 //-----------------------------------------------------------------------------
 
-bool PlateSolver::solve(double minWidth, double maxWidth)
+bool PlateSolver::solve(double minWidth, double maxWidth, time_t limit)
 {
     coordinates = Coordinates();
     pixelScale = 0.0;
@@ -236,8 +260,12 @@ bool PlateSolver::solve(double minWidth, double maxWidth)
     solver->logratio_tokeep = log(1e9);
     solver->logratio_totune = log(1e6);
 
+    callback_data_t callback_data;
+    callback_data.limit = limit;
+
     solver->record_match_callback = match_callback;
-    solver->userdata = nullptr;
+    solver->timer_callback = timer_callback;
+    solver->userdata = &callback_data;
 
     solver->distance_from_quad_bonus = TRUE;
     solver->verify_dedup = FALSE;

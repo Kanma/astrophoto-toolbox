@@ -51,7 +51,10 @@ namespace platesolving {
         ///
         /// The method 'loadIndexes()' must have been called before this one.
         //--------------------------------------------------------------------------------
-        bool run(Bitmap* bitmap, double minWidth = 0.1, double maxWidth = 180.0);
+        bool run(
+            Bitmap* bitmap, double minWidth = 0.1, double maxWidth = 180.0,
+            time_t limit = 10
+        );
 
         //--------------------------------------------------------------------------------
         /// @brief  Perform plate solving on a list of stars
@@ -63,7 +66,7 @@ namespace platesolving {
         //--------------------------------------------------------------------------------
         bool run(
             const star_list_t& stars, const size2d_t& imageSize, double minWidth = 0.1,
-            double maxWidth = 180.0
+            double maxWidth = 180.0, time_t limit = 10
         );
 
         //--------------------------------------------------------------------------------
@@ -110,7 +113,7 @@ namespace platesolving {
         /// It is expected that the list of stars has been uniformized and cut
         /// appropriately.
         //--------------------------------------------------------------------------------
-        bool solve(double minWidth = 0.1, double maxWidth = 180.0);
+        bool solve(double minWidth = 0.1, double maxWidth = 180.0, time_t limit = 10);
 
         //--------------------------------------------------------------------------------
         /// @brief  Set the list of detected stars

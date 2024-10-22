@@ -54,11 +54,3 @@ tests but not run them automatically.
 ## License
 
 ```astrophoto-toolbox``` is licensed under a BSD 3-Clause license.
-
-**However**, plate-solving is using the *astrometry.net* source code, which altough
-being licensed under a BSD 3-Clause license too, requires some GPL dependencies.
-Consequently, the whole work must be distributed under the GPL version 3 or later.
-
-Should you not need the plate solving feature, you can disable it by setting the
-```ASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING``` option to ```OFF```, in which case
-the GPLv3 doesn't apply and everything remains under the BSD 3-Clause license.

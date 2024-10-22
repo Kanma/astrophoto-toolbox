@@ -15,9 +15,6 @@ jobs:
     strategy:
       fail-fast: false
 
-      matrix:
-        platesolving: ['with platesolving', 'without platesolving']
-
     steps:
     - uses: actions/checkout@v4
       with:
@@ -32,7 +29,6 @@ jobs:
     - name: Configure CMake
       run: |
         cmake -B ${{ steps.strings.outputs.build-output-dir }} \
-          -DASTROPHOTOTOOLBOX_INCLUDE_PLATESOLVING=${{ matrix.platesolving == 'with platesolving' }} \
           -DASTROPHOTOTOOLBOX_RUN_TESTS=OFF \
           -DENABLE_OPENMP=OFF \
           -DCMAKE_BUILD_TYPE=Release \

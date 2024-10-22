@@ -58,7 +58,7 @@ TEST_CASE("Adding bitmaps populates temporary files", "[BitmapStacker]")
         FILE* f = std::fopen((folder / filenames[j]).c_str(), "rb");
         REQUIRE(f);
 
-        fread(buffer, sizeof(double), WIDTH * NB_IMAGES * 3, f);
+        size_t nb = fread(buffer, sizeof(double), WIDTH * NB_IMAGES * 3, f);
         fclose(f);
 
         double* ptr = buffer;

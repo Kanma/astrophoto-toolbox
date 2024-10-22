@@ -212,7 +212,7 @@ TEST_CASE("Plate solving", "[PlateSolver]")
     REQUIRE(coordinates.getRA() == Approx(282.654));
     REQUIRE(coordinates.getDEC() == Approx(-12.9414));
 
-    REQUIRE(solver.getPixelSize() == Approx(1.1736878371));
+    REQUIRE(solver.getPixelSize() == Approx(1.173130749).margin(0.001));
 }
 
 

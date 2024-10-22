@@ -104,7 +104,7 @@ BITMAP* BitmapStacker<BITMAP>::process() const
             return nullptr;
         }
 
-        fread(buffer.data(), BITMAP::ChannelSize, bufferSize, f);
+        size_t nb = fread(buffer.data(), BITMAP::ChannelSize, bufferSize, f);
         fclose(f);
 
         stack(part.startRow, part.endRow, nbRowElements, buffer.data(), output);
