@@ -1,13 +1,11 @@
-set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-
-
 add_library(astrophoto-toolbox)
 
 target_include_directories(astrophoto-toolbox
     PUBLIC
-        ${INCLUDE_DIR}
+        ${PROJECT_SOURCE_DIR}/include
     PRIVATE
         ${FETCHCONTENT_BASE_DIR}/eigen3-src/
+        ${PROJECT_SOURCE_DIR}/dependencies
 )
 
 target_link_libraries(astrophoto-toolbox

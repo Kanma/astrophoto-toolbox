@@ -12,7 +12,7 @@
 
 #include <astrophoto-toolbox/images/raw.h>
 #include <astrophoto-toolbox/images/bitmap.h>
-#include <astrophoto-toolbox/images/pnm.h>
+#include <astrophoto-toolbox/images/io.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/stacking/backgroundcalibration.h>
@@ -56,7 +56,7 @@ void showUsage(const std::string& strApplicationName)
     cout << "raw2img" << endl
          << "Usage: " << strApplicationName << " [options] <--fits | --raw> <reference> <image> <output>" << endl
          << endl
-         << "This program convert a RAW image file into a FITS, PPM or PGM one." << endl
+         << "Perform background calibration on an image, given a reference image." << endl
          << endl
          << "Options:" << endl
          << "    --help, -h             Display this help" << endl
@@ -253,52 +253,9 @@ int main(int argc, char** argv)
     calibration.calibrate(bitmap2);
 
     // Save the image
-    std::string outputFilename(args.File(2));
-    if (outputFilename.ends_with(".fits"))
+    if (!astrophototoolbox::io::save(args.File(2), bitmap, true))
     {
-        // Save the FITS file
-        astrophototoolbox::FITS output;
-        if (std::ifstream(args.File(2)).good())
-        {
-            cerr << "The file '" << args.File(2) << "' already exists, can't overwrite it" << endl;
-            delete reference2;
-            delete bitmap2;
-            return 1;
-        }
-
-        if (!output.create(args.File(2)))
-        {
-            cerr << "Failed to create the FITS file '" << args.File(2) << "'" << endl;
-            delete reference2;
-            delete bitmap2;
-            return 1;
-        }
-
-        if (!output.write(bitmap2))
-        {
-            cerr << "Failed to add the image into the FITS file" << endl;
-            output.close();
-            delete reference2;
-            delete bitmap2;
-            return 1;
-        }
-
-        output.close();
-    }
-    else if (outputFilename.ends_with(".ppm") || outputFilename.ends_with(".pgm"))
-    {
-        // Save the PNM file
-        if (!astrophototoolbox::pnm::save(args.File(2), bitmap2))
-        {
-            cerr << "Failed to save the PNM file '" << args.File(2) << "'" << endl;
-            delete reference2;
-            delete bitmap2;
-            return 1;
-        }
-    }
-    else
-    {
-        cerr << "Unknown file format: '" << args.File(2) << "'" << endl;
+        cerr << "Failed to save the file '" << args.File(2) << "'" << endl;
         delete reference2;
         delete bitmap2;
         return 1;

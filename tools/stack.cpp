@@ -11,7 +11,7 @@
 #include <string>
 
 #include <astrophoto-toolbox/stacking/stacking.h>
-#include <astrophoto-toolbox/images/pnm.h>
+#include <astrophoto-toolbox/images/io.h>
 #include <astrophoto-toolbox/data/fits.h>
 
 using namespace std;
@@ -174,48 +174,9 @@ int main(int argc, char** argv)
 
 
     // Save the image
-    std::string outputFilename(args.File(1));
-    if (outputFilename.ends_with(".fits"))
+    if (!astrophototoolbox::io::save(args.File(1), bitmap, true))
     {
-        // Save the FITS file
-        astrophototoolbox::FITS output;
-        if (std::ifstream(args.File(1)).good())
-        {
-            cerr << "The file '" << args.File(1) << "' already exists, can't overwrite it" << endl;
-            delete bitmap;
-            return 1;
-        }
-
-        if (!output.create(args.File(1)))
-        {
-            cerr << "Failed to create the FITS file '" << args.File(1) << "'" << endl;
-            delete bitmap;
-            return 1;
-        }
-
-        if (!output.write(bitmap))
-        {
-            cerr << "Failed to add the image into the FITS file" << endl;
-            output.close();
-            delete bitmap;
-            return 1;
-        }
-
-        output.close();
-    }
-    else if (outputFilename.ends_with(".ppm") || outputFilename.ends_with(".pgm"))
-    {
-        // Save the PNM file
-        if (!astrophototoolbox::pnm::save(args.File(1), bitmap))
-        {
-            cerr << "Failed to save the PNM file '" << args.File(1) << "'" << endl;
-            delete bitmap;
-            return 1;
-        }
-    }
-    else
-    {
-        cerr << "Unknown file format: '" << args.File(1) << "'" << endl;
+        cerr << "Failed to save the file '" << args.File(1) << "'" << endl;
         delete bitmap;
         return 1;
     }

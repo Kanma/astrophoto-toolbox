@@ -114,11 +114,13 @@ bool RawImage::toBitmap(Bitmap* bitmap, bool useCameraWhiteBalance, bool linear)
     {
         _processor.imgdata.params.gamm[0] = 1.0;
         _processor.imgdata.params.gamm[1] = 1.0;
+        bitmap->setSpace(SPACE_LINEAR, false);
     }
     else
     {
         _processor.imgdata.params.gamm[0] = 1.0 / 2.4;
         _processor.imgdata.params.gamm[1] = 12.92;
+        bitmap->setSpace(SPACE_sRGB, false);
     }
 
     // Handle special cases
@@ -155,7 +157,10 @@ bool RawImage::toBitmap(Bitmap* bitmap, bool useCameraWhiteBalance, bool linear)
             if (src)
             {
                 src->set(processedImage->data, processedImage->width, processedImage->height);
+
+                src->setSpace((linear ? SPACE_LINEAR : SPACE_sRGB), false);
                 bitmap->set(src);
+
                 delete src;
             }
             else

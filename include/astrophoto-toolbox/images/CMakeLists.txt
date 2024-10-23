@@ -3,6 +3,6 @@ target_sources(astrophoto-toolbox
         bitmap.h
         bitmapinfo.h
         helpers.h
-        pnm.h
+        io.h
         raw.h
 )
