@@ -148,6 +148,14 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         BITMAP* process(unsigned int nbExpectedLightFrames = 0);
 
+        //--------------------------------------------------------------------------------
+        /// @brief  Cancel the processing
+        ///
+        /// Only useful in a multithreading scenario, where this method is called from a
+        /// different thread than the one doing the processing.
+        //--------------------------------------------------------------------------------
+        void cancel();
+
 
     private:
         void detectHotPixels() requires(BITMAP::Channels == 3);
@@ -194,6 +202,9 @@ namespace stacking {
         RawImage rawImage;
         BitmapStacker<BITMAP> stacker;
         rect_t outputRect;
+
+        bool cancelled = false;
+        std::function<void()> cancelFunction = nullptr;
     };
 
 }

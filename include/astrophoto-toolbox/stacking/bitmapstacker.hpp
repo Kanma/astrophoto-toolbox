@@ -86,6 +86,8 @@ bool BitmapStacker<BITMAP>::addBitmap(BITMAP* bitmap)
 template<class BITMAP>
 BITMAP* BitmapStacker<BITMAP>::process() const
 {
+    bool cancelled = false;
+
     BITMAP* output = new BITMAP(width, height, range);
 
     const unsigned int nbRowElements = width * BITMAP::Channels;
@@ -108,6 +110,12 @@ BITMAP* BitmapStacker<BITMAP>::process() const
         fclose(f);
 
         stack(part.startRow, part.endRow, nbRowElements, buffer.data(), output);
+
+        if (cancelled)
+        {
+            delete output;
+            return nullptr;
+        }
     }
 
     return output;
@@ -191,6 +199,9 @@ void BitmapStacker<BITMAP>::stack(
         }
 
         combine(row, srcRows, output);
+
+        if (cancelled)
+            return;
     }
 }
 

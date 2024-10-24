@@ -84,6 +84,17 @@ namespace stacking {
             return nbAddedBitmaps;
         }
 
+        //--------------------------------------------------------------------------------
+        /// @brief  Cancel the processing
+        ///
+        /// Only useful in a multithreading scenario, where this method is called from a
+        /// different thread than the one doing the processing.
+        //--------------------------------------------------------------------------------
+        inline void cancel()
+        {
+            cancelled = true;
+        }
+
 
     private:
         //--------------------------------------------------------------------------------
@@ -140,6 +151,7 @@ namespace stacking {
 
         std::filesystem::path tempFolder;
         std::vector<part_file_t> partFiles;
+        bool cancelled = false;
     };
 
 }

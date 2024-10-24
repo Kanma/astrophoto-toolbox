@@ -163,6 +163,8 @@ bool Stacking<BITMAP>::addDarkFrame(const std::string& filename)
 template<class BITMAP>
 bool Stacking<BITMAP>::computeMasterDark()
 {
+    cancelled = false;
+
     clearMasterDark();
 
     if (darkFrames.empty())
@@ -185,7 +187,9 @@ bool Stacking<BITMAP>::computeMasterDark()
             }
         }
 
+        cancelFunction = [&stacker]() { stacker.cancel(); };
         masterDark = stacker.process();
+        cancelFunction = nullptr;
     }
     else
     {
@@ -261,6 +265,8 @@ bool Stacking<BITMAP>::addLightFrame(const std::string& filename, bool reference
 template<class BITMAP>
 bool Stacking<BITMAP>::processLightFrames()
 {
+    cancelled = false;
+
     if (lightFrames.empty())
         return false;
 
@@ -315,6 +321,9 @@ bool Stacking<BITMAP>::processLightFrames()
 
     delete bitmap;
 
+    if (cancelled)
+        return false;
+
     for (size_t i = 0; i < lightFrames.size(); ++i)
     {
         if (i == referenceFrame)
@@ -346,6 +355,13 @@ bool Stacking<BITMAP>::processLightFrames()
         );
 
         delete bitmap;
+
+        if (cancelled)
+        {
+            lightFramesCalibrated = (i == lightFrames.size() - 1);
+            nbLightFramesCalibrated = i;
+            return lightFramesCalibrated;
+        }
     }
 
     lightFramesCalibrated = true;
@@ -359,6 +375,8 @@ bool Stacking<BITMAP>::processLightFrames()
 template<class BITMAP>
 BITMAP* Stacking<BITMAP>::process(unsigned int nbExpectedLightFrames)
 {
+    cancelled = false;
+
     if (!lightFramesCalibrated)
     {
         if (!processLightFrames())
@@ -417,6 +435,9 @@ BITMAP* Stacking<BITMAP>::process(unsigned int nbExpectedLightFrames)
 
             delete bitmap;
         }
+
+        if (cancelled)
+            return nullptr;
     }
 
     std::filesystem::path resultPath = folder / "stacked.fits";
@@ -424,6 +445,8 @@ BITMAP* Stacking<BITMAP>::process(unsigned int nbExpectedLightFrames)
     if (nbStackedFrames < stacker.nbStackedBitmaps())
     {
         BITMAP* stacked = stacker.process();
+        if (!stacked)
+            return nullptr;
 
         BITMAP* result = new BITMAP(outputRect.width(), outputRect.height());
         for (unsigned int y = 0; y < result->height(); ++y)
@@ -445,6 +468,18 @@ BITMAP* Stacking<BITMAP>::process(unsigned int nbExpectedLightFrames)
     }
 
     return loadBitmap(resultPath);
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void Stacking<BITMAP>::cancel()
+{
+    cancelled = true;
+    stacker.cancel();
+
+    if (cancelFunction)
+        cancelFunction();
 }
 
 //-----------------------------------------------------------------------------
