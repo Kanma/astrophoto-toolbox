@@ -173,6 +173,14 @@ namespace platesolving {
         //--------------------------------------------------------------------------------
         void clearIndexes();
 
+        //--------------------------------------------------------------------------------
+        /// @brief  Cancel the processing
+        ///
+        /// Only useful in a multithreading scenario, where this method is called from a
+        /// different thread than the one doing the processing.
+        //--------------------------------------------------------------------------------
+        void cancel();
+
 
     private:
         //--------------------------------------------------------------------------------
@@ -200,6 +208,8 @@ namespace platesolving {
         double pixelScale = 0.0;    // in arcsec/pixel
 
         std::vector<index_t*> indexes;
+
+        bool cancelled = false;
     };
 
 }

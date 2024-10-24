@@ -31,8 +31,8 @@ using namespace astrophototoolbox::platesolving;
 
 struct callback_data_t
 {
-    bool started = false;
     time_t limit = 10;
+    bool* cancelled = nullptr;
 };
 
 //-----------------------------------------------------------------------------
@@ -48,10 +48,12 @@ time_t timer_callback(void* userdata)
 {
     callback_data_t* data = (callback_data_t*) userdata;
 
-    time_t limit = data->started ? 0 : data->limit;
-    data->started = true;
+    if (*data->cancelled || (data->limit == 0))
+        return 0;
 
-    return limit;
+    --data->limit;
+
+    return 1;
 }
 
 
@@ -73,8 +75,12 @@ PlateSolver::~PlateSolver()
 
 bool PlateSolver::run(Bitmap* bitmap, double minWidth, double maxWidth, time_t limit)
 {
-    return detectStars(bitmap, true, true) &&
-           solve(minWidth, maxWidth, limit);
+    cancelled = false;
+
+    if (!detectStars(bitmap, true, true) || cancelled)
+        return false;
+
+    return solve(minWidth, maxWidth, limit);
 }
 
 //-----------------------------------------------------------------------------
@@ -84,12 +90,17 @@ bool PlateSolver::run(
     time_t limit
 )
 {
+    cancelled = false;
+
     setStars(stars, imageSize);
 
     if (!uniformize())
         return false;
 
     cut();
+
+    if (cancelled)
+        return false;
 
     return solve(minWidth, maxWidth, limit);
 }
@@ -98,6 +109,8 @@ bool PlateSolver::run(
 
 bool PlateSolver::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
 {
+    cancelled = false;
+
     coordinates = Coordinates();
     pixelScale = 0.0;
 
@@ -122,7 +135,7 @@ bool PlateSolver::detectStars(Bitmap* bitmap, bool uniformize, bool cut)
     if (grayBitmap != bitmap)
         delete grayBitmap;
 
-    if (res != 0)
+    if ((res != 0) || cancelled)
         return false;
 
     std::vector<int> sortedIndices = sort(params, false);
@@ -237,6 +250,8 @@ void PlateSolver::cut(unsigned int nb)
 
 bool PlateSolver::solve(double minWidth, double maxWidth, time_t limit)
 {
+    cancelled = false;
+
     coordinates = Coordinates();
     pixelScale = 0.0;
 
@@ -262,6 +277,7 @@ bool PlateSolver::solve(double minWidth, double maxWidth, time_t limit)
 
     callback_data_t callback_data;
     callback_data.limit = limit;
+    callback_data.cancelled = &cancelled;
 
     solver->record_match_callback = match_callback;
     solver->timer_callback = timer_callback;
@@ -288,8 +304,16 @@ bool PlateSolver::solve(double minWidth, double maxWidth, time_t limit)
         }
 
         solver_add_index(solver, index);
+
+        if (cancelled)
+            break;
     }
 
+    if (cancelled)
+    {
+        solver_free(solver);
+        return false;
+    }
 
     starxy_t* fieldxy = starxy_new(stars.size(), false, false);
 
@@ -367,6 +391,13 @@ void PlateSolver::clearIndexes()
         index_free(index);
 
     indexes.clear();
+}
+
+//-----------------------------------------------------------------------------
+
+void PlateSolver::cancel()
+{
+    cancelled = true;
 }
 
 
