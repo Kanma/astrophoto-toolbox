@@ -8,6 +8,7 @@
 
 #include <astrophoto-toolbox/data/fits.h>
 #include <fstream>
+#include <cstring>
 #include <assert.h>
 
 using namespace astrophototoolbox;

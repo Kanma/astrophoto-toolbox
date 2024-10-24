@@ -16,6 +16,7 @@
 #include <astrophoto-toolbox/data/transformation.h>
 #include <astrophoto-toolbox/stacking/bitmapstacker.h>
 #include <filesystem>
+#include <functional>
 #include <vector>
 #include <string>
 
