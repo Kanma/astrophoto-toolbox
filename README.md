@@ -5,10 +5,15 @@ Command-line tools are available too. They act as usage examples for the library
 
 Features:
 
-* RAW files loading and conversion to FITS
+* RAW files loading and conversion to FITS, or various image file formats
+* Registration (= stars detection)
 * Plate solving (= finding the celestial coordinates of an image)
-* Computation of the transformation to apply to one image in order to stack it
-  on top of another one
+* Stacking of several images, which includes:
+  * Background calibration
+  * Computation of the transformation to apply to one image in order to stack it
+    on top of another one
+* Detection of the center of the star in a bitmap where a Bahtinov mask is used
+* Search in a catalog of Deep-Space Objects for objects matching a pattern
 
 
 ## Compilation
@@ -34,10 +39,13 @@ the ```ASTROPHOTOTOOLBOX_BUILD_TOOLS``` option to ```OFF```):
 
 | Tool                      | Description                                                                               |
 | ------------------------- | ----------------------------------------------------------------------------------------- |
-| raw2img                   | Convert a RAW image file into a FITS, PPM or PGM one                                      |
-| find-coordinates          | Determine the astronomical coordinates of a FITS or RAW file                              |
-| register                  | Detect the stars in a FITS or RAW image                                                   |
+| raw2img                   | Convert a RAW image file into a FITS, PPM, PGM, PNG, BMP, JPG, TGA or HDR one             |
+| find-coordinates          | Determine the astronomical coordinates of an image                                        |
+| register                  | Detect the stars in an image                                                              |
+| background-calibration    | Perform background calibration on an image, given a reference image                       |
 | compute-transformation    | Compute the translation between two FITS files containing approximately the same stars    |
+| stack                     | Perform stacking of several images                                                        |
+| search-in-catalog         | Search in the catalog of Deep-Space Objects for objects matching a pattern                |
 
 
 ## Tests
