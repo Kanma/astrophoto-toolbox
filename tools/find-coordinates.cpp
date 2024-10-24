@@ -14,7 +14,7 @@
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/platesolving/platesolver.h>
-#include <astrophoto-toolbox/images/raw.h>
+#include <astrophoto-toolbox/images/io.h>
 #include <astrophoto-toolbox/images/helpers.h>
 
 using namespace std;
@@ -29,8 +29,6 @@ enum
 {
     OPT_HELP,
     OPT_VERBOSE,
-    OPT_RAW,
-    OPT_FITS,
     OPT_MIN_SCALE,
     OPT_MAX_SCALE,
     OPT_INDEXES_FOLDER,
@@ -42,8 +40,6 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_HELP,             "--help",       SO_NONE },
     { OPT_VERBOSE,          "-v",           SO_NONE },
     { OPT_VERBOSE,          "--verbose",    SO_NONE },
-    { OPT_RAW,              "--raw",        SO_NONE },
-    { OPT_FITS,             "--fits",       SO_NONE },
     { OPT_MIN_SCALE,        "--min-scale",  SO_REQ_SEP },
     { OPT_MAX_SCALE,        "--max-scale",  SO_REQ_SEP },
     { OPT_INDEXES_FOLDER,   "--indexes",    SO_REQ_SEP },
@@ -57,18 +53,17 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 void showUsage(const std::string& strApplicationName)
 {
     cout << "find-coordinates" << endl
-         << "Usage: " << strApplicationName << " [options] <--fits | --raw> <file>" << endl
+         << "Usage: " << strApplicationName << " [options] <file>" << endl
          << endl
-         << "Determine the astronomical coordinates of a FITS or RAW file." << endl
+         << "Determine the astronomical coordinates of an image." << endl
          << endl
-         << "If the FITS file contains a list of stars, it is used. Otherwise, the image in the FITS file is" << endl
-         << "loaded and star detection is performed (like for a RAW image)." << endl
+         << "If the image file is a FITS one and it contains a list of stars, it is used." << endl
+         << "Otherwise, the image in the FITS file is loaded and star detection is performed (like" << endl
+         << "for any other image format)." << endl
          << endl
          << "Options:" << endl
          << "    --help, -h        Display this help" << endl
          << "    --verbose, -v     Display more details" << endl
-         << "    --fits            Indicates that the file is a FITS one, containing either a star list or an image (or both)" << endl
-         << "    --raw             Indicates that the file is a RAW image" << endl
          << "    --min-scale       Minimum size (in degrees) of the image (default: 0.1)" << endl
          << "    --max-scale       Maximum size (in degrees) of the image (default: 180.0)" << endl
          << "    --indexes         Folder from which load the index files (default: /usr/local/astrometry/data)" << endl
@@ -79,8 +74,6 @@ void showUsage(const std::string& strApplicationName)
 int main(int argc, char** argv)
 {
     bool verbose = false;
-    bool isRaw = false;
-    bool isFits = false;
     std::string indexesFolder = "/usr/local/astrometry/data";
     double minScale = 0.1;
     double maxScale = 180.0;
@@ -99,14 +92,6 @@ int main(int argc, char** argv)
 
                 case OPT_VERBOSE:
                     verbose = true;
-                    break;
-
-                case OPT_RAW:
-                    isRaw = true;
-                    break;
-
-                case OPT_FITS:
-                    isFits = true;
                     break;
 
                 case OPT_MIN_SCALE:
@@ -135,24 +120,13 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if (isRaw && isFits)
-    {
-        cerr << "Must indicates either --raw or --fits, not both" << endl;
-        return 1;
-    }
-    else if (!isRaw && !isFits)
-    {
-        cerr << "Must indicates either --raw or --fits" << endl;
-        return 1;
-    }
-
 
     // Open the image
     Bitmap* bitmap = nullptr;
     star_list_t stars;
     size2d_t imageSize;
 
-    if (isFits)
+    if (FITS::isFITS(args.File(0)))
     {
         // Open the FITS file
         FITS fits;
@@ -174,28 +148,16 @@ int main(int argc, char** argv)
                 cerr << "Failed to read stars or a bitmap from the FITS file" << endl;
                 return 1;
             }
+
+            removeHotPixels(bitmap);
         }
     }
     else
     {
-        // Open the RAW image
-        RawImage image;
-        if (!image.open(args.File(0)))
+        bitmap = io::load(args.File(0));
+        if (!bitmap)
         {
-            cerr << "Failed to open the RAW file '" << args.File(0) << "'" << endl;
-            return 1;
-        }
-
-        // Decode the RAW image
-        if (image.channels() == 3)
-            bitmap = new UInt16ColorBitmap();
-        else
-            bitmap = new UInt8ColorBitmap();
-
-        if (!image.toBitmap(bitmap))
-        {
-            cerr << "Failed to convert the RAW image" << endl;
-            delete bitmap;
+            cerr << "Failed to load an image from file '" << args.File(0) << "'" << endl;
             return 1;
         }
 
@@ -203,7 +165,15 @@ int main(int argc, char** argv)
     }
 
 
+    // Load the index files
     PlateSolver solver;
+
+    if (!solver.loadIndexes(indexesFolder))
+    {
+        cerr << "Failed to load the index files from '" << indexesFolder << "'" << endl;
+        delete bitmap;
+        return 1;
+    }
 
     // Process the bitmap if one was loaded
     if (bitmap)
@@ -225,13 +195,6 @@ int main(int argc, char** argv)
         }
 
         // Plate solving
-        if (!solver.loadIndexes(indexesFolder))
-        {
-            cerr << "Failed to load the index files from '" << indexesFolder << "'" << endl;
-            delete bitmap;
-            return 1;
-        }
-
         if (!solver.run(bitmap, minScale, maxScale))
         {
             cerr << "Failed to determine the coordinates" << endl;
@@ -244,13 +207,6 @@ int main(int argc, char** argv)
     else
     {
         // Plate solving
-        if (!solver.loadIndexes(indexesFolder))
-        {
-            cerr << "Failed to load the index files from '" << indexesFolder << "'" << endl;
-            delete bitmap;
-            return 1;
-        }
-
         solver.setStars(stars, imageSize);
         solver.uniformize();
         solver.cut();
@@ -263,6 +219,7 @@ int main(int argc, char** argv)
     }
 
 
+    // Display the result
     if (verbose)
     {
         cout << solver.getStars().size() << " star(s) detected" << endl;

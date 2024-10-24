@@ -14,7 +14,7 @@
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/stacking/registration.h>
-#include <astrophoto-toolbox/images/raw.h>
+#include <astrophoto-toolbox/images/io.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <astrophoto-toolbox/platesolving/platesolver.h>
 
@@ -29,8 +29,6 @@ enum
 {
     OPT_HELP,
     OPT_VERBOSE,
-    OPT_RAW,
-    OPT_FITS,
     OPT_OUTPUT,
     OPT_NO_AN_KEYWORDS,
     OPT_PLATESOLVING,
@@ -44,8 +42,6 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_HELP,             "--help",           SO_NONE },
     { OPT_VERBOSE,          "-v",               SO_NONE },
     { OPT_VERBOSE,          "--verbose",        SO_NONE },
-    { OPT_RAW,              "--raw",            SO_NONE },
-    { OPT_FITS,             "--fits",           SO_NONE },
     { OPT_OUTPUT,           "-o",               SO_REQ_SEP },
     { OPT_NO_AN_KEYWORDS,   "--no-an-keywords", SO_NONE },
     { OPT_PLATESOLVING,     "--platesolving",   SO_NONE },
@@ -62,11 +58,11 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
 void showUsage(const std::string& strApplicationName)
 {
     cout << "register" << endl
-         << "Usage: " << strApplicationName << " [options] <--fits | --raw> <image>" << endl
+         << "Usage: " << strApplicationName << " [options] <image>" << endl
          << endl
-         << "Detect the stars in a FITS or RAW image." << endl
+         << "Detect the stars in an image." << endl
          << endl
-         << "By default, stars are detected using algorithm tailored for image stacking." << endl
+         << "By default, stars are detected using an algorithm tailored for image stacking." << endl
          << "Another detection algorithm is available, adapted to plate solving. It can be selected" << endl
          << "with the --platesolving option." << endl
          << endl
@@ -74,8 +70,6 @@ void showUsage(const std::string& strApplicationName)
          << "Options:" << endl
          << "    --help, -h        Display this help" << endl
          << "    --verbose, -v     Display more details" << endl
-         << "    --fits            Indicates that the image is a FITS one" << endl
-         << "    --raw             Indicates that the image is a RAW one" << endl
          << "    -o FILE           FITS file into which write the coordinates (default: the input FITS" << endl
          << "                      image if applicable)" << endl
          << "    --no-an-keywords  Do not write astrometry.net specific keywords in the file (included by" << endl
@@ -93,8 +87,6 @@ int main(int argc, char** argv)
 {
     std::string outputFileName;
     bool verbose = false;
-    bool isRaw = false;
-    bool isFits = false;
     bool includeANKeywords = true;
     bool usePlateSolvingDetection = false;
     bool uniformize = false;
@@ -114,14 +106,6 @@ int main(int argc, char** argv)
 
                 case OPT_VERBOSE:
                     verbose = true;
-                    break;
-
-                case OPT_RAW:
-                    isRaw = true;
-                    break;
-
-                case OPT_FITS:
-                    isFits = true;
                     break;
 
                 case OPT_OUTPUT:
@@ -158,69 +142,24 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if (isRaw && isFits)
+    bool isFits = FITS::isFITS(args.File(0));
+    if (!isFits && outputFileName.empty())
     {
-        cerr << "Must indicates either --raw or --fits, not both" << endl;
-        return 1;
-    }
-    else if (!isRaw && !isFits)
-    {
-        cerr << "Must indicates either --raw or --fits" << endl;
-        return 1;
-    }
-    else if (isRaw && outputFileName.empty())
-    {
-        cerr << "Must specify an output file with -o when processing a RAW file" << endl;
+        cerr << "Must specify an output file with -o when not processing a FITS file" << endl;
         return 1;
     }
 
 
     // Open the image
-    Bitmap* bitmap = nullptr;
-    FITS fitsImage;
-
-    if (isFits)
+    Bitmap* bitmap = io::load(args.File(0));
+    if (!bitmap)
     {
-        // Open the FITS file
-        if (!fitsImage.open(args.File(0), false))
-        {
-            cerr << "Failed to open the FITS file '" << args.File(0) << "'" << endl;
-            return 1;
-        }
-
-        // Retrieve the bitmap
-        bitmap = fitsImage.readBitmap();
-        if (!bitmap)
-        {
-            cerr << "Failed to read the bitmap from the FITS file" << endl;
-            return 1;
-        }
+        cerr << "Failed to load an image from file '" << args.File(0) << "'" << endl;
+        return 1;
     }
-    else
-    {
-        // Open the RAW image
-        RawImage image;
-        if (!image.open(args.File(0)))
-        {
-            cerr << "Failed to open the RAW file '" << args.File(0) << "'" << endl;
-            return 1;
-        }
 
-        // Decode the RAW image
-        if (image.channels() == 3)
-            bitmap = new UInt16ColorBitmap();
-        else
-            bitmap = new UInt8ColorBitmap();
+    removeHotPixels(bitmap);
 
-        if (!image.toBitmap(bitmap))
-        {
-            cerr << "Failed to convert the RAW image" << endl;
-            delete bitmap;
-            return 1;
-        }
-
-        removeHotPixels(bitmap);
-    }
 
     // Registration
     star_list_t stars;
@@ -287,21 +226,30 @@ int main(int argc, char** argv)
     if (verbose)
         cout << stars.size() << " star(s) detected" << endl;
 
-    // Save the coordinates
-    FITS* dest = (isFits ? &fitsImage : nullptr);
+
+    // Save the stars in a FITS file
     FITS output;
+    bool ok = false;
 
-    if (!outputFileName.empty())
+    if (!isFits)
     {
-        if (std::ifstream(outputFileName).good())
-            output.open(outputFileName, false);
+        if (std::filesystem::exists(outputFileName))
+            ok = output.open(outputFileName, false);
         else
-            output.create(outputFileName);
-
-        dest = &output;
+            ok = output.create(outputFileName);
+    }
+    else
+    {
+        ok = output.open(args.File(0), false);
     }
 
-    if (!dest->write(stars, imageSize, "STARS", true))
+    if (!ok)
+    {
+        cerr << "Failed to open/create the FITS output file" << endl;
+        return 1;
+    }
+
+    if (!output.write(stars, imageSize, "STARS", true))
     {
         cerr << "Failed to save the coordinates in the FITS file" << endl;
         return 1;
@@ -310,7 +258,7 @@ int main(int argc, char** argv)
     // Include the astrometry.net keywords if necessary
     if (includeANKeywords)
     {
-        if (!dest->writeAstrometryNetKeywords(imageSize))
+        if (!output.writeAstrometryNetKeywords(imageSize))
         {
             cerr << "Failed to write the keywords specific to astrometry.net" << endl;
             return 1;

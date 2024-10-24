@@ -66,13 +66,13 @@ TEST_CASE("Save 8-bits color bitmap", "[PNM]")
 
     SECTION("as 8bits PPM")
     {
-        REQUIRE(io::save(TEMP_DIR "rgb8bits.ppm", &bitmap));
+        REQUIRE(io::savePNM(TEMP_DIR "rgb8bits.ppm", &bitmap, false));
         checkFile("rgb8bits.ppm");
     }
 
     SECTION("as 8bits PGM")
     {
-        REQUIRE(io::save(TEMP_DIR "rgb8bits.pgm", &bitmap));
+        REQUIRE(io::savePNM(TEMP_DIR "rgb8bits.pgm", &bitmap, false));
         checkFile("rgb8bits.pgm");
     }
 }
@@ -102,13 +102,13 @@ TEST_CASE("Save 16-bits color bitmap", "[PNM]")
 
     SECTION("as 16bits PPM")
     {
-        REQUIRE(io::save(TEMP_DIR "rgb16bits.ppm", &bitmap));
+        REQUIRE(io::savePNM(TEMP_DIR "rgb16bits.ppm", &bitmap, false));
         checkFile("rgb16bits.ppm");
     }
 
     SECTION("as 16bits PGM")
     {
-        REQUIRE(io::save(TEMP_DIR "rgb16bits.pgm", &bitmap));
+        REQUIRE(io::savePNM(TEMP_DIR "rgb16bits.pgm", &bitmap, false));
         checkFile("rgb16bits.pgm");
     }
 }
@@ -138,13 +138,13 @@ TEST_CASE("Save 8-bits gray bitmap", "[PNM]")
 
     SECTION("as 8bits PPM")
     {
-        REQUIRE(io::save(TEMP_DIR "gray8bits.ppm", &bitmap));
+        REQUIRE(io::savePNM(TEMP_DIR "gray8bits.ppm", &bitmap, false));
         checkFile("gray8bits.ppm");
     }
 
     SECTION("as 8bits PGM")
     {
-        REQUIRE(io::save(TEMP_DIR "gray8bits.pgm", &bitmap));
+        REQUIRE(io::savePNM(TEMP_DIR "gray8bits.pgm", &bitmap, false));
         checkFile("gray8bits.pgm");
     }
 }
@@ -174,13 +174,13 @@ TEST_CASE("Save 16-bits gray bitmap", "[PNM]")
 
     SECTION("as 16bits PPM")
     {
-        REQUIRE(io::save(TEMP_DIR "gray16bits.ppm", &bitmap));
+        REQUIRE(io::savePNM(TEMP_DIR "gray16bits.ppm", &bitmap, false));
         checkFile("gray16bits.ppm");
     }
 
     SECTION("as 16bits PGM")
     {
-        REQUIRE(io::save(TEMP_DIR "gray16bits.pgm", &bitmap));
+        REQUIRE(io::savePNM(TEMP_DIR "gray16bits.pgm", &bitmap, false));
         checkFile("gray16bits.pgm");
     }
 }

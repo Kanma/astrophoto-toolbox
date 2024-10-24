@@ -143,6 +143,15 @@ namespace astrophototoolbox {
         Transformation readTransformation(int index = 0);
 
 
+        //_____ Static methods __________
+    public:
+        //--------------------------------------------------------------------------------
+        /// @brief  Determine if a file is a FITS one, by inspecting its header
+        //--------------------------------------------------------------------------------
+        static bool isFITS(const std::string& filename);
+
+
+        //_____ Internal methods __________
     private:
         Bitmap* readBitmapFromCurrentHDU();
         star_list_t readStarsFromCurrentHDU(size2d_t* imageSize = nullptr);

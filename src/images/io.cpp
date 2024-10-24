@@ -8,6 +8,7 @@
 
 #include <astrophoto-toolbox/images/io.h>
 #include <astrophoto-toolbox/images/helpers.h>
+#include <astrophoto-toolbox/images/raw.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <fstream>
 #include <iostream>
@@ -18,6 +19,9 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #pragma clang diagnostic pop
 
@@ -118,18 +122,21 @@ void savePGM16(std::ofstream& stream, UInt16GrayBitmap* bitmap)
 //-----------------------------------------------------------------------------
 
 bool savePNM(
-    const std::filesystem::path& filename, const std::filesystem::path& extension, Bitmap* bitmap
+    const std::filesystem::path& filename, const std::filesystem::path& extension,
+    bool convertColorSpace, Bitmap* bitmap
 )
 {
     std::ofstream output(filename, std::ios_base::out | std::ios_base::binary);
     if (!output.is_open())
         return false;
 
+    space_t space = (convertColorSpace ? SPACE_sRGB : SPACE_SOURCE);
+
     if (extension == ".ppm")
     {
         if (bitmap->channelSize() == 1)
         {
-            UInt8ColorBitmap* converted = requiresFormat<UInt8ColorBitmap>(bitmap, RANGE_DEST, SPACE_sRGB);
+            UInt8ColorBitmap* converted = requiresFormat<UInt8ColorBitmap>(bitmap, RANGE_DEST, space);
 
             savePPM8(output, converted);
 
@@ -140,7 +147,7 @@ bool savePNM(
         }
         else if (bitmap->channelSize() == 2)
         {
-            UInt16ColorBitmap* converted = requiresFormat<UInt16ColorBitmap>(bitmap, RANGE_DEST, SPACE_sRGB);
+            UInt16ColorBitmap* converted = requiresFormat<UInt16ColorBitmap>(bitmap, RANGE_DEST, space);
 
             savePPM16(output, converted);
 
@@ -154,7 +161,7 @@ bool savePNM(
     {
         if (bitmap->channelSize() == 1)
         {
-            UInt8GrayBitmap* converted = requiresFormat<UInt8GrayBitmap>(bitmap, RANGE_DEST, SPACE_sRGB);
+            UInt8GrayBitmap* converted = requiresFormat<UInt8GrayBitmap>(bitmap, RANGE_DEST, space);
 
             savePGM8(output, converted);
 
@@ -165,7 +172,7 @@ bool savePNM(
         }
         else if (bitmap->channelSize() == 2)
         {
-            UInt16GrayBitmap* converted = requiresFormat<UInt16GrayBitmap>(bitmap, RANGE_DEST, SPACE_sRGB);
+            UInt16GrayBitmap* converted = requiresFormat<UInt16GrayBitmap>(bitmap, RANGE_DEST, space);
 
             savePGM16(output, converted);
 
@@ -206,7 +213,7 @@ bool save(const std::filesystem::path& filename, Bitmap* bitmap, bool overwrite)
 {
     assert(bitmap);
 
-    if (std::ifstream(filename).good())
+    if (std::filesystem::exists(filename))
     {
         if (!overwrite)
             return false;
@@ -218,7 +225,7 @@ bool save(const std::filesystem::path& filename, Bitmap* bitmap, bool overwrite)
 
     if ((extension == ".ppm") || (extension == ".pgm"))
     {
-        return savePNM(filename, extension, bitmap);
+        return savePNM(filename, extension, true, bitmap);
     }
     else if ((extension == ".png") || (extension == ".bmp") || (extension == ".tga") ||
              (extension == ".jpg") || (extension == ".jpeg"))
@@ -298,6 +305,127 @@ bool save(const std::filesystem::path& filename, Bitmap* bitmap, bool overwrite)
 
         return true;
     }
+}
+
+//-----------------------------------------------------------------------------
+
+bool savePNM(
+    const std::filesystem::path& filename, Bitmap* bitmap, bool convertColorSpace,
+    bool overwrite
+)
+{
+    assert(bitmap);
+
+    if (std::filesystem::exists(filename))
+    {
+        if (!overwrite)
+            return false;
+
+        std::filesystem::remove(filename);
+    }
+
+    auto extension = filename.extension();
+
+    if ((extension == ".ppm") || (extension == ".pgm"))
+    {
+        return savePNM(filename, extension, convertColorSpace, bitmap);
+    }
+
+    return false;
+ }
+
+//-----------------------------------------------------------------------------
+
+Bitmap* load(const std::filesystem::path& filename, bool useCameraWhiteBalance, bool linear)
+{
+    Bitmap* bitmap = nullptr;
+
+    if (!std::filesystem::exists(filename))
+        return nullptr;
+
+    auto extension = filename.extension();
+
+    if ((extension == ".png") || (extension == ".bmp") || (extension == ".tga") ||
+        (extension == ".jpg") || (extension == ".jpeg") || (extension == ".ppm") ||
+        (extension == ".pgm"))
+    {
+        int width, height, channels;
+
+        int is16bits = stbi_is_16_bit(filename.c_str());
+        if (is16bits)
+        {
+            unsigned short* pixels = stbi_load_16(filename.c_str(), &width, &height, &channels, 0);
+            if (!pixels)
+                return nullptr;
+
+            if (channels == 3)
+                bitmap = new UInt16ColorBitmap(pixels, width, height);
+            else if (channels == 1)
+                bitmap = new UInt16GrayBitmap(pixels, width, height);
+
+            stbi_image_free(pixels);
+        }
+        else
+        {
+            unsigned char* pixels = stbi_load(filename.c_str(), &width, &height, &channels, 0);
+            if (!pixels)
+                return nullptr;
+
+            if (channels == 3)
+                bitmap = new UInt8ColorBitmap(pixels, width, height);
+            else if (channels == 1)
+                bitmap = new UInt8GrayBitmap(pixels, width, height);
+
+            stbi_image_free(pixels);
+        }
+
+        bitmap->setSpace(SPACE_sRGB, false);
+    }
+    else if (extension == ".hdr")
+    {
+        int width, height, channels;
+
+        float* pixels = stbi_loadf(filename.c_str(), &width, &height, &channels, 0);
+        if (!pixels)
+            return nullptr;
+
+        if (channels == 3)
+            bitmap = new FloatColorBitmap(pixels, width, height);
+        else if (channels == 1)
+            bitmap = new FloatGrayBitmap(pixels, width, height);
+
+        stbi_image_free(pixels);
+
+        bitmap->setSpace(SPACE_LINEAR, false);
+    }
+    else if (FITS::isFITS(filename))
+    {
+        FITS fits;
+        if (!fits.open(filename, true))
+            return nullptr;
+
+        bitmap = fits.readBitmap();
+    }
+    else
+    {
+        RawImage image;
+        if (!image.open(filename))
+            return nullptr;
+
+        // Decode the RAW image
+        if (image.channels() == 3)
+            bitmap = new UInt16ColorBitmap();
+        else
+            bitmap = new UInt8ColorBitmap();
+
+        if (!image.toBitmap(bitmap, useCameraWhiteBalance, linear))
+        {
+            delete bitmap;
+            return nullptr;
+        }
+    }
+
+    return bitmap;
 }
 
 }

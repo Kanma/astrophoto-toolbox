@@ -7,6 +7,7 @@
 */
 
 #include <astrophoto-toolbox/data/fits.h>
+#include <fstream>
 #include <assert.h>
 
 using namespace astrophototoolbox;
@@ -215,6 +216,9 @@ bool FITS::write(Bitmap* bitmap, const std::string& name)
 
     fits_write_key(_file, TDOUBLE, "DATAMIN", &vmin, "minimum data value", &status);
     fits_write_key(_file, TDOUBLE, "DATAMAX", &vmax, "maximum data value", &status);
+
+    bool sRGB = (bitmap->space() == SPACE_sRGB);
+    fits_write_key(_file, TLOGICAL, "sRGB", &sRGB, "sRGB or linear color space", &status);
 
     bitmap_info_t info = bitmap->info();
     fits_write_key(_file, TUINT, "ISO", &info.isoSpeed, "ISO speed", &status);
@@ -505,7 +509,26 @@ Transformation FITS::readTransformation(int index)
     return readTransformationFromCurrentHDU();
 }
 
-//-----------------------------------------------------------------------------
+
+/*********************************** STATIC METHODS ************************************/
+
+bool FITS::isFITS(const std::string& filename)
+{
+    #define FITS_MAGIC "SIMPLE"
+    #define FITS_MAGIC_SIZE 6
+
+    std::ifstream file(filename);
+    if (!file.good())
+        return false;
+
+    char magic[FITS_MAGIC_SIZE + 1];
+    file.read((char*) &magic, FITS_MAGIC_SIZE);
+
+    return (strstr(magic, FITS_MAGIC) != nullptr);
+}
+
+
+/********************************** INTERNAL METHODS ***********************************/
 
 Bitmap* FITS::readBitmapFromCurrentHDU()
 {
@@ -640,6 +663,12 @@ Bitmap* FITS::readBitmapFromCurrentHDU()
         if (maxValue > 1.0)
             dest->setRange(RANGE_BYTE, false);
     }
+
+    bool sRGB = false;
+    fits_read_key(_file, TLOGICAL, "sRGB", &sRGB, nullptr, &status);
+    dest->setSpace(sRGB ? SPACE_sRGB : SPACE_LINEAR, false);
+
+    status = 0;
 
     // Retrieve the bitmap info
     bitmap_info_t& info = dest->info();
