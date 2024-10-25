@@ -31,11 +31,42 @@ namespace stacking {
         /// Note that the returned list of stars is meant to be used stacking-related
         /// purposes. In particular, only a few stars (the most relevant ones for
         /// stacking) are in the list.
+        ///
+        /// The luminancy threshold to use can be either specified (between 0 and 100),
+        /// or you can ask to search for a value that produces a good amount of stars for
+        /// the stacking algorithm (by setting 'luminancyThreshold' to -1).
+        ///
+        /// Note that to compare the overall quality of two lists of stars, the same
+        /// threshold must have been used during registration.
         //--------------------------------------------------------------------------------
-        const star_list_t registerBitmap(Bitmap* bitmap) const;
+        const star_list_t registerBitmap(Bitmap* bitmap, int luminancyThreshold = 10);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the last luminancy threshold that was used/found
+        //--------------------------------------------------------------------------------
+        inline int getLuminancyThreshold() const
+        {
+            return luminancyThreshold;
+        }
 
 
     private:
+        //--------------------------------------------------------------------------------
+        /// @brief  Detect the stars in a luminance bitmap, with a threshold previously
+        ///         specified
+        //--------------------------------------------------------------------------------
+        void registerBitmapWithFixedThreshold(
+            DoubleGrayBitmap* luminance, double median, star_list_t& stars
+        );
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Search a good threshold and detect the stars in a luminance bitmap at
+        ///         the same time
+        //--------------------------------------------------------------------------------
+        void registerBitmapAndSearchThreshold(
+            DoubleGrayBitmap* luminance, double median, star_list_t& stars
+        );
+
         //--------------------------------------------------------------------------------
         /// @brief  Detect the stars in a rectangular part of the bitmap
         //--------------------------------------------------------------------------------
@@ -56,6 +87,8 @@ namespace stacking {
     private:
         static constexpr int STARMAXSIZE = 50;
         static constexpr double ROUNDNESS_TOLERANCE = 2.0;
+
+        int luminancyThreshold = 10;
     };
 
 }

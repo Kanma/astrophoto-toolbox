@@ -224,7 +224,10 @@ int main(int argc, char** argv)
     delete bitmap;
 
     if (verbose)
-        cout << stars.size() << " star(s) detected" << endl;
+    {
+        cout << stars.size() << " star(s) detected, quality = " << computeQuality(stars)
+             << ", FWHM = " << computeFWHM(stars) << endl;
+    }
 
 
     // Save the stars in a FITS file

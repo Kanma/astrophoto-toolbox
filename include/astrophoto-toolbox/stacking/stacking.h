@@ -204,6 +204,8 @@ namespace stacking {
         BitmapStacker<BITMAP> stacker;
         rect_t outputRect;
 
+        int luminancyThreshold = -1;
+
         bool cancelled = false;
         std::function<void()> cancelFunction = nullptr;
     };

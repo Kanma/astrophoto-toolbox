@@ -314,7 +314,8 @@ bool Stacking<BITMAP>::processLightFrames()
 
         calibration.setReference(bitmap);
 
-        refStars = registration.registerBitmap(bitmap);
+        refStars = registration.registerBitmap(bitmap, -1);
+        luminancyThreshold = registration.getLuminancyThreshold();
 
         saveBitmap(bitmap, path / getCalibratedFilename(lightFrames[referenceFrame]), nullptr, &refStars);
     }
@@ -342,7 +343,7 @@ bool Stacking<BITMAP>::processLightFrames()
 
         calibration.calibrate(bitmap);
 
-        star_list_t stars = registration.registerBitmap(bitmap);
+        star_list_t stars = registration.registerBitmap(bitmap, luminancyThreshold);
 
         bool valid = matcher.computeTransformation(
             stars, refStars, size2d_t(bitmap->width(), bitmap->height()),

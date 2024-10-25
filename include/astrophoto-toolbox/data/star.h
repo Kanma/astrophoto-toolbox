@@ -100,4 +100,19 @@ namespace astrophototoolbox {
     //------------------------------------------------------------------------------------
     typedef std::set<star_t> star_set_t;
 
+
+    //------------------------------------------------------------------------------------
+    /// @brief  Returns the overall quality of a list of stars (higher is better)
+    //------------------------------------------------------------------------------------
+    double computeQuality(const star_list_t& stars);
+
+
+    //------------------------------------------------------------------------------------
+    /// @brief  Returns the full width at half maximum (FWHM) of a list of stars (lower is
+    ///         better)
+    ///
+    /// The FWHM is computed over the mean radius of the stars.
+    //------------------------------------------------------------------------------------
+    double computeFWHM(const star_list_t& stars);
+
 }

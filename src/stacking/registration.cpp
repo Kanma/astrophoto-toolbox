@@ -49,26 +49,94 @@ struct searchEntry_t {
 
 //-----------------------------------------------------------------------------
 
-const star_list_t Registration::registerBitmap(Bitmap* bitmap) const
+const star_list_t Registration::registerBitmap(Bitmap* bitmap, int luminancyThreshold)
 {
     DoubleGrayBitmap* luminance = computeLuminanceBitmap(bitmap);
     double median = computeMedian(luminance);
 
+    this->luminancyThreshold = std::min(std::max(luminancyThreshold, -1), 100);
+
+    star_list_t stars;
+
+    if (this->luminancyThreshold >= 0)
+        registerBitmapWithFixedThreshold(luminance, median, stars);
+    else
+        registerBitmapAndSearchThreshold(luminance, median, stars);
+
+	std::sort(stars.begin(), stars.end(), star_t::compareIntensity);
+
+    delete luminance;
+
+    return stars;
+}
+
+//-----------------------------------------------------------------------------
+
+void Registration::registerBitmapWithFixedThreshold(
+    DoubleGrayBitmap* luminance, double median, star_list_t& stars
+)
+{
     const int rectSize = STARMAXSIZE * 5;
     const int stepSize = rectSize / 2;
     const int separation = 3;
-    const int width = bitmap->width() - 2 * STARMAXSIZE;
-    const int height = bitmap->height() - 2 * STARMAXSIZE;
+    const int width = luminance->width() - 2 * STARMAXSIZE;
+    const int height = luminance->height() - 2 * STARMAXSIZE;
     const int nbRectsX = (width - 1) / stepSize + 1;
     const int nbRectsY = (height - 1) / stepSize + 1;
 
-    const int rightColumn = bitmap->width() - STARMAXSIZE;
-    const int bottomRow = bitmap->height() - STARMAXSIZE;
+    const int rightColumn = luminance->width() - STARMAXSIZE;
+    const int bottomRow = luminance->height() - STARMAXSIZE;
 
-    int luminancyThreshold = 10;
+    star_set_t foundStars;
+    int nbStars = 0;
+
+    double minLuminancy = double(luminancyThreshold) / 100.0;
+
+    for (int row = 0; row < nbRectsY; ++row)
+    {
+        const int top = STARMAXSIZE + row * stepSize;
+        const int bottom = std::min(bottomRow, top + rectSize);
+
+        for (int col = 0; (col < nbRectsX) && (nbStars <= 100); ++col)
+        {
+            nbStars += registerRect(
+                luminance,
+                rect_t(
+                    STARMAXSIZE + col * stepSize,
+                    top,
+                    std::min(rightColumn, STARMAXSIZE + col * stepSize + rectSize),
+                    bottom),
+                median,
+                minLuminancy,
+                foundStars
+            );
+        }
+    }
+
+    stars.assign(foundStars.cbegin(), foundStars.cend());
+}
+
+//-----------------------------------------------------------------------------
+
+void Registration::registerBitmapAndSearchThreshold(
+    DoubleGrayBitmap* luminance, double median, star_list_t& stars
+)
+{
+    const int rectSize = STARMAXSIZE * 5;
+    const int stepSize = rectSize / 2;
+    const int separation = 3;
+    const int width = luminance->width() - 2 * STARMAXSIZE;
+    const int height = luminance->height() - 2 * STARMAXSIZE;
+    const int nbRectsX = (width - 1) / stepSize + 1;
+    const int nbRectsY = (height - 1) / stepSize + 1;
+
+    const int rightColumn = luminance->width() - STARMAXSIZE;
+    const int bottomRow = luminance->height() - STARMAXSIZE;
+
     std::set<searchEntry_t> searchGrid;
-    star_list_t stars;
     bool found = false;
+
+    luminancyThreshold = 10;
 
     while (true)
     {
@@ -142,12 +210,6 @@ const star_list_t Registration::registerBitmap(Bitmap* bitmap) const
             }
         }
     }
-
-	std::sort(stars.begin(), stars.end(), star_t::compareIntensity);
-
-    delete luminance;
-
-    return stars;
 }
 
 //-----------------------------------------------------------------------------
