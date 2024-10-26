@@ -1,3 +1,5 @@
+add_subdirectory(processing)
+
 target_sources(unittests
     PUBLIC
         backgroundcalibration.cpp

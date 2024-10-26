@@ -1,3 +1,5 @@
+add_subdirectory(processing)
+
 target_sources(astrophoto-toolbox
     PUBLIC
         backgroundcalibration.h

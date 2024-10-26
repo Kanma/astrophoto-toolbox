@@ -89,7 +89,7 @@ TEST_CASE("Dark frames loading", "[Stacking]")
 }
 
 
-TEST_CASE("Master dark frame computation", "[Stacking]")
+TEST_CASE("Stacking / Master dark frame computation", "[Stacking]")
 {
     REQUIRE(std::filesystem::exists(TEMP_DIR "stacking"));
     REQUIRE(!std::filesystem::exists(TEMP_DIR "stacking/master_dark.fits"));
