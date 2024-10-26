@@ -1,4 +1,6 @@
 target_sources(unittests
     PUBLIC
-        masterdark.cpp
+        processing.cpp
+        lightframes.hpp
+        masterdark.hpp
 )

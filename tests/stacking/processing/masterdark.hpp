@@ -9,7 +9,7 @@
 #include <catch.hpp>
 #include <astrophoto-toolbox/stacking/processing/masterdark.h>
 #include <astrophoto-toolbox/data/fits.h>
-#include <fstream>
+//#include <fstream>
 
 using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
