@@ -5,6 +5,9 @@ target_sources(astrophoto-toolbox
         masterdark.h
         masterdark.hpp
         registration.h
+        registration.hpp
+        stacking.h
+        stacking.hpp
         utils.h
         utils.hpp
 )

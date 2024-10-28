@@ -4,4 +4,5 @@ target_sources(unittests
         lightframes.hpp
         masterdark.hpp
         registration.hpp
+        stacking.hpp
 )

@@ -218,7 +218,7 @@ bool FITS::write(Bitmap* bitmap, const std::string& name)
     fits_write_key(_file, TDOUBLE, "DATAMIN", &vmin, "minimum data value", &status);
     fits_write_key(_file, TDOUBLE, "DATAMAX", &vmax, "maximum data value", &status);
 
-    bool sRGB = (bitmap->space() == SPACE_sRGB);
+    int sRGB = (bitmap->space() == SPACE_sRGB ? 1 : 0);
     fits_write_key(_file, TLOGICAL, "sRGB", &sRGB, "sRGB or linear color space", &status);
 
     bitmap_info_t info = bitmap->info();

@@ -68,7 +68,7 @@ std::shared_ptr<BITMAP> LightFrameProcessor<BITMAP>::process(
     else
         calibration.calibrate(lightFrame.get());
 
-    if (!saveProcessedBitmap(lightFrame.get(), destination))
+    if (!destination.empty() && !saveProcessedBitmap(lightFrame.get(), destination))
         return nullptr;
 
     return lightFrame;

@@ -10,3 +10,4 @@
 #include "masterdark.hpp"
 #include "lightframes.hpp"
 #include "registration.hpp"
+#include "stacking.hpp"
