@@ -3,4 +3,5 @@ target_sources(unittests
         processing.cpp
         lightframes.hpp
         masterdark.hpp
+        registration.hpp
 )

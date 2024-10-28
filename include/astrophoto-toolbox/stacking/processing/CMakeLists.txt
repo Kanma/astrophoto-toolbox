@@ -1,9 +1,10 @@
 target_sources(astrophoto-toolbox
     PUBLIC
-        masterdark.h
-        masterdark.hpp
         lightframes.h
         lightframes.hpp
+        masterdark.h
+        masterdark.hpp
+        registration.h
         utils.h
         utils.hpp
 )

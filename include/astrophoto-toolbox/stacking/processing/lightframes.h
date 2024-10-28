@@ -20,14 +20,24 @@ namespace astrophototoolbox {
 namespace stacking {
 
     //------------------------------------------------------------------------------------
-    /// @brief  Allows to perform all the stacking-related operations
+    /// @brief  Allows to perform all the operations related to light frames (background
+    ///         calibration, dark frame substraction, ...)
     //------------------------------------------------------------------------------------
     template<class BITMAP>
     class LightFrameProcessor
     {
     public:
+        //--------------------------------------------------------------------------------
+        /// @brief  Set the master dark frame file to use
+        ///
+        /// It is expected that it is a FITS file containing a bitmap and a lit of hot
+        /// pixels.
+        //--------------------------------------------------------------------------------
         bool setMasterDark(const std::string& filename);
 
+        //--------------------------------------------------------------------------------
+        /// @brief  Set the master dark frame bitmap and lit of hot pixels to use
+        //--------------------------------------------------------------------------------
         inline void setMasterDark(
             const std::shared_ptr<BITMAP>& masterDark, const point_list_t& hotPixels
         )
@@ -37,18 +47,24 @@ namespace stacking {
         }
 
         //--------------------------------------------------------------------------------
-        /// @brief  Computes the master dark frame from the provided list of dark frames,
-        ///         and save it at the given destination path
+        /// @brief  Process a light frame file, and save it at the given destination path
         ///
-        /// Several files need to be written during the processing, so the caller has to
-        /// specify a temp folder to user (it will be created and destroyed by this
-        /// method).
+        /// If 'reference' is set, the light frame becomes the reference one used by the
+        /// background calibration algorithm for all the following frames. So be sure to
+        /// pass your reference frame as the first one and set the flag.
         //--------------------------------------------------------------------------------
         std::shared_ptr<BITMAP> process(
             const std::string& lightFrame, bool reference = false,
             const std::string& destination = ""
         );
 
+        //--------------------------------------------------------------------------------
+        /// @brief  Process a light frame bitmap, and save it at the given destination path
+        ///
+        /// If 'reference' is set, the light frame becomes the reference one used by the
+        /// background calibration algorithm for all the following frames. So be sure to
+        /// pass your reference frame as the first one and set the flag.
+        //--------------------------------------------------------------------------------
         std::shared_ptr<BITMAP> process(
             const std::shared_ptr<BITMAP>& lightFrame, bool reference = false,
             const std::string& destination = ""

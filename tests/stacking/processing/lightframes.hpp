@@ -65,18 +65,20 @@ TEST_CASE("Process light frames", "[LightFrames]")
 
     LightFrameProcessor<UInt16ColorBitmap> processor;
 
+    processor.setMasterDark(TEMP_DIR "master_dark.fits");
+
     std::shared_ptr<UInt16ColorBitmap> lightFrame = processor.process(
         DATA_DIR "downloads/light1.fits", true, TEMP_DIR "lightframes/light1.fits"
     );
     REQUIRE(lightFrame);
 
     lightFrame = processor.process(
-        DATA_DIR "downloads/light2.fits", true, TEMP_DIR "lightframes/light2.fits"
+        DATA_DIR "downloads/light2.fits", false, TEMP_DIR "lightframes/light2.fits"
     );
     REQUIRE(lightFrame);
 
     lightFrame = processor.process(
-        DATA_DIR "downloads/light3.fits", true, TEMP_DIR "lightframes/light3.fits"
+        DATA_DIR "downloads/light3.fits", false, TEMP_DIR "lightframes/light3.fits"
     );
     REQUIRE(lightFrame);
 }

@@ -19,7 +19,8 @@ namespace astrophototoolbox {
 namespace stacking {
 
     //------------------------------------------------------------------------------------
-    /// @brief  Allows to perform all the stacking-related operations
+    /// @brief  Allows to generate a master dark frame (and list of hot pixels) from a
+    ///         list of dark frames
     //------------------------------------------------------------------------------------
     template<class BITMAP>
     class MasterDarkGenerator
