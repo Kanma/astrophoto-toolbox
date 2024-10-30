@@ -12,6 +12,7 @@
 #include <astrophoto-toolbox/data/fits.h>
 #include <fstream>
 #include <iostream>
+#include <thread>
 #include <assert.h>
 
 #pragma clang diagnostic push
@@ -31,6 +32,11 @@ using namespace astrophototoolbox;
 
 namespace astrophototoolbox {
 namespace io {
+
+static RawImage rawImage;
+static std::mutex rawImageMutex;
+
+//-----------------------------------------------------------------------------
 
 void savePPM8(std::ofstream& stream, UInt8ColorBitmap* bitmap)
 {
@@ -408,17 +414,18 @@ Bitmap* load(const std::filesystem::path& filename, bool useCameraWhiteBalance, 
     }
     else
     {
-        RawImage image;
-        if (!image.open(filename))
+        std::lock_guard<std::mutex> lock(rawImageMutex);
+
+        if (!rawImage.open(filename))
             return nullptr;
 
         // Decode the RAW image
-        if (image.channels() == 3)
+        if (rawImage.channels() == 3)
             bitmap = new UInt16ColorBitmap();
         else
             bitmap = new UInt8ColorBitmap();
 
-        if (!image.toBitmap(bitmap, useCameraWhiteBalance, linear))
+        if (!rawImage.toBitmap(bitmap, useCameraWhiteBalance, linear))
         {
             delete bitmap;
             return nullptr;

@@ -14,7 +14,7 @@ namespace threads {
 
 
 template<class BITMAP>
-LightFrameThread<BITMAP>::LightFrameThread(
+RegistrationThread<BITMAP>::RegistrationThread(
     StackingListener* listener, const std::filesystem::path& destFolder
 )
 : listener(listener), destFolder(destFolder)
@@ -26,7 +26,7 @@ LightFrameThread<BITMAP>::LightFrameThread(
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-LightFrameThread<BITMAP>::~LightFrameThread()
+RegistrationThread<BITMAP>::~RegistrationThread()
 {
     if (thread.joinable())
     {
@@ -38,25 +38,18 @@ LightFrameThread<BITMAP>::~LightFrameThread()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool LightFrameThread<BITMAP>::setMasterDark(const std::string& filename)
-{
-    if (thread.joinable())
-        return false;
-
-    return processor.setMasterDark(filename);
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-bool LightFrameThread<BITMAP>::processReferenceFrame(const std::string& lightFrame)
+bool RegistrationThread<BITMAP>::processReferenceFrame(
+    const std::string& lightFrame, int luminancyThreshold
+)
 {
     if (thread.joinable())
         return false;
 
     lightFrames.push_back(lightFrame);
 
-    thread = std::thread(&LightFrameThread<BITMAP>::processNextFrame, this, true);
+    thread = std::thread(
+        &RegistrationThread<BITMAP>::processNextFrame, this, true, luminancyThreshold
+    );
 
     return true;
 }
@@ -64,7 +57,7 @@ bool LightFrameThread<BITMAP>::processReferenceFrame(const std::string& lightFra
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LightFrameThread<BITMAP>::processFrames(const std::vector<std::string>& lightFrames)
+void RegistrationThread<BITMAP>::processFrames(const std::vector<std::string>& lightFrames)
 {
     mutex.lock();
 
@@ -72,7 +65,7 @@ void LightFrameThread<BITMAP>::processFrames(const std::vector<std::string>& lig
         this->lightFrames.push_back(lightFrame);
 
     if (!thread.joinable())
-        thread = std::thread(&LightFrameThread<BITMAP>::processNextFrame, this, false);
+        thread = std::thread(&RegistrationThread<BITMAP>::processNextFrame, this, false, -1);
 
     mutex.unlock();
 }
@@ -80,7 +73,7 @@ void LightFrameThread<BITMAP>::processFrames(const std::vector<std::string>& lig
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LightFrameThread<BITMAP>::cancel()
+void RegistrationThread<BITMAP>::cancel()
 {
     mutex.lock();
     lightFrames.clear();
@@ -90,7 +83,7 @@ void LightFrameThread<BITMAP>::cancel()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LightFrameThread<BITMAP>::wait()
+void RegistrationThread<BITMAP>::wait()
 {
     if (thread.joinable())
         thread.join();
@@ -99,7 +92,7 @@ void LightFrameThread<BITMAP>::wait()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LightFrameThread<BITMAP>::processNextFrame(bool reference)
+void RegistrationThread<BITMAP>::processNextFrame(bool reference, int luminancyThreshold)
 {
     while (true)
     {
@@ -119,10 +112,17 @@ void LightFrameThread<BITMAP>::processNextFrame(bool reference)
         std::string extension = std::filesystem::path(name).extension().string();
         std::string destName = name.replace(name.find(extension), extension.size(), ".fits");
 
-        std::shared_ptr<BITMAP> bitmap = processor.process(filename, reference, destFolder / destName);
-
-        listener->lightFrameProcessed(filename, (bool) bitmap);
-        reference = false;
+        if (reference)
+        {
+            star_list_t stars = processor.processReference(filename, luminancyThreshold, destFolder / destName);
+            listener->lightFrameRegistered(filename, !stars.empty());
+            reference = false;
+        }
+        else
+        {
+            auto result = processor.process(filename, destFolder / destName);
+            listener->lightFrameRegistered(filename, !get<0>(result).empty());
+        }
     }
 }
 

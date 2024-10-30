@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <astrophoto-toolbox/stacking/processing/lightframes.h>
+#include <astrophoto-toolbox/stacking/processing/registration.h>
 #include <astrophoto-toolbox/stacking/threads/listener.h>
 #include <filesystem>
 #include <string>
@@ -20,50 +20,53 @@ namespace stacking {
 namespace threads {
 
     //------------------------------------------------------------------------------------
-    /// @brief  Thread allowig to perform all the operations related to light frames
-    ///         (background calibration, dark frame substraction, ...)
+    /// @brief  Thread allowig to perform all the registration-related operations (stars
+    ///         detection and transformation from a reference frame computation)
     //------------------------------------------------------------------------------------
     template<class BITMAP>
-    class LightFrameThread
+    class RegistrationThread
     {
     public:
         //--------------------------------------------------------------------------------
         /// @brief  Constructor
         ///
-        /// The listener will be used to notify the caller when a frame was processed, and
+        /// The listener will be used to notify the called when a frame was processed, and
         /// the destination folder (will be created if necessary) is where the processed
         /// frame files will be saved.
         //--------------------------------------------------------------------------------
-        LightFrameThread(StackingListener* listener, const std::filesystem::path& destFolder);
+        RegistrationThread(StackingListener* listener, const std::filesystem::path& destFolder);
 
         //--------------------------------------------------------------------------------
         /// @brief  Destructor
         ///
         /// If the thread is still running, the processing will be cancelled.
         //--------------------------------------------------------------------------------
-        ~LightFrameThread();
+        ~RegistrationThread();
 
 
     public:
         //--------------------------------------------------------------------------------
-        /// @brief  Set the master dark frame file to use
+        /// @brief  Register the light frame file to use as the reference
         ///
-        /// It is expected that the thread isn't already running, and that th file is a
-        /// FITS one containing a bitmap and a list of hot pixels.
-        //--------------------------------------------------------------------------------
-        bool setMasterDark(const std::string& filename);
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Process the reference frame
+        /// If not specified, the luminancy threshold is estimated on the reference frame
+        /// and used as-is on all the other frames.
         ///
-        /// It is expected that the thread isn't already running.
+        /// If the destination file points to an existing FITS file, the list of detected
+        /// stars is added to that file (which can be the same as the light frame one).
+        ///
+        /// It is expected that the light frame has been properly processed, and that the
+        /// thread isn't already running.
         ///
         /// Calling this method will start the thread.
         //--------------------------------------------------------------------------------
-        bool processReferenceFrame(const std::string& lightFrame);
+        bool processReferenceFrame(
+            const std::string& lightFrame, int luminancyThreshold=-1
+        );
 
         //--------------------------------------------------------------------------------
-        /// @brief  Process a list of light frame files
+        /// @brief  Register a list of light frame files
+        ///
+        /// It is expected that the light frame has been properly processed.
         ///
         /// Calling this method will start the thread (if not already running).
         //--------------------------------------------------------------------------------
@@ -82,14 +85,14 @@ namespace threads {
 
 
     private:
-        void processNextFrame(bool reference);
+        void processNextFrame(bool reference, int luminancyThreshold=-1);
 
 
     private:
         StackingListener* listener;
         std::filesystem::path destFolder;
 
-        LightFrameProcessor<BITMAP> processor;
+        RegistrationProcessor<BITMAP> processor;
         std::thread thread;
 
         std::vector<std::string> lightFrames;
@@ -100,4 +103,4 @@ namespace threads {
 }
 }
 
-#include <astrophoto-toolbox/stacking/threads/lightframes.hpp>
+#include <astrophoto-toolbox/stacking/threads/registration.hpp>

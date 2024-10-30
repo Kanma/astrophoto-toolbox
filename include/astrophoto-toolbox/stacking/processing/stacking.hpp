@@ -4,13 +4,6 @@
  * SPDX-FileContributor: Philip Abbet <philip.abbet@gmail.com>
  *
  * SPDX-License-Identifier: BSD-3-Clause
- *
- * This file is essentially a reimplementation of parts of 'DeepSkyStacker',
- * which is released under a BSD 3-Clause license,
- * Copyright (c) 2006-2019, LucCoiffier
- * Copyright (c) 2018-2023,
- *      David C. Partridge, Tony Cook, Mat Draper,
- *      Simon C. Smith, Vitali Pelenjow, Michal Schulz, Martin Toeltsch
 */
 
 #pragma once

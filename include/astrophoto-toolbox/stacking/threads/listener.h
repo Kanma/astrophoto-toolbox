@@ -22,6 +22,7 @@ namespace threads {
     {
     public:
         virtual void lightFrameProcessed(const std::string& filename, bool success) = 0;
+        virtual void lightFrameRegistered(const std::string& filename, bool success) = 0;
     };
 
 }
