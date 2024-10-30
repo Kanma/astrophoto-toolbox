@@ -30,13 +30,13 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         /// @brief  Set the master dark frame file to use
         ///
-        /// It is expected that it is a FITS file containing a bitmap and a lit of hot
+        /// It is expected that it is a FITS file containing a bitmap and a list of hot
         /// pixels.
         //--------------------------------------------------------------------------------
         bool setMasterDark(const std::string& filename);
 
         //--------------------------------------------------------------------------------
-        /// @brief  Set the master dark frame bitmap and lit of hot pixels to use
+        /// @brief  Set the master dark frame bitmap and list of hot pixels to use
         //--------------------------------------------------------------------------------
         inline void setMasterDark(
             const std::shared_ptr<BITMAP>& masterDark, const point_list_t& hotPixels

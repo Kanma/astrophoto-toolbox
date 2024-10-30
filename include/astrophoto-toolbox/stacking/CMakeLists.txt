@@ -1,4 +1,5 @@
 add_subdirectory(processing)
+add_subdirectory(threads)
 
 target_sources(astrophoto-toolbox
     PUBLIC
