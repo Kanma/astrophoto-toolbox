@@ -15,7 +15,7 @@ using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
 
 
-TEST_CASE("Fail to register missing reference frame file", "[RegistrationProcessor]")
+TEST_CASE("(Stacking/Processing/Registration) Fail to register missing reference frame file", "[RegistrationProcessor]")
 {
     RegistrationProcessor<UInt16ColorBitmap> processor;
     star_list_t stars = processor.processReference(DATA_DIR "missing.fits");
@@ -23,7 +23,7 @@ TEST_CASE("Fail to register missing reference frame file", "[RegistrationProcess
 }
 
 
-TEST_CASE("Fail to register missing light frame file", "[RegistrationProcessor]")
+TEST_CASE("(Stacking/Processing/Registration) Fail to register missing light frame file", "[RegistrationProcessor]")
 {
     RegistrationProcessor<UInt16ColorBitmap> processor;
     std::tuple<star_list_t, Transformation> result = processor.process(DATA_DIR "missing.fits");
@@ -31,7 +31,7 @@ TEST_CASE("Fail to register missing light frame file", "[RegistrationProcessor]"
 }
 
 
-TEST_CASE("Registration process", "[RegistrationProcessor]")
+TEST_CASE("(Stacking/Processing/Registration) Registration process", "[RegistrationProcessor]")
 {
     REQUIRE(std::filesystem::exists(TEMP_DIR "lightframes/light1.fits"));
     REQUIRE(std::filesystem::exists(TEMP_DIR "lightframes/light2.fits"));

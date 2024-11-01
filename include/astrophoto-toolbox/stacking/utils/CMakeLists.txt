@@ -1,0 +1,11 @@
+target_sources(astrophoto-toolbox
+    PUBLIC
+        backgroundcalibration.h
+        backgroundcalibration.hpp
+        bitmapstacker.h
+        bitmapstacker.hpp
+        registration.h
+        starmatcher.h
+        starsdistance.h
+        votingpair.h
+)

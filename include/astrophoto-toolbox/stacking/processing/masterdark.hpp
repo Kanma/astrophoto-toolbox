@@ -19,6 +19,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace processing {
 
 
 template<class BITMAP>
@@ -153,5 +154,6 @@ void MasterDarkGenerator<BITMAP>::detectHotPixels(BITMAP* masterDark)
     }
 }
 
+}
 }
 }

@@ -10,7 +10,7 @@
 
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/point.h>
-#include <astrophoto-toolbox/stacking/backgroundcalibration.h>
+#include <astrophoto-toolbox/stacking/utils/backgroundcalibration.h>
 #include <filesystem>
 #include <string>
 #include <memory>
@@ -18,6 +18,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace processing {
 
     //------------------------------------------------------------------------------------
     /// @brief  Allows to perform all the operations related to light frames (background
@@ -77,11 +78,12 @@ namespace stacking {
 
 
     private:
-        BackgroundCalibration<BITMAP> calibration;
+        utils::BackgroundCalibration<BITMAP> calibration;
         std::shared_ptr<BITMAP> masterDark;
         point_list_t hotPixels;
     };
 
+}
 }
 }
 

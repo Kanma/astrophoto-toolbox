@@ -16,6 +16,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace utils {
 
     //------------------------------------------------------------------------------------
     /// @brief  Allows to stack bitmaps, using the 'median' method
@@ -156,6 +157,7 @@ namespace stacking {
 
 }
 }
+}
 
 
-#include <astrophoto-toolbox/stacking/bitmapstacker.hpp>
+#include <astrophoto-toolbox/stacking/utils/bitmapstacker.hpp>

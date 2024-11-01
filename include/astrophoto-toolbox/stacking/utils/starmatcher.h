@@ -11,12 +11,13 @@
 #include <astrophoto-toolbox/data/star.h>
 #include <astrophoto-toolbox/data/size.h>
 #include <astrophoto-toolbox/data/transformation.h>
-#include <astrophoto-toolbox/stacking/starsdistance.h>
-#include <astrophoto-toolbox/stacking/votingpair.h>
+#include <astrophoto-toolbox/stacking/utils/starsdistance.h>
+#include <astrophoto-toolbox/stacking/utils/votingpair.h>
 
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace utils {
 
     //------------------------------------------------------------------------------------
     /// @brief  Allows to compute the transformation between two list of stars
@@ -86,5 +87,6 @@ namespace stacking {
         static constexpr double MAXSTARDISTANCEDELTA = 2.0;
     };
 
+}
 }
 }

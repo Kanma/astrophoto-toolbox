@@ -21,6 +21,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace utils {
 
 template<class BITMAP>
 void BackgroundCalibration<BITMAP>::setReference(BITMAP* bitmap) requires(BITMAP::Channels == 3)
@@ -203,5 +204,6 @@ void BackgroundCalibration<BITMAP>::computeParameters(
     background = findMedian(histogram) * bitmap->maxRangeValue();
 }
 
+}
 }
 }

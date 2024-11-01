@@ -13,7 +13,7 @@
 
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/fits.h>
-#include <astrophoto-toolbox/stacking/registration.h>
+#include <astrophoto-toolbox/stacking/utils/registration.h>
 #include <astrophoto-toolbox/images/io.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <astrophoto-toolbox/platesolving/platesolver.h>
@@ -167,7 +167,7 @@ int main(int argc, char** argv)
 
     if (!usePlateSolvingDetection)
     {
-        stacking::Registration registration;
+        stacking::utils::Registration registration;
         stars = registration.registerBitmap(bitmap);
 
         if (stars.empty())

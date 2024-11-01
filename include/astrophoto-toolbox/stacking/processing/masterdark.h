@@ -10,13 +10,14 @@
 
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/point.h>
-#include <astrophoto-toolbox/stacking/bitmapstacker.h>
+#include <astrophoto-toolbox/stacking/utils/bitmapstacker.h>
 #include <filesystem>
 #include <string>
 
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace processing {
 
     //------------------------------------------------------------------------------------
     /// @brief  Allows to generate a master dark frame (and list of hot pixels) from a
@@ -62,13 +63,13 @@ namespace stacking {
 
 
     private:
-        BitmapStacker<BITMAP> stacker;
+        utils::BitmapStacker<BITMAP> stacker;
         point_list_t hotPixels;
         bool cancelled = false;
     };
 
 }
 }
-
+}
 
 #include <astrophoto-toolbox/stacking/processing/masterdark.hpp>

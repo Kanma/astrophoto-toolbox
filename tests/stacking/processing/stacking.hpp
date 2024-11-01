@@ -14,7 +14,7 @@ using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
 
 
-TEST_CASE("Fail to add missing light frame file", "[FramesStacker]")
+TEST_CASE("(Stacking/Processing/Stacking) Fail to add missing light frame file", "[FramesStacker]")
 {
     REQUIRE(!std::filesystem::exists(TEMP_DIR "tmp_stacking"));
 
@@ -29,7 +29,7 @@ TEST_CASE("Fail to add missing light frame file", "[FramesStacker]")
 }
 
 
-TEST_CASE("Stacking of 3 light frames", "[FramesStacker]")
+TEST_CASE("(Stacking/Processing/Stacking) Stacking of 3 light frames", "[FramesStacker]")
 {
     REQUIRE(!std::filesystem::exists(TEMP_DIR "tmp_stacking"));
 

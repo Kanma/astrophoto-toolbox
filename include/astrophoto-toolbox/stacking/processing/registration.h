@@ -9,8 +9,8 @@
 #pragma once
 
 #include <astrophoto-toolbox/images/bitmap.h>
-#include <astrophoto-toolbox/stacking/registration.h>
-#include <astrophoto-toolbox/stacking/starmatcher.h>
+#include <astrophoto-toolbox/stacking/utils/registration.h>
+#include <astrophoto-toolbox/stacking/utils/starmatcher.h>
 #include <filesystem>
 #include <string>
 #include <memory>
@@ -18,6 +18,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace processing {
 
     //------------------------------------------------------------------------------------
     /// @brief  Allows to perform all the registration-related operations (stars detection
@@ -91,12 +92,13 @@ namespace stacking {
 
 
     private:
-        Registration registration;
+        utils::Registration registration;
         int luminancyThreshold;
-        StarMatcher matcher;
+        utils::StarMatcher matcher;
         star_list_t referenceStars;
     };
 
+}
 }
 }
 

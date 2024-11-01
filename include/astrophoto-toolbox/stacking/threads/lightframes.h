@@ -89,7 +89,7 @@ namespace threads {
         StackingListener* listener;
         std::filesystem::path destFolder;
 
-        LightFrameProcessor<BITMAP> processor;
+        processing::LightFrameProcessor<BITMAP> processor;
         std::thread thread;
 
         std::vector<std::string> lightFrames;

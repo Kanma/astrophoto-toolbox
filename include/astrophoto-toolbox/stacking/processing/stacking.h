@@ -10,13 +10,14 @@
 
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <astrophoto-toolbox/data/point.h>
-#include <astrophoto-toolbox/stacking/bitmapstacker.h>
+#include <astrophoto-toolbox/stacking/utils/bitmapstacker.h>
 #include <filesystem>
 #include <string>
 
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace processing {
 
     //------------------------------------------------------------------------------------
     /// @brief  Allows to stack processed light frames
@@ -74,10 +75,11 @@ namespace stacking {
 
 
     private:
-        BitmapStacker<BITMAP> stacker;
+        utils::BitmapStacker<BITMAP> stacker;
         rect_t outputRect;
     };
 
+}
 }
 }
 

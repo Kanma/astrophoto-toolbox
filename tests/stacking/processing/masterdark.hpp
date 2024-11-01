@@ -9,13 +9,13 @@
 #include <catch.hpp>
 #include <astrophoto-toolbox/stacking/processing/masterdark.h>
 #include <astrophoto-toolbox/data/fits.h>
-//#include <fstream>
 
 using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
+using namespace astrophototoolbox::stacking::processing;
 
 
-TEST_CASE("Fail to compute master dark frame without dark frames", "[MasterDark]")
+TEST_CASE("(Stacking/Processing/MasterDark) Fail to compute master dark frame without dark frames", "[MasterDark]")
 {
     std::vector<std::string> darkFrames = {
     };
@@ -32,7 +32,7 @@ TEST_CASE("Fail to compute master dark frame without dark frames", "[MasterDark]
 }
 
 
-TEST_CASE("Fail to compute master dark frame with missing dark frames", "[MasterDark]")
+TEST_CASE("(Stacking/Processing/MasterDark) Fail to compute master dark frame with missing dark frames", "[MasterDark]")
 {
     std::vector<std::string> darkFrames = {
         DATA_DIR "downloads/missing1.fits",
@@ -52,7 +52,7 @@ TEST_CASE("Fail to compute master dark frame with missing dark frames", "[Master
 }
 
 
-TEST_CASE("Master dark frame computation", "[MasterDark]")
+TEST_CASE("(Stacking/Processing/MasterDark) Master dark frame computation", "[MasterDark]")
 {
     REQUIRE(!std::filesystem::exists(TEMP_DIR "tmp_masterdark"));
     REQUIRE(!std::filesystem::exists(TEMP_DIR "master_dark.fits"));

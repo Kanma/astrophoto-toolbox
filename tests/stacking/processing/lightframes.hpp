@@ -13,23 +13,24 @@
 
 using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
+using namespace astrophototoolbox::stacking::processing;
 
 
-TEST_CASE("Fail to use missing master dark frame file", "[LightFrames]")
+TEST_CASE("(Stacking/Processing/LightFrames) Fail to use missing master dark frame file", "[LightFrames]")
 {
     LightFrameProcessor<UInt16ColorBitmap> processor;
     REQUIRE(!processor.setMasterDark(DATA_DIR "missing.fits"));
 }
 
 
-TEST_CASE("Fail to process missing light frame file", "[LightFrames]")
+TEST_CASE("(Stacking/Processing/LightFrames) Fail to process missing light frame file", "[LightFrames]")
 {
     LightFrameProcessor<UInt16ColorBitmap> processor;
     REQUIRE(!processor.process(DATA_DIR "missing.fits"));
 }
 
 
-TEST_CASE("Process reference light frame without a master dark", "[LightFrames]")
+TEST_CASE("(Stacking/Processing/LightFrames) Process reference light frame without a master dark", "[LightFrames]")
 {
     LightFrameProcessor<UInt16ColorBitmap> processor;
 
@@ -59,7 +60,7 @@ TEST_CASE("Process reference light frame without a master dark", "[LightFrames]"
 }
 
 
-TEST_CASE("Process light frames", "[LightFrames]")
+TEST_CASE("(Stacking/Processing/LightFrames) Process light frames", "[LightFrames]")
 {
     REQUIRE(std::filesystem::create_directory(TEMP_DIR "lightframes"));
 

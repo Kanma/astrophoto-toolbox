@@ -23,6 +23,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace processing {
 
 template<class BITMAP>
 BITMAP* loadProcessedBitmap(
@@ -102,5 +103,6 @@ bool saveProcessedBitmap(
     return true;
 }
 
+}
 }
 }

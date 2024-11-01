@@ -20,6 +20,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace processing {
 
 
 template<class BITMAP>
@@ -154,5 +155,6 @@ void LightFrameProcessor<BITMAP>::removeHotPixels(const std::shared_ptr<BITMAP>&
     }
 }
 
+}
 }
 }

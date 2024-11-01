@@ -13,7 +13,7 @@
 
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/data/star.h>
-#include <astrophoto-toolbox/stacking/starmatcher.h>
+#include <astrophoto-toolbox/stacking/utils/starmatcher.h>
 
 using namespace std;
 using namespace astrophototoolbox;
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 
     // Compute the transformation
     Transformation transformation;
-    stacking::StarMatcher matcher;
+    stacking::utils::StarMatcher matcher;
     if (!matcher.computeTransformation(sourceStars, targetStars, imageSize, transformation, minDistance))
     {
         cerr << "Failed to compute the transformation" << endl;

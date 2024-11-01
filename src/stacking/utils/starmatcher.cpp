@@ -13,13 +13,14 @@
  *      Simon C. Smith, Vitali Pelenjow, Michal Schulz, Martin Toeltsch
 */
 
-#include <astrophoto-toolbox/stacking/starmatcher.h>
+#include <astrophoto-toolbox/stacking/utils/starmatcher.h>
 #include <astrophoto-toolbox/algorithms/math.h>
 #include <Eigen/Core>
 #include <Eigen/LU>
 
 using namespace astrophototoolbox;
 using namespace stacking;
+using namespace utils;
 
 
 bool StarMatcher::computeTransformation(

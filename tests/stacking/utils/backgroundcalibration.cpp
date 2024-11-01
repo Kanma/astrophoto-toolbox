@@ -7,10 +7,11 @@
 */
 
 #include <catch.hpp>
-#include <astrophoto-toolbox/stacking/backgroundcalibration.h>
+#include <astrophoto-toolbox/stacking/utils/backgroundcalibration.h>
 
 using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
+using namespace astrophototoolbox::stacking::utils;
 
 
 TEST_CASE("BackgroundCalibration", "[BackgroundCalibration]")

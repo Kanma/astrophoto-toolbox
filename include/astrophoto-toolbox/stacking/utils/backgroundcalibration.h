@@ -13,6 +13,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace utils {
 
     //------------------------------------------------------------------------------------
     /// @brief  Allows to perform the background calibration over a group of images
@@ -77,6 +78,7 @@ namespace stacking {
 
 }
 }
+}
 
 
-#include <astrophoto-toolbox/stacking/backgroundcalibration.hpp>
+#include <astrophoto-toolbox/stacking/utils/backgroundcalibration.hpp>

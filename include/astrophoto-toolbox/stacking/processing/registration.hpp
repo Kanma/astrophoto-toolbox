@@ -12,6 +12,7 @@
 
 using namespace astrophototoolbox;
 using namespace stacking;
+using namespace processing;
 
 
 template<class BITMAP>

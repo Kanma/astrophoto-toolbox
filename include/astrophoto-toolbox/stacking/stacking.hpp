@@ -15,10 +15,10 @@
 
 #pragma once
 
-#include <astrophoto-toolbox/stacking/bitmapstacker.h>
-#include <astrophoto-toolbox/stacking/registration.h>
-#include <astrophoto-toolbox/stacking/backgroundcalibration.h>
-#include <astrophoto-toolbox/stacking/starmatcher.h>
+#include <astrophoto-toolbox/stacking/utils/bitmapstacker.h>
+#include <astrophoto-toolbox/stacking/utils/registration.h>
+#include <astrophoto-toolbox/stacking/utils/backgroundcalibration.h>
+#include <astrophoto-toolbox/stacking/utils/starmatcher.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <sstream>
@@ -174,7 +174,7 @@ bool Stacking<BITMAP>::computeMasterDark()
 
     if (darkFrames.size() > 1)
     {
-        BitmapStacker<BITMAP> stacker;
+        utils::BitmapStacker<BITMAP> stacker;
         stacker.setup(darkFrames.size(), folder / "tmp");
 
         for (const auto& filename : darkFrames)
@@ -289,9 +289,9 @@ bool Stacking<BITMAP>::processLightFrames()
     std::filesystem::path path = folder / "calibrated" / "lights";
     std::filesystem::create_directories(path);
 
-    Registration registration;
-    BackgroundCalibration<BITMAP> calibration;
-    StarMatcher matcher;
+    utils::Registration registration;
+    utils::BackgroundCalibration<BITMAP> calibration;
+    utils::StarMatcher matcher;
     Transformation transformation;
 
     BITMAP* bitmap = nullptr;

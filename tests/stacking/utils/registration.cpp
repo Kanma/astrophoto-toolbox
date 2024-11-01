@@ -7,7 +7,7 @@
 */
 
 #include <catch.hpp>
-#include <astrophoto-toolbox/stacking/registration.h>
+#include <astrophoto-toolbox/stacking/utils/registration.h>
 #include <astrophoto-toolbox/images/raw.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <astrophoto-toolbox/data/fits.h>
@@ -29,7 +29,7 @@ TEST_CASE("Registration of a bitmap", "[Registration]")
 
     removeHotPixels(&bitmap);
 
-    stacking::Registration registration;
+    stacking::utils::Registration registration;
     star_list_t stars;
 
     SECTION("with a fixed threshold")

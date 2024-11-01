@@ -7,10 +7,11 @@
 */
 
 #include <catch.hpp>
-#include <astrophoto-toolbox/stacking/bitmapstacker.h>
+#include <astrophoto-toolbox/stacking/utils/bitmapstacker.h>
 
 using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
+using namespace astrophototoolbox::stacking::utils;
 
 
 TEST_CASE("Adding bitmaps populates temporary files", "[BitmapStacker]")

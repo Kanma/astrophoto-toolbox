@@ -13,12 +13,13 @@
  *      Simon C. Smith, Vitali Pelenjow, Michal Schulz, Martin Toeltsch
 */
 
-#include <astrophoto-toolbox/stacking/registration.h>
+#include <astrophoto-toolbox/stacking/utils/registration.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <array>
 
 using namespace astrophototoolbox;
 using namespace stacking;
+using namespace utils;
 
 
 struct pixel_direction_t

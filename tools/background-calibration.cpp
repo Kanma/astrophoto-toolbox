@@ -14,11 +14,12 @@
 #include <astrophoto-toolbox/images/io.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <astrophoto-toolbox/data/fits.h>
-#include <astrophoto-toolbox/stacking/backgroundcalibration.h>
+#include <astrophoto-toolbox/stacking/utils/backgroundcalibration.h>
 
 using namespace std;
 using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
+using namespace astrophototoolbox::stacking::utils;
 
 
 /**************************** COMMAND-LINE PARSING ****************************/

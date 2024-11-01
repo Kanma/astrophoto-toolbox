@@ -12,6 +12,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace processing {
 
 
 template<class BITMAP>
@@ -111,5 +112,6 @@ void FramesStacker<BITMAP>::cancel()
     stacker.cancel();
 }
 
+}
 }
 }

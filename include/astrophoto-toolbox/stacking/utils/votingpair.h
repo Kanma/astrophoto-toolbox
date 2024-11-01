@@ -14,6 +14,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace utils {
 
     constexpr int VPFLAG_ACTIVE = 0x00000001;
     constexpr int VPFLAG_USED   = 0x00000002;
@@ -73,5 +74,6 @@ namespace stacking {
     //------------------------------------------------------------------------------------
     typedef std::vector<VotingPair> voting_pair_list_t;
 
+}
 }
 }

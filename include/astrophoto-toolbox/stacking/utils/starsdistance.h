@@ -14,6 +14,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace utils {
 
     //------------------------------------------------------------------------------------
     /// @brief  Holds the distance between two stars. Used by the star matching algorithm.
@@ -57,5 +58,6 @@ namespace stacking {
 
     typedef std::vector<StarsDistance>  stars_distance_list_t;
 
+}
 }
 }

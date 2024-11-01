@@ -15,6 +15,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace utils {
 
     //------------------------------------------------------------------------------------
     /// @brief  Allows to perform the registration (star detection) of an image
@@ -91,5 +92,6 @@ namespace stacking {
         int luminancyThreshold = 10;
     };
 
+}
 }
 }

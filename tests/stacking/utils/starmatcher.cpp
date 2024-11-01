@@ -7,7 +7,7 @@
 */
 
 #include <catch.hpp>
-#include <astrophoto-toolbox/stacking/starmatcher.h>
+#include <astrophoto-toolbox/stacking/utils/starmatcher.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <cstdlib>
 
@@ -118,7 +118,7 @@ TEST_CASE("Matching registered stars", "[StarMatcher]")
     input.close();
 
     Transformation transformation;
-    stacking::StarMatcher matcher;
+    stacking::utils::StarMatcher matcher;
 
     REQUIRE(matcher.computeTransformation(stars1, stars2, imageSize, transformation));
 
@@ -146,7 +146,7 @@ TEST_CASE("Matching registered stars", "[StarMatcher]")
 TEST_CASE("Matching synthetic stars", "[StarMatcher]")
 {
     Transformation transformation;
-    stacking::StarMatcher matcher;
+    stacking::utils::StarMatcher matcher;
 
     star_list_t stars1 = generateStars(100);
     star_list_t matching_stars1 = cropStars(stars1);
@@ -178,7 +178,7 @@ TEST_CASE("Matching synthetic stars", "[StarMatcher]")
 TEST_CASE("Matching synthetic stars with hot pixels", "[StarMatcher]")
 {
     Transformation transformation;
-    stacking::StarMatcher matcher;
+    stacking::utils::StarMatcher matcher;
 
     star_list_t stars1 = generateStars(50);
     star_list_t hotPixels = generateHotPixels(50);

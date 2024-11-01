@@ -14,7 +14,7 @@
 #include <astrophoto-toolbox/data/star.h>
 #include <astrophoto-toolbox/data/rect.h>
 #include <astrophoto-toolbox/data/transformation.h>
-#include <astrophoto-toolbox/stacking/bitmapstacker.h>
+#include <astrophoto-toolbox/stacking/utils/bitmapstacker.h>
 #include <filesystem>
 #include <functional>
 #include <vector>
@@ -201,7 +201,7 @@ namespace stacking {
         size_t nbLightFramesUnusable = 0;
 
         RawImage rawImage;
-        BitmapStacker<BITMAP> stacker;
+        utils::BitmapStacker<BITMAP> stacker;
         rect_t outputRect;
 
         int luminancyThreshold = -1;

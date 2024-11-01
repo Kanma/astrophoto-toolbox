@@ -20,6 +20,7 @@
 
 namespace astrophototoolbox {
 namespace stacking {
+namespace utils {
 
 
 template<class BITMAP>
@@ -293,5 +294,6 @@ void BitmapStacker<BITMAP>::combine(
     }
 }
 
+}
 }
 }

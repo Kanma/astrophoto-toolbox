@@ -1,16 +1,9 @@
 add_subdirectory(processing)
 add_subdirectory(threads)
+add_subdirectory(utils)
 
 target_sources(astrophoto-toolbox
     PUBLIC
-        backgroundcalibration.h
-        backgroundcalibration.hpp
-        bitmapstacker.h
-        bitmapstacker.hpp
-        registration.h
         stacking.h
         stacking.hpp
-        starmatcher.h
-        starsdistance.h
-        votingpair.h
 )
