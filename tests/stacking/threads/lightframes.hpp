@@ -26,6 +26,10 @@ public:
     {
     }
 
+    void lightFramesStacked(const std::string& filename) override
+    {
+    }
+
     std::map<std::string, bool> results;
 };
 

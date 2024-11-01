@@ -5,4 +5,6 @@ target_sources(astrophoto-toolbox
         listener.h
         registration.h
         registration.hpp
+        stacking.h
+        stacking.hpp
 )

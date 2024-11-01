@@ -9,3 +9,4 @@
 // This is to ensure that tests are running in the order we need
 #include "lightframes.hpp"
 #include "registration.hpp"
+#include "stacking.hpp"

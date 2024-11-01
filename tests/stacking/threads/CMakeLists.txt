@@ -3,4 +3,5 @@ target_sources(unittests
         threads.cpp
         lightframes.hpp
         registration.hpp
+        stacking.hpp
 )

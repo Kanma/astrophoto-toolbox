@@ -15,9 +15,9 @@ namespace stacking {
 
 
 template<class BITMAP>
-bool FramesStacker<BITMAP>::addReferenceFrame(
-    const std::string& lightFrame, unsigned int nbExpectedFrames,
-    const std::filesystem::path& tempFolder, unsigned long maxFileSize
+void FramesStacker<BITMAP>::setup(
+    unsigned int nbExpectedFrames, const std::filesystem::path& tempFolder,
+    unsigned long maxFileSize
 )
 {
     stacker.setup(nbExpectedFrames, tempFolder, maxFileSize);
@@ -25,25 +25,6 @@ bool FramesStacker<BITMAP>::addReferenceFrame(
     outputRect = rect_t(
         0, 0, std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()
     );
-
-    return addFrame(lightFrame);
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-bool FramesStacker<BITMAP>::addReferenceFrame(
-    const std::shared_ptr<BITMAP>& lightFrame, unsigned int nbExpectedFrames,
-    const std::filesystem::path& tempFolder, unsigned long maxFileSize
-)
-{
-    stacker.setup(nbExpectedFrames, tempFolder, maxFileSize);
-
-    outputRect = rect_t(
-        0, 0, std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()
-    );
-
-    return addFrame(lightFrame, Transformation());
 }
 
 //-----------------------------------------------------------------------------

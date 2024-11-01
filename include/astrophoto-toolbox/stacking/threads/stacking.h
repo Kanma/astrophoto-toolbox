@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <astrophoto-toolbox/stacking/processing/registration.h>
+#include <astrophoto-toolbox/stacking/processing/stacking.h>
 #include <astrophoto-toolbox/stacking/threads/listener.h>
 #include <filesystem>
 #include <string>
@@ -20,51 +20,41 @@ namespace stacking {
 namespace threads {
 
     //------------------------------------------------------------------------------------
-    /// @brief  Thread allowing to perform all the registration-related operations (stars
-    ///         detection and transformation from a reference frame computation)
+    /// @brief  Thread allowing to to stack processed light frames
     //------------------------------------------------------------------------------------
     template<class BITMAP>
-    class RegistrationThread
+    class StackingThread
     {
     public:
         //--------------------------------------------------------------------------------
         /// @brief  Constructor
         ///
-        /// The listener will be used to notify the called when a frame was processed, and
-        /// the destination folder (will be created if necessary) is where the processed
-        /// frame files will be saved.
+        /// The listener will be used to notify the called when a frame is stacked.
         //--------------------------------------------------------------------------------
-        RegistrationThread(StackingListener* listener, const std::filesystem::path& destFolder);
+        StackingThread(StackingListener* listener, const std::filesystem::path& destFilename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Destructor
         ///
         /// If the thread is still running, the processing will be cancelled.
         //--------------------------------------------------------------------------------
-        ~RegistrationThread();
+        ~StackingThread();
 
 
     public:
         //--------------------------------------------------------------------------------
-        /// @brief  Register the light frame file to use as the reference
+        /// @brief  Setup the stacker
         ///
-        /// If not specified, the luminancy threshold is estimated on the reference frame
-        /// and used as-is on all the other frames.
-        ///
-        /// If the destination file points to an existing FITS file, the list of detected
-        /// stars is added to that file (which can be the same as the light frame one).
-        ///
-        /// It is expected that the light frame has been properly processed, and that the
-        /// thread isn't already running.
-        ///
-        /// Calling this method will start the thread.
+        /// It is expected that the thread isn't already running.
         //--------------------------------------------------------------------------------
-        bool processReferenceFrame(
-            const std::string& lightFrame, int luminancyThreshold=-1
+        bool setup(
+            unsigned int nbExpectedFrames,
+            const std::filesystem::path& tempFolder,
+            unsigned long maxFileSize = 50000000L
         );
 
         //--------------------------------------------------------------------------------
-        /// @brief  Register a list of light frame files
+        /// @brief  Add a list of light frame files to the stack
         ///
         /// It is expected that the light frame has been properly processed.
         ///
@@ -85,22 +75,24 @@ namespace threads {
 
 
     private:
-        void processNextFrame(bool reference, int luminancyThreshold=-1);
+        void process();
 
 
     private:
         StackingListener* listener;
-        std::filesystem::path destFolder;
+        std::filesystem::path destFilename;
 
-        RegistrationProcessor<BITMAP> processor;
+        FramesStacker<BITMAP> stacker;
         std::thread thread;
 
         std::vector<std::string> lightFrames;
         std::mutex mutex;
+
+        bool cancelled = false;
     };
 
 }
 }
 }
 
-#include <astrophoto-toolbox/stacking/threads/registration.hpp>
+#include <astrophoto-toolbox/stacking/threads/stacking.hpp>

@@ -20,7 +20,7 @@ namespace stacking {
 namespace threads {
 
     //------------------------------------------------------------------------------------
-    /// @brief  Thread allowig to perform all the operations related to light frames
+    /// @brief  Thread allowing to perform all the operations related to light frames
     ///         (background calibration, dark frame substraction, ...)
     //------------------------------------------------------------------------------------
     template<class BITMAP>
@@ -48,7 +48,7 @@ namespace threads {
         //--------------------------------------------------------------------------------
         /// @brief  Set the master dark frame file to use
         ///
-        /// It is expected that the thread isn't already running, and that th file is a
+        /// It is expected that the thread isn't already running, and that the file is a
         /// FITS one containing a bitmap and a list of hot pixels.
         //--------------------------------------------------------------------------------
         bool setMasterDark(const std::string& filename);

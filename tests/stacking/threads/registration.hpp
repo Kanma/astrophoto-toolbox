@@ -8,8 +8,6 @@
 
 #include <catch.hpp>
 #include <astrophoto-toolbox/stacking/threads/registration.h>
-#include <astrophoto-toolbox/data/fits.h>
-#include <fstream>
 
 using namespace astrophototoolbox;
 using namespace astrophototoolbox::stacking;
@@ -26,6 +24,10 @@ public:
     void lightFrameRegistered(const std::string& filename, bool success) override
     {
         results[filename] = success;
+    }
+
+    void lightFramesStacked(const std::string& filename) override
+    {
     }
 
     std::map<std::string, bool> results;

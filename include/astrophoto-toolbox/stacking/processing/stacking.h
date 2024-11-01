@@ -19,35 +19,17 @@ namespace astrophototoolbox {
 namespace stacking {
 
     //------------------------------------------------------------------------------------
-    /// @brief  Allows to generate a master dark frame (and list of hot pixels) from a
-    ///         list of dark frames
+    /// @brief  Allows to stack processed light frames
     //------------------------------------------------------------------------------------
     template<class BITMAP>
     class FramesStacker
     {
     public:
         //--------------------------------------------------------------------------------
-        /// @brief  Add a bitmap to the list of bitmaps to be stacked
-        ///
-        /// It is expected that all the bitmaps have the same dimensions and range.
-        ///
-        /// Note: 'setup()' must have been called before this method.
+        /// @brief  Setup the stacker
         //--------------------------------------------------------------------------------
-        bool addReferenceFrame(
-            const std::string& lightFrame, unsigned int nbExpectedFrames,
-            const std::filesystem::path& tempFolder = "",
-            unsigned long maxFileSize = 50000000L
-        );
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Add a bitmap to the list of bitmaps to be stacked
-        ///
-        /// It is expected that all the bitmaps have the same dimensions and range.
-        ///
-        /// Note: 'setup()' must have been called before this method.
-        //--------------------------------------------------------------------------------
-        bool addReferenceFrame(
-            const std::shared_ptr<BITMAP>& lightFrame, unsigned int nbExpectedFrames,
+        void setup(
+            unsigned int nbExpectedFrames,
             const std::filesystem::path& tempFolder = "",
             unsigned long maxFileSize = 50000000L
         );
