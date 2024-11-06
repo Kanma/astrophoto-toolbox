@@ -9,14 +9,11 @@
 #pragma once
 
 #include <astrophoto-toolbox/images/bitmap.h>
-#include <astrophoto-toolbox/images/raw.h>
-#include <astrophoto-toolbox/data/point.h>
-#include <astrophoto-toolbox/data/star.h>
-#include <astrophoto-toolbox/data/rect.h>
-#include <astrophoto-toolbox/data/transformation.h>
-#include <astrophoto-toolbox/stacking/utils/bitmapstacker.h>
+#include <astrophoto-toolbox/stacking/processing/masterdark.h>
+#include <astrophoto-toolbox/stacking/processing/lightframes.h>
+#include <astrophoto-toolbox/stacking/processing/registration.h>
+#include <astrophoto-toolbox/stacking/processing/stacking.h>
 #include <filesystem>
-#include <functional>
 #include <vector>
 #include <string>
 
@@ -30,10 +27,6 @@ namespace stacking {
     template<class BITMAP>
     class Stacking
     {
-    public:
-        ~Stacking();
-
-
     public:
         //--------------------------------------------------------------------------------
         /// @brief  Setup the stacking with a specific folder to work in
@@ -53,27 +46,12 @@ namespace stacking {
         /// @brief  Save the list of images into a configuration file ('stacking.txt' in
         ///         the working folder)
         //--------------------------------------------------------------------------------
-        bool save() const;
+        bool save();
 
         //--------------------------------------------------------------------------------
         /// @brief  Add a dark frame
         //--------------------------------------------------------------------------------
         bool addDarkFrame(const std::string& filename);
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Computes the master dark frame from all the added dark frames
-        //--------------------------------------------------------------------------------
-        bool computeMasterDark();
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Indicates if the master dark frame exists
-        //--------------------------------------------------------------------------------
-        bool hasMasterDark() const;
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Retrieves the master dark frame
-        //--------------------------------------------------------------------------------
-        BITMAP* getMasterDark();
 
         //--------------------------------------------------------------------------------
         /// @brief  Returns the number of dark frames
@@ -89,27 +67,11 @@ namespace stacking {
         bool addLightFrame(const std::string& filename, bool reference = false);
 
         //--------------------------------------------------------------------------------
-        /// @brief  Process the light frames, to be ready to be stacked
-        ///
-        /// Only the images not already done are processed, so you can repeatedly call
-        /// this method during live stacking.
-        //--------------------------------------------------------------------------------
-        bool processLightFrames();
-
-        //--------------------------------------------------------------------------------
         /// @brief  Returns the number of light frames
         //--------------------------------------------------------------------------------
         inline size_t nbLightFrames() const
         {
             return lightFrames.size();
-        }
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Returns the number of light frames already processed
-        //--------------------------------------------------------------------------------
-        inline size_t nbProcessedLightFrames() const
-        {
-            return nbLightFramesCalibrated;
         }
 
         //--------------------------------------------------------------------------------
@@ -120,9 +82,6 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         inline void setReference(size_t index)
         {
-            if (index != referenceFrame)
-                invalidateLights();
-
             referenceFrame = index;
         }
 
@@ -135,79 +94,29 @@ namespace stacking {
         }
 
         //--------------------------------------------------------------------------------
-        /// @brief  Indicates if a reference light frame was set
-        //--------------------------------------------------------------------------------
-        inline bool hasReference() const
-        {
-            return (referenceFrame >= 0) && (referenceFrame < lightFrames.size());
-        }
-
-        //--------------------------------------------------------------------------------
         /// @brief  Stack the light frames
         ///
-        /// This method can be repeatedly called during live stacking.
+        /// This method will block until the stacking is done, which takes a while.
         //--------------------------------------------------------------------------------
-        BITMAP* process(unsigned int nbExpectedLightFrames = 0);
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Cancel the processing
-        ///
-        /// Only useful in a multithreading scenario, where this method is called from a
-        /// different thread than the one doing the processing.
-        //--------------------------------------------------------------------------------
-        void cancel();
+        BITMAP* process(int luminancyThreshold = -1);
 
 
     private:
-        void detectHotPixels() requires(BITMAP::Channels == 3);
-        void detectHotPixels() requires(BITMAP::Channels == 1);
-
-        void removeHotPixels(BITMAP* bitmap) const requires(BITMAP::Channels == 3);
-        void removeHotPixels(BITMAP* bitmap) const requires(BITMAP::Channels == 1);
-
-        void clear();
-        void clearMasterDark();
-
-        void invalidateDarks();
-        void invalidateLights();
-
         const std::string getCalibratedFilename(const std::string& path);
-
-        BITMAP* loadBitmap(
-            const std::filesystem::path& path, point_list_t* hotPixels = nullptr,
-            star_list_t* stars = nullptr, Transformation* transformation = nullptr
-        );
-
-        bool saveBitmap(
-            BITMAP* bitmap, const std::filesystem::path& path,
-            point_list_t* hotPixels = nullptr, star_list_t* stars = nullptr,
-            Transformation* transformation = nullptr
-        ) const;
 
 
     private:
         std::filesystem::path folder;
-        bool loading = false;
 
         std::vector<std::string> darkFrames;
         std::vector<std::string> lightFrames;
 
-        BITMAP* masterDark = nullptr;
-        point_list_t hotPixels;
-
         size_t referenceFrame = -1;
-        bool lightFramesCalibrated = false;
-        size_t nbLightFramesCalibrated = 0;
-        size_t nbLightFramesUnusable = 0;
 
-        RawImage rawImage;
-        utils::BitmapStacker<BITMAP> stacker;
-        rect_t outputRect;
-
-        int luminancyThreshold = -1;
-
-        bool cancelled = false;
-        std::function<void()> cancelFunction = nullptr;
+        processing::MasterDarkGenerator<BITMAP> masterDarkGenerator;
+        processing::LightFrameProcessor<BITMAP> lightFrameProcessor;
+        processing::RegistrationProcessor<BITMAP> registrationProcessor;
+        processing::FramesStacker<BITMAP> framesStacker;
     };
 
 }

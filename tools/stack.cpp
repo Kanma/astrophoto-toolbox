@@ -12,7 +12,6 @@
 
 #include <astrophoto-toolbox/stacking/stacking.h>
 #include <astrophoto-toolbox/images/io.h>
-#include <astrophoto-toolbox/data/fits.h>
 
 using namespace std;
 using namespace astrophototoolbox;
@@ -58,7 +57,6 @@ void showUsage(const std::string& strApplicationName)
 
 int main(int argc, char** argv)
 {
-    astrophototoolbox::RawImage image;
     bool verbose = false;
 
     // Parse the command-line parameters
@@ -122,44 +120,8 @@ int main(int argc, char** argv)
             cout << "No light frame" << endl;
     }
 
-    if ((stacking.nbDarkFrames() != 0) && !stacking.hasMasterDark())
-    {
-        if (verbose)
-            cout << "Computing the master dark frame..." << endl;
-
-        if (!stacking.computeMasterDark())
-        {
-            cerr << "Failed to compute the master dark frame" << endl;
-            return 1;
-        }
-    }
-    else if (verbose)
-    {
-        cout << "Master dark frame already computed" << endl;
-    }
-
-
     if (stacking.nbLightFrames() == 0)
         return 0;
-
-    if (stacking.nbProcessedLightFrames() < stacking.nbLightFrames())
-    {
-        if (verbose)
-        {
-            cout << "Processing " << (stacking.nbLightFrames() - stacking.nbProcessedLightFrames())
-                 << " light frames..." << endl;
-        }
-
-        if (!stacking.processLightFrames())
-        {
-            cerr << "Failed to process the light frames" << endl;
-            return 1;
-        }
-    }
-    else if (verbose)
-    {
-        cout << "All light frames are already processed" << endl;
-    }
 
 
     if (verbose)
