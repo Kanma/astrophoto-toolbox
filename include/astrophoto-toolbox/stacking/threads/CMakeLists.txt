@@ -3,6 +3,8 @@ target_sources(astrophoto-toolbox
         lightframes.h
         lightframes.hpp
         listener.h
+        masterdark.h
+        masterdark.hpp
         registration.h
         registration.hpp
         stacking.h

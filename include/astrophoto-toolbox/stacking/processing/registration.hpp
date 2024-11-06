@@ -59,7 +59,7 @@ star_list_t RegistrationProcessor<BITMAP>::processReference(
                 return star_list_t();
         }
 
-        if (!fits.write(referenceStars, size2d_t(lightFrame->width(), lightFrame->height()), "STARS"))
+        if (!fits.write(referenceStars, size2d_t(lightFrame->width(), lightFrame->height()), "STARS", true))
             return star_list_t();
     }
 
@@ -117,10 +117,10 @@ std::tuple<star_list_t, Transformation> RegistrationProcessor<BITMAP>::process(
                 return std::make_tuple(star_list_t(), Transformation());
         }
 
-        if (!fits.write(stars, size2d_t(lightFrame->width(), lightFrame->height()), "STARS"))
+        if (!fits.write(stars, size2d_t(lightFrame->width(), lightFrame->height()), "STARS", true))
             return std::make_tuple(star_list_t(), Transformation());
 
-        if (!fits.write(transformation, "TRANSFORMS"))
+        if (!fits.write(transformation, "TRANSFORMS", true))
             return std::make_tuple(star_list_t(), Transformation());
     }
 

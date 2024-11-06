@@ -73,6 +73,11 @@ namespace processing {
         //--------------------------------------------------------------------------------
         void cancel();
 
+        inline unsigned int nbFrames() const
+        {
+            return stacker.nbStackedBitmaps();
+        }
+
 
     private:
         utils::BitmapStacker<BITMAP> stacker;

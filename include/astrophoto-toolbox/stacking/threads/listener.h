@@ -21,9 +21,10 @@ namespace threads {
     class StackingListener
     {
     public:
+        virtual void masterDarkFrameComputed(const std::string& filename, bool success) = 0;
         virtual void lightFrameProcessed(const std::string& filename, bool success) = 0;
         virtual void lightFrameRegistered(const std::string& filename, bool success) = 0;
-        virtual void lightFramesStacked(const std::string& filename) = 0;
+        virtual void lightFramesStacked(const std::string& filename, unsigned int nbFrames) = 0;
     };
 
 }

@@ -28,6 +28,8 @@ BITMAP* MasterDarkGenerator<BITMAP>::compute(
     const std::filesystem::path& tmpFolder
 )
 {
+    cancelled = false;
+
     if (std::filesystem::exists(destination))
         std::filesystem::remove(destination);
 
@@ -46,6 +48,13 @@ BITMAP* MasterDarkGenerator<BITMAP>::compute(
         {
             stacker.addBitmap(bitmap);
             delete bitmap;
+        }
+
+        if (cancelled)
+        {
+            stacker.clear();
+            std::filesystem::remove(tmpFolder);
+            return nullptr;
         }
     }
 
@@ -79,6 +88,7 @@ BITMAP* MasterDarkGenerator<BITMAP>::compute(
 template<class BITMAP>
 void MasterDarkGenerator<BITMAP>::cancel()
 {
+    cancelled = true;
     stacker.cancel();
 }
 

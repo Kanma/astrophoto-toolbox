@@ -94,6 +94,10 @@ namespace threads {
 
         std::vector<std::string> lightFrames;
         std::mutex mutex;
+        std::condition_variable condition;
+
+        bool cancelled = false;
+        bool terminate = false;
     };
 
 }

@@ -6,4 +6,6 @@ target_sources(astrophoto-toolbox
     PUBLIC
         stacking.h
         stacking.hpp
+        livestacking.h
+        livestacking.hpp
 )

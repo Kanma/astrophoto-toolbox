@@ -30,7 +30,7 @@ namespace threads {
         //--------------------------------------------------------------------------------
         /// @brief  Constructor
         ///
-        /// The listener will be used to notify the called when a frame was processed, and
+        /// The listener will be used to notify the caller when a frame was processed, and
         /// the destination folder (will be created if necessary) is where the processed
         /// frame files will be saved.
         //--------------------------------------------------------------------------------
@@ -97,6 +97,10 @@ namespace threads {
 
         std::vector<std::string> lightFrames;
         std::mutex mutex;
+        std::condition_variable condition;
+
+        bool cancelled = false;
+        bool terminate = false;
     };
 
 }

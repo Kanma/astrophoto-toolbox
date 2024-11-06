@@ -56,7 +56,11 @@ bool LightFrameThread<BITMAP>::processReferenceFrame(const std::string& lightFra
 
     lightFrames.push_back(lightFrame);
 
+    cancelled = false;
+    terminate = false;
+
     thread = std::thread(&LightFrameThread<BITMAP>::processNextFrame, this, true);
+    condition.notify_one();
 
     return true;
 }
@@ -72,9 +76,14 @@ void LightFrameThread<BITMAP>::processFrames(const std::vector<std::string>& lig
         this->lightFrames.push_back(lightFrame);
 
     if (!thread.joinable())
+    {
+        cancelled = false;
+        terminate = false;
         thread = std::thread(&LightFrameThread<BITMAP>::processNextFrame, this, false);
+    }
 
     mutex.unlock();
+    condition.notify_one();
 }
 
 //-----------------------------------------------------------------------------
@@ -84,7 +93,9 @@ void LightFrameThread<BITMAP>::cancel()
 {
     mutex.lock();
     lightFrames.clear();
+    cancelled = true;
     mutex.unlock();
+    condition.notify_one();
 }
 
 //-----------------------------------------------------------------------------
@@ -93,7 +104,14 @@ template<class BITMAP>
 void LightFrameThread<BITMAP>::wait()
 {
     if (thread.joinable())
+    {
+        mutex.lock();
+        terminate = true;
+        mutex.unlock();
+        condition.notify_one();
+
         thread.join();
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -101,20 +119,27 @@ void LightFrameThread<BITMAP>::wait()
 template<class BITMAP>
 void LightFrameThread<BITMAP>::processNextFrame(bool reference)
 {
+    auto jobAvailable = [this]{ return !lightFrames.empty() || cancelled || terminate; };
+
     while (true)
     {
-        mutex.lock();
-        if (lightFrames.empty())
-        {
-            mutex.unlock();
-            return;
-        }
+        // Wait for a frame to process
+        std::unique_lock lock(mutex);
+        if (!jobAvailable())
+            condition.wait(lock, jobAvailable);
+
+        if (cancelled)
+            break;
+
+        if (terminate && lightFrames.empty())
+            break;
 
         const std::string filename = lightFrames[0];
         lightFrames.erase(lightFrames.begin());
 
-        mutex.unlock();
+        lock.unlock();
 
+        // Process the frame
         std::string name = std::filesystem::path(filename).filename().string();
         std::string extension = std::filesystem::path(name).extension().string();
         std::string destName = name.replace(name.find(extension), extension.size(), ".fits");

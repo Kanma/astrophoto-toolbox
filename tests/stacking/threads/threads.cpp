@@ -7,6 +7,7 @@
 */
 
 // This is to ensure that tests are running in the order we need
+#include "masterdark.hpp"
 #include "lightframes.hpp"
 #include "registration.hpp"
 #include "stacking.hpp"

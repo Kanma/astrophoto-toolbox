@@ -45,6 +45,9 @@ bool StackingThread<BITMAP>::setup(
         return false;
 
     cancelled = false;
+    terminate = false;
+
+    lightFrames.clear();
 
     stacker.setup(nbExpectedFrames, tempFolder, maxFileSize);
 
@@ -62,7 +65,11 @@ void StackingThread<BITMAP>::processFrames(const std::vector<std::string>& light
         this->lightFrames.push_back(lightFrame);
 
     if (!thread.joinable())
+    {
+        cancelled = false;
+        terminate = false;
         thread = std::thread(&StackingThread<BITMAP>::process, this);
+    }
 
     mutex.unlock();
 }
@@ -77,6 +84,7 @@ void StackingThread<BITMAP>::cancel()
     stacker.cancel();
     cancelled = true;
     mutex.unlock();
+    condition.notify_one();
 }
 
 //-----------------------------------------------------------------------------
@@ -85,7 +93,14 @@ template<class BITMAP>
 void StackingThread<BITMAP>::wait()
 {
     if (thread.joinable())
+    {
+        mutex.lock();
+        terminate = true;
+        mutex.unlock();
+        condition.notify_one();
+
         thread.join();
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -93,22 +108,27 @@ void StackingThread<BITMAP>::wait()
 template<class BITMAP>
 void StackingThread<BITMAP>::process()
 {
-    while (!cancelled)
+    auto jobAvailable = [this]{ return !lightFrames.empty() || cancelled || terminate; };
+
+    while (true)
     {
-        std::vector<std::string> filenames;
+        // Wait for frames to process
+        std::unique_lock lock(mutex);
+        if (!jobAvailable())
+            condition.wait(lock, jobAvailable);
 
-        mutex.lock();
-        if (lightFrames.empty())
-        {
-            mutex.unlock();
-            return;
-        }
+        if (cancelled)
+            break;
 
-        filenames = lightFrames;
+        if (terminate && lightFrames.empty())
+            break;
+
+        std::vector<std::string> filenames = lightFrames;
         lightFrames.clear();
 
-        mutex.unlock();
+        lock.unlock();
 
+        // Stack the frames
         for (const auto& filename : filenames)
         {
             stacker.addFrame(filename);
@@ -120,7 +140,7 @@ void StackingThread<BITMAP>::process()
         BITMAP* bitmap = stacker.process(destFilename);
         if (bitmap)
         {
-            listener->lightFramesStacked(destFilename);
+            listener->lightFramesStacked(destFilename, stacker.nbFrames());
             delete bitmap;
         }
     }

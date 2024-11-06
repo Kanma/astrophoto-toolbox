@@ -17,6 +17,10 @@ using namespace astrophototoolbox::stacking::threads;
 class LightFrameTestListener : public StackingListener
 {
 public:
+    void masterDarkFrameComputed(const std::string& filename, bool success) override
+    {
+    }
+
     void lightFrameProcessed(const std::string& filename, bool success) override
     {
         results[filename] = success;
@@ -26,7 +30,7 @@ public:
     {
     }
 
-    void lightFramesStacked(const std::string& filename) override
+    void lightFramesStacked(const std::string& filename, unsigned int nbFrames) override
     {
     }
 
