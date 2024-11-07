@@ -12,6 +12,7 @@
 #include <astrophoto-toolbox/data/star.h>
 #include <astrophoto-toolbox/data/size.h>
 #include <astrophoto-toolbox/data/transformation.h>
+#include <astrophoto-toolbox/stacking/utils/backgroundcalibration.h>
 #include <fitsio.h>
 #include <string>
 
@@ -71,7 +72,8 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         bool write(
             const star_list_t& stars, const size2d_t& imageSize,
-            const std::string& name = "STARS", bool overwrite = false
+            int* luminancyThreshold = nullptr, const std::string& name = "STARS",
+            bool overwrite = false
         );
 
         //--------------------------------------------------------------------------------
@@ -88,6 +90,14 @@ namespace astrophototoolbox {
         bool write(
             const Transformation& transformation, const std::string& name = "TRANSFORMS",
             bool overwrite = false
+        );
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Add background calibration parameters into the FITS file
+        //--------------------------------------------------------------------------------
+        bool write(
+            const stacking::utils::background_calibration_parameters_t& parameters,
+            const std::string& name = "BACKGROUNDCALIBRATION", bool overwrite = false
         );
 
         //--------------------------------------------------------------------------------
@@ -114,13 +124,16 @@ namespace astrophototoolbox {
         /// @brief  Read the list of stars with the given name from the FITS file
         //--------------------------------------------------------------------------------
         star_list_t readStars(
-            const std::string& name, size2d_t* imageSize = nullptr
+            const std::string& name, size2d_t* imageSize = nullptr,
+            int* luminancyThreshold = nullptr
         );
 
         //--------------------------------------------------------------------------------
         /// @brief  Read the n-th list of stars from the FITS file
         //--------------------------------------------------------------------------------
-        star_list_t readStars(int index = 0, size2d_t* imageSize = nullptr);
+        star_list_t readStars(
+            int index = 0, size2d_t* imageSize = nullptr, int* luminancyThreshold = nullptr
+        );
 
         //--------------------------------------------------------------------------------
         /// @brief  Read the list of points with the given name from the FITS file
@@ -142,6 +155,20 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         Transformation readTransformation(int index = 0);
 
+        //--------------------------------------------------------------------------------
+        /// @brief  Read the transformation with the given name from the FITS file
+        //--------------------------------------------------------------------------------
+        stacking::utils::background_calibration_parameters_t readBackgroundCalibrationParameters(
+            const std::string& name
+        );
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Read the n-th transformation from the FITS file
+        //--------------------------------------------------------------------------------
+        stacking::utils::background_calibration_parameters_t readBackgroundCalibrationParameters(
+            int index = 0
+        );
+
 
         //_____ Static methods __________
     public:
@@ -154,9 +181,10 @@ namespace astrophototoolbox {
         //_____ Internal methods __________
     private:
         Bitmap* readBitmapFromCurrentHDU();
-        star_list_t readStarsFromCurrentHDU(size2d_t* imageSize = nullptr);
+        star_list_t readStarsFromCurrentHDU(size2d_t* imageSize = nullptr, int* luminancyThreshold = nullptr);
         point_list_t readPointsFromCurrentHDU();
         Transformation readTransformationFromCurrentHDU();
+        stacking::utils::background_calibration_parameters_t readBackgroundCalibrationParametersFromCurrentHDU();
 
         bool gotoHDU(const std::string& name, int type);
         bool gotoHDU(int index, int type, const std::string& datatype = "");

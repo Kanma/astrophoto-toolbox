@@ -13,6 +13,8 @@
 #include <filesystem>
 #include <string>
 #include <thread>
+#include <condition_variable>
+#include <mutex>
 
 
 namespace astrophototoolbox {
@@ -52,6 +54,15 @@ namespace threads {
         /// FITS one containing a bitmap and a list of hot pixels.
         //--------------------------------------------------------------------------------
         bool setMasterDark(const std::string& filename);
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Set the parameters to use for background calibration
+        ///
+        /// This method is an aternative to 'processReferenceFrame()'.
+        //--------------------------------------------------------------------------------
+        void setParameters(
+            const utils::background_calibration_parameters_t& parameters
+        );
 
         //--------------------------------------------------------------------------------
         /// @brief  Process the reference frame

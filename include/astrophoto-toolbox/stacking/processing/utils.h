@@ -12,6 +12,7 @@
 #include <astrophoto-toolbox/data/point.h>
 #include <astrophoto-toolbox/data/star.h>
 #include <astrophoto-toolbox/data/transformation.h>
+#include <astrophoto-toolbox/stacking/utils/backgroundcalibration.h>
 #include <filesystem>
 
 
@@ -22,14 +23,16 @@ namespace processing {
     template<class BITMAP>
     BITMAP* loadProcessedBitmap(
         const std::filesystem::path& filename, point_list_t* hotPixels = nullptr,
-        star_list_t* stars = nullptr, Transformation* transformation = nullptr
+        star_list_t* stars = nullptr, Transformation* transformation = nullptr,
+        utils::background_calibration_parameters_t* bgcalibration = nullptr
     );
 
     template<class BITMAP>
     bool saveProcessedBitmap(
         BITMAP* bitmap, const std::filesystem::path& path,
         point_list_t* hotPixels = nullptr, star_list_t* stars = nullptr,
-        Transformation* transformation = nullptr
+        Transformation* transformation = nullptr,
+        utils::background_calibration_parameters_t* bgcalibration = nullptr
     );
 
 }

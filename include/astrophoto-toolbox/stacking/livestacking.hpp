@@ -680,10 +680,25 @@ void LiveStacking<BITMAP>::nextStep()
 
         mutex.unlock();
 
-        lightFramesThread->processReferenceFrame(reference.filename);
-
         if (reference.calibrated)
-            registrationThread->processReferenceFrame(reference.filename);
+        {
+            FITS fits;
+            fits.open(folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(reference.filename));
+            lightFramesThread->setParameters(fits.readBackgroundCalibrationParameters());
+
+            if (reference.registered)
+            {
+                int luminancyThreshold;
+                auto stars = fits.readStars(0, nullptr, &luminancyThreshold);
+                registrationThread->setParameters(stars, luminancyThreshold);
+            }
+            else
+                registrationThread->processReferenceFrame(reference.filename);
+        }
+        else
+        {
+            lightFramesThread->processReferenceFrame(reference.filename);
+        }
 
         if (reference.registered)
             stackingThread->processFrames({ reference.filename });

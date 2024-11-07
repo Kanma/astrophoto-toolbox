@@ -28,7 +28,7 @@ namespace processing {
 template<class BITMAP>
 BITMAP* loadProcessedBitmap(
     const std::filesystem::path& filename, point_list_t* hotPixels, star_list_t* stars,
-    Transformation* transformation
+    Transformation* transformation, utils::background_calibration_parameters_t* bgcalibration
 )
 {
     Bitmap* bitmap = nullptr;
@@ -48,6 +48,9 @@ BITMAP* loadProcessedBitmap(
 
             if (transformation)
                 *transformation = fits.readTransformation("TRANSFORMS");
+
+            if (bgcalibration)
+                *bgcalibration = fits.readBackgroundCalibrationParameters("BACKGROUNDCALIBRATION");
         }
     }
     else
@@ -62,6 +65,9 @@ BITMAP* loadProcessedBitmap(
 
         if (transformation)
             *transformation = Transformation();
+
+        if (bgcalibration)
+            *bgcalibration =  utils::background_calibration_parameters_t();
     }
 
     if (bitmap)
@@ -81,7 +87,8 @@ BITMAP* loadProcessedBitmap(
 template<class BITMAP>
 bool saveProcessedBitmap(
     BITMAP* bitmap, const std::filesystem::path& path, point_list_t* hotPixels,
-    star_list_t* stars, Transformation* transformation
+    star_list_t* stars, Transformation* transformation,
+    utils::background_calibration_parameters_t* bgcalibration
 )
 {
     FITS fits;
@@ -94,10 +101,13 @@ bool saveProcessedBitmap(
     if (hotPixels && !fits.write(*hotPixels, "HOTPIXELS"))
         return false;
 
-    if (stars && !fits.write(*stars, size2d_t(bitmap->width(), bitmap->height()), "STARS"))
+    if (stars && !fits.write(*stars, size2d_t(bitmap->width(), bitmap->height()), nullptr, "STARS"))
         return false;
 
     if (transformation && !fits.write(*transformation, "TRANSFORMS"))
+        return false;
+
+    if (bgcalibration && !fits.write(*bgcalibration, "BACKGROUNDCALIBRATION"))
         return false;
 
     return true;

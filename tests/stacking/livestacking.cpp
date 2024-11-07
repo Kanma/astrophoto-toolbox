@@ -255,6 +255,8 @@ TEST_CASE("(LiveStacking) Load and process in populated folder", "[LiveStacking]
 
             if (infos.lightFrames.nbStacked == 3)
                 stackingComplete = true;
+
+            ++counter;
         }
 
         void stackingDone(const std::string& filename) override
@@ -267,6 +269,7 @@ TEST_CASE("(LiveStacking) Load and process in populated folder", "[LiveStacking]
 
     public:
         bool stackingComplete = false;
+        int counter = 0;
     };
 
 
@@ -282,6 +285,7 @@ TEST_CASE("(LiveStacking) Load and process in populated folder", "[LiveStacking]
     stacking.wait();
 
     REQUIRE(listener.stackingComplete);
+    REQUIRE(listener.counter == 1);
 
     REQUIRE(std::filesystem::exists(TEMP_DIR "livestacking/stacked.fits"));
 }

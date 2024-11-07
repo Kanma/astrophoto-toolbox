@@ -128,7 +128,7 @@ TEST_CASE("Save stars with name", "[FITS]")
 
     FITS output;
     REQUIRE(output.create(TEMP_DIR "namedstars.fits"));
-    REQUIRE(output.write(list, imageSize, "SOURCES"));
+    REQUIRE(output.write(list, imageSize, nullptr, "SOURCES"));
     output.close();
 
     checkTableHeader(TEMP_DIR "namedstars.fits", 2, 3, imageSize, 1, "SOURCES");
@@ -146,7 +146,7 @@ TEST_CASE("Save stars multiple times", "[FITS]")
 
     imageSize.width = 200;
     REQUIRE(!output.write(list, imageSize));
-    REQUIRE(output.write(list, imageSize, "STARS", true));
+    REQUIRE(output.write(list, imageSize, nullptr, "STARS", true));
 
     output.close();
 
@@ -165,7 +165,7 @@ TEST_CASE("Save multiple stars", "[FITS]")
     FITS output;
     REQUIRE(output.create(TEMP_DIR "multiplestars.fits"));
     REQUIRE(output.write(list, imageSize));
-    REQUIRE(output.write(list, imageSize2, "STARS2"));
+    REQUIRE(output.write(list, imageSize2, nullptr, "STARS2"));
 
     output.close();
 

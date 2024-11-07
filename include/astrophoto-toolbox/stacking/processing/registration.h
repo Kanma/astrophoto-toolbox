@@ -29,6 +29,13 @@ namespace processing {
     {
     public:
         //--------------------------------------------------------------------------------
+        /// @brief  Set the parameters to use for the registration
+        ///
+        /// This method is an aternative to 'processReference()'.
+        //--------------------------------------------------------------------------------
+        void setParameters(const star_list_t& stars, int luminancyThreshold);
+
+        //--------------------------------------------------------------------------------
         /// @brief  Register the light frame file to use as the reference, and save the
         ///         list of detected stars at the given destination path
         ///

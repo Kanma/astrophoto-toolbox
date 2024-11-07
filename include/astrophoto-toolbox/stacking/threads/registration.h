@@ -13,6 +13,8 @@
 #include <filesystem>
 #include <string>
 #include <thread>
+#include <condition_variable>
+#include <mutex>
 
 
 namespace astrophototoolbox {
@@ -45,6 +47,13 @@ namespace threads {
 
 
     public:
+        //--------------------------------------------------------------------------------
+        /// @brief  Set the parameters to use for the registration
+        ///
+        /// This method is an aternative to 'processReferenceFrame()'.
+        //--------------------------------------------------------------------------------
+        bool setParameters(const star_list_t& stars, int luminancyThreshold);
+
         //--------------------------------------------------------------------------------
         /// @brief  Register the light frame file to use as the reference
         ///

@@ -16,6 +16,15 @@ using namespace processing;
 
 
 template<class BITMAP>
+void RegistrationProcessor<BITMAP>::setParameters(const star_list_t& stars, int luminancyThreshold)
+{
+    referenceStars = stars;
+    this->luminancyThreshold = luminancyThreshold;
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
 star_list_t RegistrationProcessor<BITMAP>::processReference(
     const std::string& lightFrame, int luminancyThreshold,
     const std::string& destination
@@ -59,8 +68,11 @@ star_list_t RegistrationProcessor<BITMAP>::processReference(
                 return star_list_t();
         }
 
-        if (!fits.write(referenceStars, size2d_t(lightFrame->width(), lightFrame->height()), "STARS", true))
+        if (!fits.write(referenceStars, size2d_t(lightFrame->width(), lightFrame->height()),
+                        &this->luminancyThreshold, "STARS", true))
+        {
             return star_list_t();
+        }
     }
 
     return referenceStars;
@@ -117,7 +129,7 @@ std::tuple<star_list_t, Transformation> RegistrationProcessor<BITMAP>::process(
                 return std::make_tuple(star_list_t(), Transformation());
         }
 
-        if (!fits.write(stars, size2d_t(lightFrame->width(), lightFrame->height()), "STARS", true))
+        if (!fits.write(stars, size2d_t(lightFrame->width(), lightFrame->height()), &luminancyThreshold, "STARS", true))
             return std::make_tuple(star_list_t(), Transformation());
 
         if (!fits.write(transformation, "TRANSFORMS", true))

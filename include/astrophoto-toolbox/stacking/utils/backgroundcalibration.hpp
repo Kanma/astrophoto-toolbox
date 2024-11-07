@@ -24,21 +24,9 @@ namespace stacking {
 namespace utils {
 
 template<class BITMAP>
-void BackgroundCalibration<BITMAP>::setReference(BITMAP* bitmap) requires(BITMAP::Channels == 3)
+void BackgroundCalibration<BITMAP>::setReference(BITMAP* bitmap)
 {
-    computeParameters(
-        bitmap,
-        targetRedBackground, targetGreenBackground, targetBlueBackground,
-        targetRedMax, targetGreenMax, targetBlueMax
-    );
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-void BackgroundCalibration<BITMAP>::setReference(BITMAP* bitmap) requires(BITMAP::Channels == 1)
-{
-    computeParameters(bitmap, targetRedBackground, targetRedMax);
+    computeParameters(bitmap, parameters);
 }
 
 //-----------------------------------------------------------------------------
@@ -46,33 +34,23 @@ void BackgroundCalibration<BITMAP>::setReference(BITMAP* bitmap) requires(BITMAP
 template<class BITMAP>
 void BackgroundCalibration<BITMAP>::calibrate(BITMAP* bitmap) const requires(BITMAP::Channels == 3)
 {
-    double srcRedBackground;
-    double srcGreenBackground;
-    double srcBlueBackground;
+    background_calibration_parameters_t src;
 
-    double srcRedMax;
-    double srcGreenMax;
-    double srcBlueMax;
-
-    computeParameters(
-        bitmap,
-        srcRedBackground, srcGreenBackground, srcBlueBackground,
-        srcRedMax, srcGreenMax, srcBlueMax
-    );
+    computeParameters(bitmap, src);
 
     Interpolation redInterpolation(
-        0.0, srcRedBackground, srcRedMax,
-        0.0, targetRedBackground, targetRedMax
+        0.0, src.redBackground, src.redMax,
+        0.0, parameters.redBackground, parameters.redMax
     );
 
     Interpolation greenInterpolation(
-        0.0, srcGreenBackground, srcGreenMax,
-        0.0, targetGreenBackground, targetGreenMax
+        0.0, src.greenBackground, src.greenMax,
+        0.0, parameters.greenBackground, parameters.greenMax
     );
 
     Interpolation blueInterpolation(
-        0.0, srcBlueBackground, srcBlueMax,
-        0.0, targetBlueBackground, targetBlueMax
+        0.0, src.blueBackground, src.blueMax,
+        0.0, parameters.blueBackground, parameters.blueMax
     );
 
     for (unsigned int y = 0; y < bitmap->height(); ++y)
@@ -93,14 +71,13 @@ void BackgroundCalibration<BITMAP>::calibrate(BITMAP* bitmap) const requires(BIT
 template<class BITMAP>
 void BackgroundCalibration<BITMAP>::calibrate(BITMAP* bitmap) const requires(BITMAP::Channels == 1)
 {
-    double srcBackground;
-    double srcMax;
+    background_calibration_parameters_t src;
 
-    computeParameters(bitmap, srcBackground, srcMax);
+    computeParameters(bitmap, src);
 
     Interpolation interpolation(
-        0.0, srcBackground, srcMax,
-        0.0, targetRedBackground, targetRedMax
+        0.0, src.redBackground, src.redMax,
+        0.0, parameters.redBackground, parameters.redMax
     );
 
     for (unsigned int y = 0; y < bitmap->height(); ++y)
@@ -116,9 +93,7 @@ void BackgroundCalibration<BITMAP>::calibrate(BITMAP* bitmap) const requires(BIT
 
 template<class BITMAP>
 void BackgroundCalibration<BITMAP>::computeParameters(
-    const BITMAP* bitmap,
-    double& redBackground, double& greenBackground, double& blueBackground,
-    double& redMax, double& greenMax, double& blueMax
+    const BITMAP* bitmap, background_calibration_parameters_t& parameters
 ) const requires(BITMAP::Channels == 3)
 {
     // Compute one histogram per channel
@@ -143,9 +118,9 @@ void BackgroundCalibration<BITMAP>::computeParameters(
         return 0.0;
     };
 
-    redMax = findMax(redHistogram) * bitmap->maxRangeValue();
-    greenMax = findMax(greenHistogram) * bitmap->maxRangeValue();
-    blueMax = findMax(blueHistogram) * bitmap->maxRangeValue();
+    parameters.redMax = findMax(redHistogram) * bitmap->maxRangeValue();
+    parameters.greenMax = findMax(greenHistogram) * bitmap->maxRangeValue();
+    parameters.blueMax = findMax(blueHistogram) * bitmap->maxRangeValue();
 
     // Compute the median of each channel
     const auto findMedian = [nbTotalValues = (bitmap->width() * bitmap->height()) / 2](const histogram_t& histogram) -> double
@@ -158,16 +133,16 @@ void BackgroundCalibration<BITMAP>::computeParameters(
         return double(index) / 65535.0;
     };
 
-    redBackground = findMedian(redHistogram) * bitmap->maxRangeValue();
-    greenBackground = findMedian(greenHistogram) * bitmap->maxRangeValue();
-    blueBackground = findMedian(blueHistogram) * bitmap->maxRangeValue();
+    parameters.redBackground = findMedian(redHistogram) * bitmap->maxRangeValue();
+    parameters.greenBackground = findMedian(greenHistogram) * bitmap->maxRangeValue();
+    parameters.blueBackground = findMedian(blueHistogram) * bitmap->maxRangeValue();
 }
 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
 void BackgroundCalibration<BITMAP>::computeParameters(
-    const BITMAP* bitmap, double& background, double& max
+    const BITMAP* bitmap, background_calibration_parameters_t& parameters
 ) const requires(BITMAP::Channels == 1)
 {
     // Compute the histogram
@@ -188,7 +163,7 @@ void BackgroundCalibration<BITMAP>::computeParameters(
         return 0.0;
     };
 
-    max = findMax(histogram) * bitmap->maxRangeValue();
+    parameters.redMax = findMax(histogram) * bitmap->maxRangeValue();
 
     // Compute the median of each channel
     const auto findMedian = [nbTotalValues = (bitmap->width() * bitmap->height()) / 2](const histogram_t& histogram) -> double
@@ -201,7 +176,7 @@ void BackgroundCalibration<BITMAP>::computeParameters(
         return double(index) / 65535.0;
     };
 
-    background = findMedian(histogram) * bitmap->maxRangeValue();
+    parameters.redBackground = findMedian(histogram) * bitmap->maxRangeValue();
 }
 
 }

@@ -252,7 +252,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if (!output.write(stars, imageSize, "STARS", true))
+    if (!output.write(stars, imageSize, nullptr, "STARS", true))
     {
         cerr << "Failed to save the coordinates in the FITS file" << endl;
         return 1;

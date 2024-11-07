@@ -15,6 +15,18 @@ namespace astrophototoolbox {
 namespace stacking {
 namespace utils {
 
+    struct background_calibration_parameters_t
+    {
+        double redBackground;
+        double greenBackground;
+        double blueBackground;
+
+        double redMax;
+        double greenMax;
+        double blueMax;
+    };
+
+
     //------------------------------------------------------------------------------------
     /// @brief  Allows to perform the background calibration over a group of images
     ///
@@ -31,49 +43,54 @@ namespace utils {
     public:
         //--------------------------------------------------------------------------------
         /// @brief  Set the bitmap to use as the reference during the calibration
+        ///
+        /// Parameters will be computed form the bitmap.
         //--------------------------------------------------------------------------------
-        void setReference(BITMAP* bitmap) requires(BITMAP::Channels == 3);
+        void setReference(BITMAP* bitmap);
 
         //--------------------------------------------------------------------------------
-        /// @brief  Set the bitmap to use as the reference during the calibration
+        /// @brief  Set the parameters to use during the calibration
         //--------------------------------------------------------------------------------
-        void setReference(BITMAP* bitmap) requires(BITMAP::Channels == 1);
+        inline void setParameters(const background_calibration_parameters_t& parameters)
+        {
+            this->parameters = parameters;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the parameters used during the calibration
+        //--------------------------------------------------------------------------------
+        inline background_calibration_parameters_t getParameters() const
+        {
+            return parameters;
+        }
 
         //--------------------------------------------------------------------------------
         /// @brief  Apply background calibration to a bitmap
         ///
-        /// Note that the reference must have been set!
+        /// Note that either the reference bitmap or the parameters must have been set!
         //--------------------------------------------------------------------------------
         void calibrate(BITMAP* bitmap) const requires(BITMAP::Channels == 3);
 
         //--------------------------------------------------------------------------------
         /// @brief  Apply background calibration to a bitmap
         ///
-        /// Note that the reference must have been set!
+        /// Note that either the reference bitmap or the parameters must have been set!
         //--------------------------------------------------------------------------------
         void calibrate(BITMAP* bitmap) const requires(BITMAP::Channels == 1);
 
 
     private:
         void computeParameters(
-            const BITMAP* bitmap,
-            double& redBackground, double& greenBackground, double& blueBackground,
-            double& redMax, double& greenMax, double& blueMax
+            const BITMAP* bitmap, background_calibration_parameters_t& parameters
         ) const requires(BITMAP::Channels == 3);
 
         void computeParameters(
-            const BITMAP* bitmap, double& background, double& max
+            const BITMAP* bitmap, background_calibration_parameters_t& parameters
         ) const requires(BITMAP::Channels == 1);
 
 
     private:
-        double targetRedBackground;
-        double targetGreenBackground;
-        double targetBlueBackground;
-
-        double targetRedMax;
-        double targetGreenMax;
-        double targetBlueMax;
+        background_calibration_parameters_t parameters;
     };
 
 }

@@ -49,6 +49,16 @@ bool LightFrameThread<BITMAP>::setMasterDark(const std::string& filename)
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
+void LightFrameThread<BITMAP>::setParameters(
+    const utils::background_calibration_parameters_t& parameters
+)
+{
+    processor.setParameters(parameters);
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
 bool LightFrameThread<BITMAP>::processReferenceFrame(const std::string& lightFrame)
 {
     if (thread.joinable())

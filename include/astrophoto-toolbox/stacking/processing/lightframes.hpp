@@ -40,6 +40,16 @@ bool LightFrameProcessor<BITMAP>::setMasterDark(const std::string& filename)
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
+void LightFrameProcessor<BITMAP>::setParameters(
+    const utils::background_calibration_parameters_t& parameters
+)
+{
+    calibration.setParameters(parameters);
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
 std::shared_ptr<BITMAP> LightFrameProcessor<BITMAP>::process(
     const std::string& lightFrame, bool reference, const std::string& destination
 )
@@ -69,8 +79,16 @@ std::shared_ptr<BITMAP> LightFrameProcessor<BITMAP>::process(
     else
         calibration.calibrate(lightFrame.get());
 
-    if (!destination.empty() && !saveProcessedBitmap(lightFrame.get(), destination))
-        return nullptr;
+    if (!destination.empty())
+    {
+        auto bgcalibParameters = calibration.getParameters();
+
+        if (!saveProcessedBitmap(lightFrame.get(), destination, nullptr, nullptr, nullptr,
+                                 reference ? &bgcalibParameters : nullptr))
+        {
+            return nullptr;
+        }
+    }
 
     return lightFrame;
 }

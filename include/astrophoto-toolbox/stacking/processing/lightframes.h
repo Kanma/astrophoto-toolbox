@@ -48,11 +48,22 @@ namespace processing {
         }
 
         //--------------------------------------------------------------------------------
+        /// @brief  Set the parameters to use for background calibration
+        ///
+        /// This method is an aternative to calling 'process()' withe the'reference' flag
+        /// set.
+        //--------------------------------------------------------------------------------
+        void setParameters(
+            const utils::background_calibration_parameters_t& parameters
+        );
+
+        //--------------------------------------------------------------------------------
         /// @brief  Process a light frame file, and save it at the given destination path
         ///
         /// If 'reference' is set, the light frame becomes the reference one used by the
         /// background calibration algorithm for all the following frames. So be sure to
-        /// pass your reference frame as the first one and set the flag.
+        /// pass your reference frame as the first one and set the flag, or use the
+        /// 'setParameters()' method.
         //--------------------------------------------------------------------------------
         std::shared_ptr<BITMAP> process(
             const std::string& lightFrame, bool reference = false,
@@ -64,7 +75,8 @@ namespace processing {
         ///
         /// If 'reference' is set, the light frame becomes the reference one used by the
         /// background calibration algorithm for all the following frames. So be sure to
-        /// pass your reference frame as the first one and set the flag.
+        /// pass your reference frame as the first one and set the flag, or use the
+        /// 'setParameters()' method.
         //--------------------------------------------------------------------------------
         std::shared_ptr<BITMAP> process(
             const std::shared_ptr<BITMAP>& lightFrame, bool reference = false,

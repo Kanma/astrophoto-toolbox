@@ -38,6 +38,19 @@ RegistrationThread<BITMAP>::~RegistrationThread()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
+bool RegistrationThread<BITMAP>::setParameters(const star_list_t& stars, int luminancyThreshold)
+{
+    if (thread.joinable())
+        return false;
+
+    processor.setParameters(stars, luminancyThreshold);
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
 bool RegistrationThread<BITMAP>::processReferenceFrame(
     const std::string& lightFrame, int luminancyThreshold
 )

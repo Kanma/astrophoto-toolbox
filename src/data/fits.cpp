@@ -233,8 +233,8 @@ bool FITS::write(Bitmap* bitmap, const std::string& name)
 //-----------------------------------------------------------------------------
 
 bool FITS::write(
-    const star_list_t& stars, const size2d_t& imageSize, const std::string& name,
-    bool overwrite
+    const star_list_t& stars, const size2d_t& imageSize, int* luminancyThreshold,
+    const std::string& name, bool overwrite
 )
 {
     int status = 0;
@@ -292,6 +292,9 @@ bool FITS::write(
     fits_update_key(_file, TSTRING, "DATATYPE", (void*) "STARS", "", &status);
     fits_update_key(_file, TINT, "IMAGEW", (void*) &imageSize.width, "Width of the image", &status);
     fits_update_key(_file, TINT, "IMAGEH", (void*) &imageSize.height, "Height of the image", &status);
+
+    if (luminancyThreshold)
+        fits_update_key(_file, TINT, "LUMINANCYTHRESHOLD", (void*) luminancyThreshold, "Luminance threshold used", &status);
 
     return (status == 0);
 }
@@ -406,6 +409,51 @@ bool FITS::write(
 
 //-----------------------------------------------------------------------------
 
+bool FITS::write(
+    const stacking::utils::background_calibration_parameters_t& parameters,
+    const std::string& name, bool overwrite
+)
+{
+    int status = 0;
+    bool tableExisting = false;
+
+    // Does the table already exist?
+    if (!name.empty())
+    {
+        fits_movnam_hdu(_file, BINARY_TBL, (char*) name.c_str(), 0, &status);
+        if (status == 0)
+        {
+            if (!overwrite)
+                return false;
+
+            tableExisting = true;
+        }
+
+        status = 0;
+    }
+
+    // Creates the table if necessary
+    if (!tableExisting)
+    {
+        fits_create_tbl(
+            _file, BINARY_TBL, 0, 0, nullptr, nullptr, nullptr,
+            (name.empty() ? nullptr : name.c_str()), &status
+        );
+    }
+
+    fits_update_key(_file, TSTRING, "DATATYPE", (void*) "BACKGROUNDCALIBRATION", "", &status);
+    fits_update_key(_file, TDOUBLE, "BACKGROUND_R", (void*) &parameters.redBackground, "", &status);
+    fits_update_key(_file, TDOUBLE, "BACKGROUND_G", (void*) &parameters.greenBackground, "", &status);
+    fits_update_key(_file, TDOUBLE, "BACKGROUND_B", (void*) &parameters.blueBackground, "", &status);
+    fits_update_key(_file, TDOUBLE, "MAX_R", (void*) &parameters.redMax, "", &status);
+    fits_update_key(_file, TDOUBLE, "MAX_G", (void*) &parameters.greenMax, "", &status);
+    fits_update_key(_file, TDOUBLE, "MAX_B", (void*) &parameters.blueMax, "", &status);
+
+    return (status == 0);
+}
+
+//-----------------------------------------------------------------------------
+
 bool FITS::writeAstrometryNetKeywords(const size2d_t& imageSize)
 {
     if (!gotoHDU(0, ANY_HDU))
@@ -451,23 +499,23 @@ Bitmap* FITS::readBitmap(int index)
 //-----------------------------------------------------------------------------
 
 star_list_t FITS::readStars(
-    const std::string& name, size2d_t* imageSize
+    const std::string& name, size2d_t* imageSize, int* luminancyThreshold
 )
 {
     if (!gotoHDU(name, BINARY_TBL))
         return star_list_t();
 
-    return readStarsFromCurrentHDU(imageSize);
+    return readStarsFromCurrentHDU(imageSize, luminancyThreshold);
 }
 
 //-----------------------------------------------------------------------------
 
-star_list_t FITS::readStars(int index, size2d_t* imageSize)
+star_list_t FITS::readStars(int index, size2d_t* imageSize, int* luminancyThreshold)
 {
     if (!gotoHDU(index, BINARY_TBL, "STARS"))
         return star_list_t();
 
-    return readStarsFromCurrentHDU(imageSize);
+    return readStarsFromCurrentHDU(imageSize, luminancyThreshold);
 }
 
 //-----------------------------------------------------------------------------
@@ -508,6 +556,26 @@ Transformation FITS::readTransformation(int index)
         return Transformation();
 
     return readTransformationFromCurrentHDU();
+}
+
+//-----------------------------------------------------------------------------
+
+stacking::utils::background_calibration_parameters_t FITS::readBackgroundCalibrationParameters(const std::string& name)
+{
+    if (!gotoHDU(name, BINARY_TBL))
+        return stacking::utils::background_calibration_parameters_t();
+
+    return readBackgroundCalibrationParametersFromCurrentHDU();
+}
+
+//-----------------------------------------------------------------------------
+
+stacking::utils::background_calibration_parameters_t FITS::readBackgroundCalibrationParameters(int index)
+{
+    if (!gotoHDU(index, BINARY_TBL, "BACKGROUNDCALIBRATION"))
+        return stacking::utils::background_calibration_parameters_t();
+
+    return readBackgroundCalibrationParametersFromCurrentHDU();
 }
 
 
@@ -683,7 +751,7 @@ Bitmap* FITS::readBitmapFromCurrentHDU()
 
 //-----------------------------------------------------------------------------
 
-star_list_t FITS::readStarsFromCurrentHDU(size2d_t* imageSize)
+star_list_t FITS::readStarsFromCurrentHDU(size2d_t* imageSize, int* luminancyThreshold)
 {
     int status = 0;
     star_list_t stars;
@@ -713,6 +781,9 @@ star_list_t FITS::readStarsFromCurrentHDU(size2d_t* imageSize)
         fits_read_key(_file, TINT, "IMAGEW", (void*) &imageSize->width, nullptr, &status);
         fits_read_key(_file, TINT, "IMAGEH", (void*) &imageSize->height, nullptr, &status);
     }
+
+    if (luminancyThreshold)
+        fits_read_key(_file, TINT, "LUMINANCYTHRESHOLD", (void*) luminancyThreshold, nullptr, &status);
 
     return stars;
 }
@@ -763,6 +834,24 @@ Transformation FITS::readTransformationFromCurrentHDU()
     fits_read_key(_file, TDOUBLE, "YWIDTH", (void*) &transformation.yWidth, nullptr, &status);
 
     return transformation;
+}
+
+//-----------------------------------------------------------------------------
+
+stacking::utils::background_calibration_parameters_t FITS::readBackgroundCalibrationParametersFromCurrentHDU()
+{
+    int status = 0;
+    stacking::utils::background_calibration_parameters_t parameters;
+
+    // Load the transformation from the hdu
+    fits_read_key(_file, TDOUBLE, "BACKGROUND_R", (void*) &parameters.redBackground, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "BACKGROUND_G", (void*) &parameters.greenBackground, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "BACKGROUND_B", (void*) &parameters.blueBackground, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "MAX_R", (void*) &parameters.redMax, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "MAX_G", (void*) &parameters.greenMax, nullptr, &status);
+    fits_read_key(_file, TDOUBLE, "MAX_B", (void*) &parameters.blueMax, nullptr, &status);
+
+    return parameters;
 }
 
 //-----------------------------------------------------------------------------
