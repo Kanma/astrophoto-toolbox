@@ -22,7 +22,23 @@ namespace stacking {
 
 
     //------------------------------------------------------------------------------------
-    /// @brief  Contains infos about the progress of the stacking
+    /// @brief  Contains infos about a light frame used in live stacking
+    ///
+    /// Sent to the user via a listener
+    //------------------------------------------------------------------------------------
+    struct live_stacking_light_frame_t
+    {
+        std::string filename;
+        bool calibrated = false;
+        bool registered = false;
+        bool stacked = false;
+        bool valid = true;
+        bool processing = false;
+    };
+
+
+    //------------------------------------------------------------------------------------
+    /// @brief  Contains infos about the progress of the live stacking
     ///
     /// Sent to the user via a listener
     //------------------------------------------------------------------------------------
@@ -34,8 +50,10 @@ namespace stacking {
             unsigned int nbProcessed = 0;
             unsigned int nbRegistered = 0;
             unsigned int nbValid = 0;
+            unsigned int nbStacking = 0;
             unsigned int nbStacked = 0;
             unsigned int nb = 0;
+            std::vector<live_stacking_light_frame_t> entries;
         } lightFrames;
     };
 
@@ -121,7 +139,7 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         inline live_stacking_infos_t getInfos()
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            std::lock_guard<std::mutex> lock(framesMutex);
             return infos;
         }
 
@@ -138,7 +156,7 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         inline size_t getReference()
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            std::lock_guard<std::mutex> lock(framesMutex);
             return referenceFrame;
         }
 
@@ -158,11 +176,36 @@ namespace stacking {
         bool start();
 
         //--------------------------------------------------------------------------------
+        /// @brief  Cancel the live stacking (blocking call)
+        ///
+        /// This method will block until no thread is working anymore. Once this method
+        /// returns, the stacker can be used again (to continue the processing or start
+        /// another one).
+        //--------------------------------------------------------------------------------
+        void cancel();
+
+        //--------------------------------------------------------------------------------
         /// @brief  Cancel the live stacking
         ///
         /// It is expected that no other method than 'wait()' is called after this one.
         //--------------------------------------------------------------------------------
-        void cancel();
+        void cancelAsync();
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Stop the live stacking (blocking call)
+        ///
+        /// This method will block until no thread is working anymore. Once this method
+        /// returns, the stacker can be used again (to continue the processing or start
+        /// another one).
+        //--------------------------------------------------------------------------------
+        void stop();
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Stop the live stacking
+        ///
+        /// It is expected that no other method than 'wait()' is called after this one.
+        //--------------------------------------------------------------------------------
+        void stopAsync();
 
         //--------------------------------------------------------------------------------
         /// @brief  Wait for the live stacking to terminate (either because all frames
@@ -175,17 +218,26 @@ namespace stacking {
         void wait();
 
 
+        //_____ Implementation of threads::StackingListener __________
     public:
         void masterDarkFrameComputed(const std::string& filename, bool success) override;
+
+        void lightFrameProcessingStarted(const std::string& filename) override;
         void lightFrameProcessed(const std::string& filename, bool success) override;
+
+        void lightFrameRegistrationStarted(const std::string& filename) override;
         void lightFrameRegistered(const std::string& filename, bool success) override;
+
+        void lightFramesStackingStarted(unsigned int nbFrames) override;
         void lightFramesStacked(const std::string& filename, unsigned int nbFrames) override;
 
 
     private:
         void nextStep();
 
-        const std::string getCalibratedFilename(const std::string& path);
+        const std::string getInternalFilename(const std::string& path) const;
+        const std::string getAbsoluteFilename(const std::string& path) const;
+        const std::string getCalibratedFilename(const std::string& path) const;
 
 
     private:
@@ -193,17 +245,14 @@ namespace stacking {
         {
             std::string filename;
             bool stacked = false;
-            bool ready = true;
+            bool processing = false;
         };
 
-        struct light_frame_t
+        enum step_t
         {
-            std::string filename;
-            bool calibrated = false;
-            bool registered = false;
-            bool stacked = false;
-            bool valid = true;
-            bool ready = true;
+            STEP_NONE,
+            STEP_MASTER_DARK,
+            STEP_STACKING,
         };
 
 
@@ -214,20 +263,20 @@ namespace stacking {
         std::filesystem::path folder;
 
         std::vector<dark_frame_t> darkFrames;
-        std::vector<light_frame_t> lightFrames;
-        std::mutex mutex;
+        std::mutex framesMutex;
 
         size_t referenceFrame = -1;
         int luminancyThreshold = -1;
 
+        step_t step = STEP_NONE;
         bool running = false;
-        bool cancelled = false;
-        bool changingLuminancyThreshold = false;
 
         threads::MasterDarkThread<BITMAP>* masterDarkThread = nullptr;
         threads::LightFrameThread<BITMAP>* lightFramesThread = nullptr;
         threads::RegistrationThread<BITMAP>* registrationThread = nullptr;
         threads::StackingThread<BITMAP>* stackingThread = nullptr;
+
+        std::thread stopThread;
     };
 
 }

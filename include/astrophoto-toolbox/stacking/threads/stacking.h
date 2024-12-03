@@ -8,13 +8,11 @@
 
 #pragma once
 
-#include <astrophoto-toolbox/stacking/processing/stacking.h>
+#include <astrophoto-toolbox/stacking/threads/thread.h>
 #include <astrophoto-toolbox/stacking/threads/listener.h>
+#include <astrophoto-toolbox/stacking/processing/stacking.h>
 #include <filesystem>
 #include <string>
-#include <thread>
-#include <condition_variable>
-#include <mutex>
 
 
 namespace astrophototoolbox {
@@ -25,7 +23,7 @@ namespace threads {
     /// @brief  Thread allowing to to stack processed light frames
     //------------------------------------------------------------------------------------
     template<class BITMAP>
-    class StackingThread
+    class StackingThread : public Thread
     {
     public:
         //--------------------------------------------------------------------------------
@@ -59,25 +57,15 @@ namespace threads {
         /// @brief  Add a list of light frame files to the stack
         ///
         /// It is expected that the light frame has been properly processed.
-        ///
-        /// Calling this method will start the thread (if not already running).
         //--------------------------------------------------------------------------------
         void processFrames(const std::vector<std::string>& lightFrames);
 
-        //--------------------------------------------------------------------------------
-        /// @brief  Cancel the processing
-        //--------------------------------------------------------------------------------
-        void cancel();
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Wait for the thread to terminate its job (either because all frames
-        ///         are processed, or because the processing was cancelled)
-        //--------------------------------------------------------------------------------
-        void wait();
-
 
     private:
-        void process();
+        void process() override;
+
+        void onCancel() override;
+        void onReset() override;
 
 
     private:
@@ -85,14 +73,8 @@ namespace threads {
         std::filesystem::path destFilename;
 
         processing::FramesStacker<BITMAP> stacker;
-        std::thread thread;
 
         std::vector<std::string> lightFrames;
-        std::mutex mutex;
-        std::condition_variable condition;
-
-        bool cancelled = false;
-        bool terminate = false;
     };
 
 }

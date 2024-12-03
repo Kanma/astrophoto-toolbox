@@ -19,10 +19,25 @@ class RegistrationTestListener : public StackingListener
 public:
     void masterDarkFrameComputed(const std::string& filename, bool success) override
     {
+        REQUIRE(false);
+    }
+
+    void lightFrameProcessingStarted(const std::string& filename) override
+    {
+        REQUIRE(false);
     }
 
     void lightFrameProcessed(const std::string& filename, bool success) override
     {
+        REQUIRE(false);
+    }
+
+    void lightFrameRegistrationStarted(const std::string& filename) override
+    {
+        started.push_back(filename);
+
+        if (started.size() == 1)
+            condition.notify_one();
     }
 
     void lightFrameRegistered(const std::string& filename, bool success) override
@@ -30,12 +45,76 @@ public:
         results[filename] = success;
     }
 
-    void lightFramesStacked(const std::string& filename, unsigned int nbFrames) override
+    void lightFramesStackingStarted(unsigned int nbFrames) override
     {
+        REQUIRE(false);
     }
 
+    void lightFramesStacked(const std::string& filename, unsigned int nbFrames) override
+    {
+        REQUIRE(false);
+    }
+
+    std::vector<std::string> started;
     std::map<std::string, bool> results;
+
+    std::condition_variable condition;
+    std::mutex mutex;
 };
+
+
+TEST_CASE("(Stacking/Threads/Registration) Not started", "[RegistrationThread]")
+{
+    REQUIRE(std::filesystem::exists(TEMP_DIR "threads/lightframes/light1.fits"));
+    REQUIRE(std::filesystem::exists(TEMP_DIR "threads/lightframes/light2.fits"));
+    REQUIRE(std::filesystem::exists(TEMP_DIR "threads/lightframes/light3.fits"));
+
+    RegistrationTestListener listener;
+    RegistrationThread<UInt16ColorBitmap> thread(&listener, TEMP_DIR "threads/lightframes");
+
+    thread.processReferenceFrame(TEMP_DIR "threads/lightframes/light1.fits", -1);
+    thread.processFrames({
+        TEMP_DIR "threads/lightframes/light2.fits",
+        TEMP_DIR "threads/lightframes/light3.fits"
+    });
+
+    SECTION("no latch")
+    {
+        REQUIRE(!thread.cancel());
+        REQUIRE(!thread.stop());
+
+        thread.join();
+
+        REQUIRE(listener.started.empty());
+        REQUIRE(listener.results.empty());
+    }
+
+    SECTION("cancel with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(!thread.cancel(&latch));
+        REQUIRE(latch.try_wait());
+
+        thread.join();
+
+        REQUIRE(listener.started.empty());
+        REQUIRE(listener.results.empty());
+    }
+
+    SECTION("stop with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(!thread.stop(&latch));
+        REQUIRE(latch.try_wait());
+
+        thread.join();
+
+        REQUIRE(listener.started.empty());
+        REQUIRE(listener.results.empty());
+    }
+}
 
 
 TEST_CASE("(Stacking/Threads/Registration) Cancel registration", "[RegistrationThread]")
@@ -47,20 +126,40 @@ TEST_CASE("(Stacking/Threads/Registration) Cancel registration", "[RegistrationT
     RegistrationTestListener listener;
     RegistrationThread<UInt16ColorBitmap> thread(&listener, TEMP_DIR "threads/lightframes");
 
-    REQUIRE(thread.processReferenceFrame(TEMP_DIR "threads/lightframes/light1.fits", -1));
+    REQUIRE(thread.start());
+
+    thread.processReferenceFrame(TEMP_DIR "threads/lightframes/light1.fits", -1);
     thread.processFrames({
         TEMP_DIR "threads/lightframes/light2.fits",
         TEMP_DIR "threads/lightframes/light3.fits"
     });
 
-    thread.cancel();
-    thread.wait();
+    std::unique_lock<std::mutex> lock(listener.mutex);
+    listener.condition.wait(lock);
+    lock.unlock();
 
-    REQUIRE(listener.results.size() < 3);
+    SECTION("without latch")
+    {
+        REQUIRE(thread.cancel());
+        thread.join();
+    }
+
+    SECTION("with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(thread.cancel(&latch));
+
+        latch.wait();
+        thread.join();
+    }
+
+    REQUIRE(listener.started.size() < 3);
+    REQUIRE(listener.results.size() <= listener.started.size());
 }
 
 
-TEST_CASE("(Stacking/Threads/Registration) Fail to process reference frame while already running", "[RegistrationThread]")
+TEST_CASE("(Stacking/Threads/Registration) Reset registration", "[RegistrationThread]")
 {
     REQUIRE(std::filesystem::exists(TEMP_DIR "threads/lightframes/light1.fits"));
     REQUIRE(std::filesystem::exists(TEMP_DIR "threads/lightframes/light2.fits"));
@@ -69,18 +168,38 @@ TEST_CASE("(Stacking/Threads/Registration) Fail to process reference frame while
     RegistrationTestListener listener;
     RegistrationThread<UInt16ColorBitmap> thread(&listener, TEMP_DIR "threads/lightframes");
 
-    REQUIRE(thread.processReferenceFrame(TEMP_DIR "threads/lightframes/light1.fits", -1));
+    REQUIRE(thread.start());
+
+    thread.processReferenceFrame(TEMP_DIR "threads/lightframes/light1.fits", -1);
     thread.processFrames({
         TEMP_DIR "threads/lightframes/light2.fits",
         TEMP_DIR "threads/lightframes/light3.fits"
     });
 
-    REQUIRE(!thread.processReferenceFrame(TEMP_DIR "threads/lightframes/light1.fits", -1));
+    std::unique_lock<std::mutex> lock(listener.mutex);
+    listener.condition.wait(lock);
+    lock.unlock();
 
-    thread.cancel();
-    thread.wait();
+    REQUIRE(thread.reset());
 
-    REQUIRE(listener.results.size() < 3);
+    SECTION("without latch")
+    {
+        REQUIRE(thread.stop());
+        thread.join();
+    }
+
+    SECTION("with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(thread.stop(&latch));
+
+        latch.wait();
+        thread.join();
+    }
+
+    REQUIRE(listener.started.size() < 3);
+    REQUIRE(listener.results.size() <= listener.started.size());
 }
 
 
@@ -109,13 +228,34 @@ TEST_CASE("(Stacking/Threads/Registration) Registration", "[RegistrationThread]"
         transformation = fits.readTransformation();
     };
 
-    REQUIRE(thread.processReferenceFrame(TEMP_DIR "threads/lightframes/light1.fits", -1));
+    REQUIRE(thread.start());
+
+    thread.processReferenceFrame(TEMP_DIR "threads/lightframes/light1.fits", -1);
     thread.processFrames({
         TEMP_DIR "threads/lightframes/light2.fits",
         TEMP_DIR "threads/lightframes/light3.fits"
     });
 
-    thread.wait();
+    SECTION("without latch")
+    {
+        REQUIRE(thread.stop());
+        thread.join();
+    }
+
+    SECTION("with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(thread.stop(&latch));
+
+        latch.wait();
+        thread.join();
+    }
+
+    REQUIRE(listener.started.size() == 3);
+    REQUIRE(listener.started[0] == TEMP_DIR "threads/lightframes/light1.fits");
+    REQUIRE(listener.started[1] == TEMP_DIR "threads/lightframes/light2.fits");
+    REQUIRE(listener.started[2] == TEMP_DIR "threads/lightframes/light3.fits");
 
     REQUIRE(listener.results.size() == 3);
     REQUIRE(listener.results[TEMP_DIR "threads/lightframes/light1.fits"]);

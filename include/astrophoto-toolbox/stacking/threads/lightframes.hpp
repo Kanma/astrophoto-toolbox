@@ -28,22 +28,17 @@ LightFrameThread<BITMAP>::LightFrameThread(
 template<class BITMAP>
 LightFrameThread<BITMAP>::~LightFrameThread()
 {
-    if (thread.joinable())
-    {
-        cancel();
-        thread.join();
-    }
 }
 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool LightFrameThread<BITMAP>::setMasterDark(const std::string& filename)
+void LightFrameThread<BITMAP>::setMasterDark(const std::string& filename)
 {
-    if (thread.joinable())
-        return false;
-
-    return processor.setMasterDark(filename);
+    mutex.lock();
+    masterDark = filename;
+    mutex.unlock();
+    condition.notify_one();
 }
 
 //-----------------------------------------------------------------------------
@@ -53,26 +48,22 @@ void LightFrameThread<BITMAP>::setParameters(
     const utils::background_calibration_parameters_t& parameters
 )
 {
-    processor.setParameters(parameters);
+    mutex.lock();
+    this->parameters = parameters;
+    parametersValid = true;
+    mutex.unlock();
+    condition.notify_one();
 }
 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool LightFrameThread<BITMAP>::processReferenceFrame(const std::string& lightFrame)
+void LightFrameThread<BITMAP>::processReferenceFrame(const std::string& lightFrame)
 {
-    if (thread.joinable())
-        return false;
-
-    lightFrames.push_back(lightFrame);
-
-    cancelled = false;
-    terminate = false;
-
-    thread = std::thread(&LightFrameThread<BITMAP>::processNextFrame, this, true);
+    mutex.lock();
+    referenceFrame = lightFrame;
+    mutex.unlock();
     condition.notify_one();
-
-    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -85,13 +76,6 @@ void LightFrameThread<BITMAP>::processFrames(const std::vector<std::string>& lig
     for (const auto& lightFrame : lightFrames)
         this->lightFrames.push_back(lightFrame);
 
-    if (!thread.joinable())
-    {
-        cancelled = false;
-        terminate = false;
-        thread = std::thread(&LightFrameThread<BITMAP>::processNextFrame, this, false);
-    }
-
     mutex.unlock();
     condition.notify_one();
 }
@@ -99,37 +83,13 @@ void LightFrameThread<BITMAP>::processFrames(const std::vector<std::string>& lig
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LightFrameThread<BITMAP>::cancel()
+void LightFrameThread<BITMAP>::process()
 {
-    mutex.lock();
-    lightFrames.clear();
-    cancelled = true;
-    mutex.unlock();
-    condition.notify_one();
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-void LightFrameThread<BITMAP>::wait()
-{
-    if (thread.joinable())
-    {
-        mutex.lock();
-        terminate = true;
-        mutex.unlock();
-        condition.notify_one();
-
-        thread.join();
-    }
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-void LightFrameThread<BITMAP>::processNextFrame(bool reference)
-{
-    auto jobAvailable = [this]{ return !lightFrames.empty() || cancelled || terminate; };
+    auto jobAvailable = [this]{
+        return !masterDark.empty() || parametersValid || !referenceFrame.empty() ||
+               !lightFrames.empty() || (state == STATE_CANCELLING) ||
+               (state == STATE_STOPPING) || (state == STATE_RESETTING);
+    };
 
     while (true)
     {
@@ -138,14 +98,51 @@ void LightFrameThread<BITMAP>::processNextFrame(bool reference)
         if (!jobAvailable())
             condition.wait(lock, jobAvailable);
 
-        if (cancelled)
+        if (state == STATE_RESETTING)
+        {
+            masterDark = "";
+            parametersValid = false;
+            referenceFrame = "";
+            lightFrames.clear();
+            state = STATE_RUNNING;
+            latch->count_down();
+            continue;
+        }
+
+        if (state == STATE_CANCELLING)
+        {
+            masterDark = "";
+            parametersValid = false;
+            referenceFrame = "";
+            lightFrames.clear();
+            break;
+        }
+
+        if (!masterDark.empty())
+        {
+            processor.setMasterDark(masterDark);
+            masterDark = "";
+        }
+
+        if (parametersValid)
+        {
+            processor.setParameters(parameters);
+            parametersValid = false;
+        }
+
+        if ((state == STATE_STOPPING) && referenceFrame.empty() && lightFrames.empty())
             break;
 
-        if (terminate && lightFrames.empty())
-            break;
+        if (referenceFrame.empty() && lightFrames.empty())
+            continue;
 
-        const std::string filename = lightFrames[0];
-        lightFrames.erase(lightFrames.begin());
+        bool reference = !referenceFrame.empty();
+        const std::string filename = reference ? referenceFrame : lightFrames[0];
+
+        if (!reference)
+            lightFrames.erase(lightFrames.begin());
+        else
+            referenceFrame = "";
 
         lock.unlock();
 
@@ -154,10 +151,12 @@ void LightFrameThread<BITMAP>::processNextFrame(bool reference)
         std::string extension = std::filesystem::path(name).extension().string();
         std::string destName = name.replace(name.find(extension), extension.size(), ".fits");
 
+        listener->lightFrameProcessingStarted(filename);
+
         std::shared_ptr<BITMAP> bitmap = processor.process(filename, reference, destFolder / destName);
 
-        listener->lightFrameProcessed(filename, (bool) bitmap);
-        reference = false;
+        if ((state != STATE_CANCELLING) && (state != STATE_RESETTING))
+            listener->lightFrameProcessed(filename, (bool) bitmap);
     }
 }
 

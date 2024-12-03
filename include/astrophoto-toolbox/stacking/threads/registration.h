@@ -8,13 +8,11 @@
 
 #pragma once
 
-#include <astrophoto-toolbox/stacking/processing/registration.h>
+#include <astrophoto-toolbox/stacking/threads/thread.h>
 #include <astrophoto-toolbox/stacking/threads/listener.h>
+#include <astrophoto-toolbox/stacking/processing/registration.h>
 #include <filesystem>
 #include <string>
-#include <thread>
-#include <condition_variable>
-#include <mutex>
 
 
 namespace astrophototoolbox {
@@ -26,7 +24,7 @@ namespace threads {
     ///         detection and transformation from a reference frame computation)
     //------------------------------------------------------------------------------------
     template<class BITMAP>
-    class RegistrationThread
+    class RegistrationThread : public Thread
     {
     public:
         //--------------------------------------------------------------------------------
@@ -52,7 +50,7 @@ namespace threads {
         ///
         /// This method is an aternative to 'processReferenceFrame()'.
         //--------------------------------------------------------------------------------
-        bool setParameters(const star_list_t& stars, int luminancyThreshold);
+        void setParameters(const star_list_t& stars, int luminancyThreshold);
 
         //--------------------------------------------------------------------------------
         /// @brief  Register the light frame file to use as the reference
@@ -63,38 +61,22 @@ namespace threads {
         /// If the destination file points to an existing FITS file, the list of detected
         /// stars is added to that file (which can be the same as the light frame one).
         ///
-        /// It is expected that the light frame has been properly processed, and that the
-        /// thread isn't already running.
-        ///
-        /// Calling this method will start the thread.
+        /// It is expected that the light frame has been properly processed.
         //--------------------------------------------------------------------------------
-        bool processReferenceFrame(
+        void processReferenceFrame(
             const std::string& lightFrame, int luminancyThreshold=-1
         );
 
         //--------------------------------------------------------------------------------
         /// @brief  Register a list of light frame files
         ///
-        /// It is expected that the light frame has been properly processed.
-        ///
-        /// Calling this method will start the thread (if not already running).
+        /// It is expected that the light frames have been properly processed.
         //--------------------------------------------------------------------------------
         void processFrames(const std::vector<std::string>& lightFrames);
 
-        //--------------------------------------------------------------------------------
-        /// @brief  Cancel the processing
-        //--------------------------------------------------------------------------------
-        void cancel();
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Wait for the thread to terminate its job (either because all frames
-        ///         are processed, or because the processing was cancelled)
-        //--------------------------------------------------------------------------------
-        void wait();
-
 
     private:
-        void processNextFrame(bool reference, int luminancyThreshold=-1);
+        void process() override;
 
 
     private:
@@ -102,14 +84,11 @@ namespace threads {
         std::filesystem::path destFolder;
 
         RegistrationProcessor<BITMAP> processor;
-        std::thread thread;
 
+        star_list_t stars;
+        int luminancyThreshold = -1;
+        std::string referenceFrame;
         std::vector<std::string> lightFrames;
-        std::mutex mutex;
-        std::condition_variable condition;
-
-        bool cancelled = false;
-        bool terminate = false;
     };
 
 }

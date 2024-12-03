@@ -8,13 +8,11 @@
 
 #pragma once
 
-#include <astrophoto-toolbox/stacking/processing/lightframes.h>
+#include <astrophoto-toolbox/stacking/threads/thread.h>
 #include <astrophoto-toolbox/stacking/threads/listener.h>
+#include <astrophoto-toolbox/stacking/processing/lightframes.h>
 #include <filesystem>
 #include <string>
-#include <thread>
-#include <condition_variable>
-#include <mutex>
 
 
 namespace astrophototoolbox {
@@ -26,7 +24,7 @@ namespace threads {
     ///         (background calibration, dark frame substraction, ...)
     //------------------------------------------------------------------------------------
     template<class BITMAP>
-    class LightFrameThread
+    class LightFrameThread : public Thread
     {
     public:
         //--------------------------------------------------------------------------------
@@ -50,10 +48,10 @@ namespace threads {
         //--------------------------------------------------------------------------------
         /// @brief  Set the master dark frame file to use
         ///
-        /// It is expected that the thread isn't already running, and that the file is a
-        /// FITS one containing a bitmap and a list of hot pixels.
+        /// It is expected that the file is a FITS one containing a bitmap and a list of
+        /// hot pixels.
         //--------------------------------------------------------------------------------
-        bool setMasterDark(const std::string& filename);
+        void setMasterDark(const std::string& filename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Set the parameters to use for background calibration
@@ -66,34 +64,19 @@ namespace threads {
 
         //--------------------------------------------------------------------------------
         /// @brief  Process the reference frame
-        ///
-        /// It is expected that the thread isn't already running.
-        ///
-        /// Calling this method will start the thread.
         //--------------------------------------------------------------------------------
-        bool processReferenceFrame(const std::string& lightFrame);
+        void processReferenceFrame(const std::string& lightFrame);
 
         //--------------------------------------------------------------------------------
         /// @brief  Process a list of light frame files
         ///
-        /// Calling this method will start the thread (if not already running).
+        /// It is expected that a reference frame was already processed
         //--------------------------------------------------------------------------------
         void processFrames(const std::vector<std::string>& lightFrames);
 
-        //--------------------------------------------------------------------------------
-        /// @brief  Cancel the processing
-        //--------------------------------------------------------------------------------
-        void cancel();
 
-        //--------------------------------------------------------------------------------
-        /// @brief  Wait for the thread to terminate its job (either because all frames
-        ///         are processed, or because the processing was cancelled)
-        //--------------------------------------------------------------------------------
-        void wait();
-
-
-    private:
-        void processNextFrame(bool reference);
+    protected:
+        void process() override;
 
 
     private:
@@ -101,14 +84,12 @@ namespace threads {
         std::filesystem::path destFolder;
 
         processing::LightFrameProcessor<BITMAP> processor;
-        std::thread thread;
 
+        std::string masterDark;
+        utils::background_calibration_parameters_t parameters;
+        bool parametersValid = false;
+        std::string referenceFrame;
         std::vector<std::string> lightFrames;
-        std::mutex mutex;
-        std::condition_variable condition;
-
-        bool cancelled = false;
-        bool terminate = false;
     };
 
 }

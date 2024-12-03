@@ -28,46 +28,32 @@ RegistrationThread<BITMAP>::RegistrationThread(
 template<class BITMAP>
 RegistrationThread<BITMAP>::~RegistrationThread()
 {
-    if (thread.joinable())
-    {
-        cancel();
-        thread.join();
-    }
 }
 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool RegistrationThread<BITMAP>::setParameters(const star_list_t& stars, int luminancyThreshold)
+void RegistrationThread<BITMAP>::setParameters(const star_list_t& stars, int luminancyThreshold)
 {
-    if (thread.joinable())
-        return false;
-
-    processor.setParameters(stars, luminancyThreshold);
-
-    return true;
+    mutex.lock();
+    this->stars = stars;
+    this->luminancyThreshold = luminancyThreshold;
+    mutex.unlock();
+    condition.notify_one();
 }
 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool RegistrationThread<BITMAP>::processReferenceFrame(
+void RegistrationThread<BITMAP>::processReferenceFrame(
     const std::string& lightFrame, int luminancyThreshold
 )
 {
-    if (thread.joinable())
-        return false;
-
-    lightFrames.push_back(lightFrame);
-
-    cancelled = false;
-    terminate = false;
-
-    thread = std::thread(
-        &RegistrationThread<BITMAP>::processNextFrame, this, true, luminancyThreshold
-    );
-
-    return true;
+    mutex.lock();
+    referenceFrame = lightFrame;
+    this->luminancyThreshold = luminancyThreshold;
+    mutex.unlock();
+    condition.notify_one();
 }
 
 //-----------------------------------------------------------------------------
@@ -80,24 +66,6 @@ void RegistrationThread<BITMAP>::processFrames(const std::vector<std::string>& l
     for (const auto& lightFrame : lightFrames)
         this->lightFrames.push_back(lightFrame);
 
-    if (!thread.joinable())
-    {
-        cancelled = false;
-        terminate = false;
-        thread = std::thread(&RegistrationThread<BITMAP>::processNextFrame, this, false, -1);
-    }
-
-    mutex.unlock();
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-void RegistrationThread<BITMAP>::cancel()
-{
-    mutex.lock();
-    lightFrames.clear();
-    cancelled = true;
     mutex.unlock();
     condition.notify_one();
 }
@@ -105,25 +73,13 @@ void RegistrationThread<BITMAP>::cancel()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void RegistrationThread<BITMAP>::wait()
+void RegistrationThread<BITMAP>::process()
 {
-    if (thread.joinable())
-    {
-        mutex.lock();
-        terminate = true;
-        mutex.unlock();
-        condition.notify_one();
-
-        thread.join();
-    }
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-void RegistrationThread<BITMAP>::processNextFrame(bool reference, int luminancyThreshold)
-{
-    auto jobAvailable = [this]{ return !lightFrames.empty() || cancelled || terminate; };
+    auto jobAvailable = [this]{
+        return !stars.empty() || !referenceFrame.empty() ||
+               !lightFrames.empty() || (state == STATE_CANCELLING) ||
+               (state == STATE_STOPPING) || (state == STATE_RESETTING);
+    };
 
     while (true)
     {
@@ -132,32 +88,69 @@ void RegistrationThread<BITMAP>::processNextFrame(bool reference, int luminancyT
         if (!jobAvailable())
             condition.wait(lock, jobAvailable);
 
-        if (cancelled)
+        if (state == STATE_RESETTING)
+        {
+            stars.clear();
+            referenceFrame = "";
+            luminancyThreshold = -1;
+            lightFrames.clear();
+            state = STATE_RUNNING;
+            latch->count_down();
+            continue;
+        }
+
+        if (state == STATE_CANCELLING)
+        {
+            stars.clear();
+            referenceFrame = "";
+            luminancyThreshold = -1;
+            lightFrames.clear();
+            break;
+        }
+
+        if (!stars.empty())
+        {
+            processor.setParameters(stars, luminancyThreshold);
+            stars.clear();
+            luminancyThreshold = -1;
+        }
+
+        if ((state == STATE_STOPPING) && referenceFrame.empty() && lightFrames.empty())
             break;
 
-        if (terminate && lightFrames.empty())
-            break;
+        if (referenceFrame.empty() && lightFrames.empty())
+            continue;
 
-        const std::string filename = lightFrames[0];
-        lightFrames.erase(lightFrames.begin());
+        bool reference = !referenceFrame.empty();
+        const std::string filename = reference ? referenceFrame : lightFrames[0];
+
+        if (!reference)
+            lightFrames.erase(lightFrames.begin());
+        else
+            referenceFrame = "";
 
         lock.unlock();
 
-        // Register the frame
+        // Process the frame
         std::string name = std::filesystem::path(filename).filename().string();
         std::string extension = std::filesystem::path(name).extension().string();
         std::string destName = name.replace(name.find(extension), extension.size(), ".fits");
 
+        listener->lightFrameRegistrationStarted(filename);
+
         if (reference)
         {
             star_list_t stars = processor.processReference(filename, luminancyThreshold, destFolder / destName);
-            listener->lightFrameRegistered(filename, !stars.empty());
-            reference = false;
+
+            if ((state != STATE_CANCELLING) && (state != STATE_RESETTING))
+                listener->lightFrameRegistered(filename, !stars.empty());
         }
         else
         {
             auto result = processor.process(filename, destFolder / destName);
-            listener->lightFrameRegistered(filename, !get<0>(result).empty());
+
+            if ((state != STATE_CANCELLING) && (state != STATE_RESETTING))
+                listener->lightFrameRegistered(filename, !get<0>(result).empty());
         }
     }
 }

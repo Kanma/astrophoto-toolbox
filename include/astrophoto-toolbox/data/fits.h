@@ -101,6 +101,11 @@ namespace astrophototoolbox {
         );
 
         //--------------------------------------------------------------------------------
+        /// @brief  Add a keyword into the FITS file
+        //--------------------------------------------------------------------------------
+        bool write(const std::string& keyword, bool value);
+
+        //--------------------------------------------------------------------------------
         /// @brief  Add the keywords needed by astrometry.net's 'astrometry-engine'
         ///         executable, that performs plate solving.
         ///
@@ -168,6 +173,11 @@ namespace astrophototoolbox {
         stacking::utils::background_calibration_parameters_t readBackgroundCalibrationParameters(
             int index = 0
         );
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Reaq a keyword from the FITS file
+        //--------------------------------------------------------------------------------
+        bool read(const std::string& keyword, bool& value);
 
 
         //_____ Static methods __________

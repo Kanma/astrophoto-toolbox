@@ -26,11 +26,6 @@ StackingThread<BITMAP>::StackingThread(
 template<class BITMAP>
 StackingThread<BITMAP>::~StackingThread()
 {
-    if (thread.joinable())
-    {
-        cancel();
-        thread.join();
-    }
 }
 
 //-----------------------------------------------------------------------------
@@ -43,11 +38,6 @@ bool StackingThread<BITMAP>::setup(
 {
     if (thread.joinable())
         return false;
-
-    cancelled = false;
-    terminate = false;
-
-    lightFrames.clear();
 
     stacker.setup(nbExpectedFrames, tempFolder, maxFileSize);
 
@@ -64,25 +54,6 @@ void StackingThread<BITMAP>::processFrames(const std::vector<std::string>& light
     for (const auto& lightFrame : lightFrames)
         this->lightFrames.push_back(lightFrame);
 
-    if (!thread.joinable())
-    {
-        cancelled = false;
-        terminate = false;
-        thread = std::thread(&StackingThread<BITMAP>::process, this);
-    }
-
-    mutex.unlock();
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-void StackingThread<BITMAP>::cancel()
-{
-    mutex.lock();
-    lightFrames.clear();
-    stacker.cancel();
-    cancelled = true;
     mutex.unlock();
     condition.notify_one();
 }
@@ -90,60 +61,82 @@ void StackingThread<BITMAP>::cancel()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void StackingThread<BITMAP>::wait()
-{
-    if (thread.joinable())
-    {
-        mutex.lock();
-        terminate = true;
-        mutex.unlock();
-        condition.notify_one();
-
-        thread.join();
-    }
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
 void StackingThread<BITMAP>::process()
 {
-    auto jobAvailable = [this]{ return !lightFrames.empty() || cancelled || terminate; };
+    auto jobAvailable = [this]{
+        return !lightFrames.empty() || (state == STATE_CANCELLING) ||
+               (state == STATE_STOPPING) || (state == STATE_RESETTING);
+    };
 
     while (true)
     {
-        // Wait for frames to process
+        // Wait for a frame to process
         std::unique_lock lock(mutex);
         if (!jobAvailable())
             condition.wait(lock, jobAvailable);
 
-        if (cancelled)
+        if (state == STATE_RESETTING)
+        {
+            lightFrames.clear();
+            stacker.clear();
+            state = STATE_RUNNING;
+            latch->count_down();
+            continue;
+        }
+
+        if (state == STATE_CANCELLING)
+        {
+            lightFrames.clear();
+            break;
+        }
+
+        if ((state == STATE_STOPPING) && lightFrames.empty())
             break;
 
-        if (terminate && lightFrames.empty())
-            break;
-
-        std::vector<std::string> filenames = lightFrames;
+        auto filenames = lightFrames;
         lightFrames.clear();
 
         lock.unlock();
+
+        listener->lightFramesStackingStarted(stacker.nbFrames() + filenames.size());
 
         // Stack the frames
         for (const auto& filename : filenames)
         {
             stacker.addFrame(filename);
 
-            if (cancelled)
-                return;
+            if ((state == STATE_CANCELLING) || (state == STATE_RESETTING))
+                break;
         }
+
+        if ((state == STATE_CANCELLING) || (state == STATE_RESETTING))
+            continue;
 
         BITMAP* bitmap = stacker.process(destFilename);
         if (bitmap)
         {
-            listener->lightFramesStacked(destFilename, stacker.nbFrames());
+            if ((state != STATE_CANCELLING) && (state != STATE_RESETTING))
+                listener->lightFramesStacked(destFilename, stacker.nbFrames());
+
             delete bitmap;
         }
     }
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void StackingThread<BITMAP>::onCancel()
+{
+    stacker.cancel();
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void StackingThread<BITMAP>::onReset()
+{
+    stacker.cancel();
 }
 
 }

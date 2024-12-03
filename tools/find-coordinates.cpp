@@ -175,6 +175,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
+
     // Process the bitmap if one was loaded
     if (bitmap)
     {

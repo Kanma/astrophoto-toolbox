@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include <astrophoto-toolbox/stacking/processing/masterdark.h>
+#include <astrophoto-toolbox/stacking/threads/thread.h>
 #include <astrophoto-toolbox/stacking/threads/listener.h>
+#include <astrophoto-toolbox/stacking/processing/masterdark.h>
 #include <filesystem>
 #include <string>
-#include <thread>
 
 
 namespace astrophototoolbox {
@@ -23,7 +23,7 @@ namespace threads {
     /// @brief  Thread allowing to to generate the master dark
     //------------------------------------------------------------------------------------
     template<class BITMAP>
-    class MasterDarkThread
+    class MasterDarkThread : public Thread
     {
     public:
         //--------------------------------------------------------------------------------
@@ -32,7 +32,10 @@ namespace threads {
         /// The listener will be used to notify the caller when the master dark frame is
         /// computed.
         //--------------------------------------------------------------------------------
-        MasterDarkThread(StackingListener* listener, const std::filesystem::path& destFilename);
+        MasterDarkThread(
+            StackingListener* listener, const std::filesystem::path& destFilename,
+            const std::filesystem::path& tempFolder
+        );
 
         //--------------------------------------------------------------------------------
         /// @brief  Destructor
@@ -47,32 +50,15 @@ namespace threads {
         /// @brief  Stack the provided list of dark frames
         ///
         /// It is expected that the dark frames have been properly processed.
-        ///
-        /// It is expected that the thread isn't already running. Calling this method will
-        /// start the thread.
         //--------------------------------------------------------------------------------
-        bool processFrames(
-            const std::vector<std::string>& darkFrames,
-            const std::filesystem::path& tempFolder
-        );
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Cancel the processing
-        //--------------------------------------------------------------------------------
-        void cancel();
-
-        //--------------------------------------------------------------------------------
-        /// @brief  Wait for the thread to terminate its job (either because the master
-        ///         dark frame was generated, or because the processing was cancelled)
-        //--------------------------------------------------------------------------------
-        void wait();
+        void processFrames(const std::vector<std::string>& darkFrames);
 
 
     private:
-        void process(
-            const std::vector<std::string>& darkFrames,
-            const std::filesystem::path& tempFolder
-        );
+        void process() override;
+
+        void onCancel() override;
+        void onReset() override;
 
 
     private:
@@ -80,9 +66,9 @@ namespace threads {
         std::filesystem::path destFilename;
 
         processing::MasterDarkGenerator<BITMAP> generator;
-        std::thread thread;
+        std::filesystem::path tempFolder;
 
-        bool cancelled;
+        std::vector<std::string> darkFrames;
     };
 
 }

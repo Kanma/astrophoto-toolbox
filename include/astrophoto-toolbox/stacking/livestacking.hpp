@@ -21,8 +21,6 @@
 #include <astrophoto-toolbox/stacking/utils/starmatcher.h>
 #include <astrophoto-toolbox/data/fits.h>
 #include <astrophoto-toolbox/images/helpers.h>
-#include <sstream>
-#include <fstream>
 
 namespace astrophototoolbox {
 namespace stacking {
@@ -73,11 +71,11 @@ bool LiveStacking<BITMAP>::setup(
 
     if (!masterDarkThread)
     {
-        masterDarkThread = new threads::MasterDarkThread<BITMAP>(this, folder / MASTER_DARK);
+        masterDarkThread = new threads::MasterDarkThread<BITMAP>(this, folder / MASTER_DARK, folder / "tmp_masterdark");
         lightFramesThread = new threads::LightFrameThread<BITMAP>(this, folder / CALIBRATED_LIGHT_FRAMES_PATH);
         registrationThread = new threads::RegistrationThread<BITMAP>(this, folder / CALIBRATED_LIGHT_FRAMES_PATH);
         stackingThread = new threads::StackingThread<BITMAP>(this, folder / STACKED_FILE);
-        stackingThread->setup(100, folder / STACKING_TEMP_PATH);
+        stackingThread->setup(10, folder / STACKING_TEMP_PATH);
     }
 
     return true;
@@ -96,7 +94,7 @@ bool LiveStacking<BITMAP>::load()
         return false;
 
     darkFrames.clear();
-    lightFrames.clear();
+    infos.lightFrames.entries.clear();
 
     memset(&infos, 0, sizeof(infos));
 
@@ -149,7 +147,7 @@ bool LiveStacking<BITMAP>::save()
     if (!output.is_open())
         return false;
 
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(framesMutex);
 
     if (!darkFrames.empty())
     {
@@ -161,11 +159,11 @@ bool LiveStacking<BITMAP>::save()
         output << "---" << std::endl;
     }
 
-    if (!lightFrames.empty())
+    if (!infos.lightFrames.entries.empty())
     {
         output << "LIGHTFRAMES" << std::endl;
 
-        for (const auto& entry : lightFrames)
+        for (const auto& entry : infos.lightFrames.entries)
             output << entry.filename << std::endl;
 
         output << "REF " << referenceFrame << std::endl;
@@ -180,27 +178,28 @@ bool LiveStacking<BITMAP>::save()
 template<class BITMAP>
 bool LiveStacking<BITMAP>::addDarkFrame(const std::string& filename)
 {
-    std::filesystem::path path(filename);
-    if (!path.is_absolute())
-        path = folder / filename;
-
+    std::filesystem::path path = getAbsoluteFilename(filename);
     if (!std::filesystem::exists(path))
         return false;
 
-    mutex.lock();
+    framesMutex.lock();
+
     dark_frame_t darkFrame;
     darkFrame.filename = filename;
 
     darkFrames.push_back(darkFrame);
 
     infos.nbDarkFrames = darkFrames.size();
-    mutex.unlock();
+
+    framesMutex.unlock();
 
     if (running)
     {
-        // Cancel all pending jobs
-        cancel();
-        wait();
+        // Reset all pending jobs
+        masterDarkThread->reset();
+        lightFramesThread->reset();
+        registrationThread->reset();
+        stackingThread->reset();
 
         // Delete the files that will need to be recomputed
         std::filesystem::remove(folder / MASTER_DARK);
@@ -211,22 +210,24 @@ bool LiveStacking<BITMAP>::addDarkFrame(const std::string& filename)
         std::filesystem::create_directories(folder / CALIBRATED_LIGHT_FRAMES_PATH);
 
         // Reset the light frames status
-        for (auto& entry : lightFrames)
+        for (auto& entry : infos.lightFrames.entries)
         {
             entry.calibrated = false;
             entry.registered = false;
             entry.stacked = false;
             entry.valid = true;
-            entry.ready = true;
+            entry.processing = false;
         }
 
-        memset(&infos.lightFrames, 0, sizeof(infos.lightFrames));
-        infos.lightFrames.nb = lightFrames.size();
-
-        stackingThread->setup(100, folder / STACKING_TEMP_PATH);
+        infos.lightFrames.nb = infos.lightFrames.entries.size();
+        infos.lightFrames.nbProcessed = 0;
+        infos.lightFrames.nbRegistered = 0;
+        infos.lightFrames.nbValid = 0;
+        infos.lightFrames.nbStacking = 0;
+        infos.lightFrames.nbStacked = 0;
 
         // Restart the processing
-        start();
+        nextStep();
     }
 
     return true;
@@ -237,14 +238,11 @@ bool LiveStacking<BITMAP>::addDarkFrame(const std::string& filename)
 template<class BITMAP>
 bool LiveStacking<BITMAP>::addLightFrame(const std::string& filename)
 {
-    std::filesystem::path path(filename);
-    if (!path.is_absolute())
-        path = folder / filename;
-
+    std::filesystem::path path = getAbsoluteFilename(filename);
     if (!std::filesystem::exists(path))
         return false;
 
-    light_frame_t entry;
+    live_stacking_light_frame_t entry;
     entry.filename = filename;
 
     auto calibratedFilename = folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(filename);
@@ -255,15 +253,16 @@ bool LiveStacking<BITMAP>::addLightFrame(const std::string& filename)
         FITS fits;
         if (fits.open(calibratedFilename))
         {
+            fits.read("REGISTERED", entry.valid);
             star_list_t stars = fits.readStars();
             entry.registered = !stars.empty();
         }
     }
 
-    mutex.lock();
+    framesMutex.lock();
 
-    lightFrames.push_back(entry);
-    infos.lightFrames.nb = lightFrames.size();
+    infos.lightFrames.entries.push_back(entry);
+    infos.lightFrames.nb = infos.lightFrames.entries.size();
 
     if (entry.calibrated)
         ++infos.lightFrames.nbProcessed;
@@ -271,22 +270,27 @@ bool LiveStacking<BITMAP>::addLightFrame(const std::string& filename)
     if (entry.registered)
     {
         ++infos.lightFrames.nbRegistered;
-        ++infos.lightFrames.nbValid;
+
+        if (entry.valid)
+            ++infos.lightFrames.nbValid;
     }
 
-    if (lightFrames.size() == 1)
+    if (infos.lightFrames.entries.size() == 1)
         referenceFrame = 0;
 
-    mutex.unlock();
-
     if (running)
+        listener->progressNotification(infos);
+
+    framesMutex.unlock();
+
+    if (step == STEP_STACKING)
     {
         if (!entry.calibrated)
-           lightFramesThread->processFrames({ filename });
+           lightFramesThread->processFrames({ path });
         else if (!entry.registered)
-            registrationThread->processFrames({ filename });
+            registrationThread->processFrames({ calibratedFilename });
         else
-            stackingThread->processFrames({ filename });
+            stackingThread->processFrames({ calibratedFilename });
     }
 
     return true;
@@ -297,32 +301,38 @@ bool LiveStacking<BITMAP>::addLightFrame(const std::string& filename)
 template<class BITMAP>
 void LiveStacking<BITMAP>::setReference(size_t index)
 {
-    mutex.lock();
+    framesMutex.lock();
 
-    if ((index < 0) || (index >= lightFrames.size()))
+    if ((index < 0) || (index >= infos.lightFrames.entries.size()))
     {
-        mutex.unlock();
+        framesMutex.unlock();
         return;
     }
 
     if (index == referenceFrame)
     {
-        mutex.unlock();
+        framesMutex.unlock();
         return;
     }
 
     referenceFrame = index;
 
-    mutex.unlock();
+    framesMutex.unlock();
 
-    bool isRunning = running;
+    bool hasPendingJobs = (step != STEP_NONE);
 
-    // Cancel all pending jobs
-    if (isRunning)
+    // Reset all pending jobs
+    if (hasPendingJobs)
     {
-        cancel();
-        wait();
+        lightFramesThread->reset();
+        registrationThread->reset();
+        stackingThread->reset();
+
+        if (step == STEP_STACKING)
+            step = STEP_MASTER_DARK;
     }
+
+    framesMutex.lock();
 
     // Delete the files that will need to be recomputed
     std::filesystem::remove(folder / STACKED_FILE);
@@ -332,23 +342,27 @@ void LiveStacking<BITMAP>::setReference(size_t index)
     std::filesystem::create_directories(folder / CALIBRATED_LIGHT_FRAMES_PATH);
 
     // Reset the light frames status
-    for (auto& entry : lightFrames)
+    for (auto& entry : infos.lightFrames.entries)
     {
         entry.calibrated = false;
         entry.registered = false;
         entry.stacked = false;
         entry.valid = true;
-        entry.ready = true;
+        entry.processing = false;
     }
 
-    memset(&infos.lightFrames, 0, sizeof(infos.lightFrames));
-    infos.lightFrames.nb = lightFrames.size();
+    infos.lightFrames.nb = infos.lightFrames.entries.size();
+    infos.lightFrames.nbProcessed = 0;
+    infos.lightFrames.nbRegistered = 0;
+    infos.lightFrames.nbValid = 0;
+    infos.lightFrames.nbStacking = 0;
+    infos.lightFrames.nbStacked = 0;
 
-    stackingThread->setup(100, folder / STACKING_TEMP_PATH);
+    framesMutex.unlock();
 
     // Restart the processing
-    if (isRunning)
-        start();
+    if (hasPendingJobs)
+        nextStep();
 }
 
 //-----------------------------------------------------------------------------
@@ -362,61 +376,47 @@ void LiveStacking<BITMAP>::setLuminancyThreshold(int threshold)
         return;
 
     luminancyThreshold = threshold;
-    changingLuminancyThreshold = true;
 
-    bool isRunning = running;
+    bool hasPendingJobs = (step != STEP_NONE);
 
-    // Cancel all relevant pending jobs
-    if (isRunning)
+    // Reset all relevant pending jobs
+    if (hasPendingJobs)
     {
-        registrationThread->cancel();
-        stackingThread->cancel();
-        
-        registrationThread->wait();
-        stackingThread->wait();
+        registrationThread->reset();
+        stackingThread->reset();
     }
 
     // Delete the files that will need to be recomputed
     std::filesystem::remove(folder / STACKED_FILE);
 
-    mutex.lock();
+    framesMutex.lock();
 
     // Reset the light frames status
-    for (auto& entry : lightFrames)
+    for (auto& entry : infos.lightFrames.entries)
     {
         entry.registered = false;
         entry.stacked = false;
         entry.valid = true;
-        entry.ready = entry.calibrated;
+        entry.processing = false;
     }
 
     infos.lightFrames.nbRegistered = 0;
     infos.lightFrames.nbValid = 0;
     infos.lightFrames.nbStacked = 0;
 
-    stackingThread->setup(100, folder / STACKING_TEMP_PATH);
-
     // Restart the processing
-    if (isRunning)
+    if (hasPendingJobs)
     {
-        auto reference = lightFrames[referenceFrame];
+        auto reference = infos.lightFrames.entries[referenceFrame];
         std::vector<std::string> lightFramesToRegister;
 
-        for (auto& entry : lightFrames)
+        for (auto& entry : infos.lightFrames.entries)
         {
-            if (!entry.valid || !entry.ready)
-                continue;
-
-            if (entry.filename != reference.filename)
-            {
-                if (entry.calibrated)
-                    lightFramesToRegister.push_back(folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(entry.filename));
-            }
-
-            entry.ready = false;
+            if ((entry.filename != reference.filename) && entry.calibrated)
+                lightFramesToRegister.push_back(folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(entry.filename));
         }
 
-        mutex.unlock();
+        framesMutex.unlock();
 
         if (reference.calibrated)
         {
@@ -430,10 +430,8 @@ void LiveStacking<BITMAP>::setLuminancyThreshold(int threshold)
     }
     else
     {
-        mutex.unlock();
+        framesMutex.unlock();
     }
-
-    changingLuminancyThreshold = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -444,8 +442,18 @@ bool LiveStacking<BITMAP>::start()
     if (running)
         return false;
 
-    cancelled = false;
     running = true;
+    step = STEP_NONE;
+
+    std::latch latch(4);
+
+    masterDarkThread->start(&latch);
+    lightFramesThread->start(&latch);
+    registrationThread->start(&latch);
+    stackingThread->start(&latch);
+
+    latch.wait();
+
     nextStep();
 
     return true;
@@ -459,12 +467,68 @@ void LiveStacking<BITMAP>::cancel()
     if (!running)
         return;
 
-    cancelled = true;
+    std::latch latch(4);
 
-    masterDarkThread->cancel();
-    lightFramesThread->cancel();
-    registrationThread->cancel();
-    stackingThread->cancel();
+    masterDarkThread->cancel(&latch);
+    lightFramesThread->cancel(&latch);
+    registrationThread->cancel(&latch);
+    stackingThread->cancel(&latch);
+
+    latch.wait();
+
+    masterDarkThread->join();
+    lightFramesThread->join();
+    registrationThread->join();
+    stackingThread->join();
+
+    running = false;
+    step = STEP_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void LiveStacking<BITMAP>::cancelAsync()
+{
+    if (!running)
+        return;
+
+    stopThread = std::thread(&LiveStacking<BITMAP>::cancel, this);
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void LiveStacking<BITMAP>::stop()
+{
+    if (!running)
+        return;
+
+    masterDarkThread->stop();
+    masterDarkThread->join();
+
+    lightFramesThread->stop();
+    lightFramesThread->join();
+
+    registrationThread->stop();
+    registrationThread->join();
+
+    stackingThread->stop();
+    stackingThread->join();
+
+    running = false;
+    step = STEP_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void LiveStacking<BITMAP>::stopAsync()
+{
+    if (!running)
+        return;
+
+    stopThread = std::thread(&LiveStacking<BITMAP>::stop, this);
 }
 
 //-----------------------------------------------------------------------------
@@ -472,12 +536,8 @@ void LiveStacking<BITMAP>::cancel()
 template<class BITMAP>
 void LiveStacking<BITMAP>::wait()
 {
-    masterDarkThread->wait();
-    lightFramesThread->wait();
-    registrationThread->wait();
-    stackingThread->wait();
-
-    running = false;
+    if (stopThread.joinable())
+        stopThread.join();
 }
 
 //-----------------------------------------------------------------------------
@@ -485,13 +545,13 @@ void LiveStacking<BITMAP>::wait()
 template<class BITMAP>
 void LiveStacking<BITMAP>::masterDarkFrameComputed(const std::string& filename, bool success)
 {
-    mutex.lock();
+    framesMutex.lock();
 
     for (auto& entry : darkFrames)
     {
-        if (!entry.ready)
+        if (entry.processing)
         {
-            entry.ready = true;
+            entry.processing = false;
             entry.stacked = success;
         }
     }
@@ -499,13 +559,35 @@ void LiveStacking<BITMAP>::masterDarkFrameComputed(const std::string& filename, 
     if (success)
         lightFramesThread->setMasterDark(filename);
 
-    if (!cancelled)
-        listener->progressNotification(infos);
+    listener->progressNotification(infos);
 
-    mutex.unlock();
+    framesMutex.unlock();
 
-    if (success && !cancelled)
+    if (success)
         nextStep();
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void LiveStacking<BITMAP>::lightFrameProcessingStarted(const std::string& filename)
+{
+    framesMutex.lock();
+
+    std::string internalFilename = getInternalFilename(filename);
+
+    for (auto& entry : infos.lightFrames.entries)
+    {
+        if (entry.filename == internalFilename)
+        {
+            entry.processing = true;
+            break;
+        }
+    }
+
+    listener->progressNotification(infos);
+
+    framesMutex.unlock();
 }
 
 //-----------------------------------------------------------------------------
@@ -513,45 +595,63 @@ void LiveStacking<BITMAP>::masterDarkFrameComputed(const std::string& filename, 
 template<class BITMAP>
 void LiveStacking<BITMAP>::lightFrameProcessed(const std::string& filename, bool success)
 {
-    mutex.lock();
+    framesMutex.lock();
 
-    for (auto& entry : lightFrames)
+    std::string internalFilename = getInternalFilename(filename);
+
+    for (auto& entry : infos.lightFrames.entries)
     {
-        if (entry.filename == filename)
+        if (entry.filename == internalFilename)
         {
             if (success)
             {
                 entry.calibrated = true;
+                entry.processing = false;
                 ++infos.lightFrames.nbProcessed;
 
-                if (!cancelled && !changingLuminancyThreshold)
-                {
-                    auto fullpath = folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(filename);
+                auto fullpath = folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(filename);
 
-                    if (lightFrames[referenceFrame].filename == filename)
-                        registrationThread->processReferenceFrame({ fullpath }, luminancyThreshold);
-                    else
-                        registrationThread->processFrames({ fullpath });
-                }
+                if (infos.lightFrames.entries[referenceFrame].filename == internalFilename)
+                    registrationThread->processReferenceFrame({ fullpath }, luminancyThreshold);
                 else
-                {
-                    entry.ready = true;
-                }
+                    registrationThread->processFrames({ fullpath });
             }
             else
             {
                 entry.valid = false;
-                entry.ready = true;
+                entry.processing = false;
             }
 
             break;
         }
     }
 
-    if (!cancelled)
-        listener->progressNotification(infos);
+    listener->progressNotification(infos);
 
-    mutex.unlock();
+    framesMutex.unlock();
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void LiveStacking<BITMAP>::lightFrameRegistrationStarted(const std::string& filename)
+{
+    framesMutex.lock();
+
+    std::string internalFilename = getInternalFilename(filename);
+
+    for (auto& entry : infos.lightFrames.entries)
+    {
+        if (entry.filename == internalFilename)
+        {
+            entry.processing = true;
+            break;
+        }
+    }
+
+    listener->progressNotification(infos);
+
+    framesMutex.unlock();
 }
 
 //-----------------------------------------------------------------------------
@@ -559,39 +659,63 @@ void LiveStacking<BITMAP>::lightFrameProcessed(const std::string& filename, bool
 template<class BITMAP>
 void LiveStacking<BITMAP>::lightFrameRegistered(const std::string& filename, bool success)
 {
-    mutex.lock();
+    framesMutex.lock();
 
-    for (auto& entry : lightFrames)
+    for (auto& entry : infos.lightFrames.entries)
     {
         auto fullpath = folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(entry.filename);
 
         if (fullpath == filename)
         {
+            entry.registered = true;
+            entry.processing = false;
+            ++infos.lightFrames.nbRegistered;
+
             if (success)
             {
-                entry.registered = true;
-                ++infos.lightFrames.nbRegistered;
                 ++infos.lightFrames.nbValid;
-
-                if (!cancelled)
-                    stackingThread->processFrames({ fullpath });
-                else
-                    entry.ready = true;
+                stackingThread->processFrames({ fullpath });
             }
             else
             {
                 entry.valid = false;
-                entry.ready = true;
             }
 
             break;
         }
     }
 
-    if (!cancelled)
-        listener->progressNotification(infos);
+    listener->progressNotification(infos);
 
-    mutex.unlock();
+    framesMutex.unlock();
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void LiveStacking<BITMAP>::lightFramesStackingStarted(unsigned int nbFrames)
+{
+    framesMutex.lock();
+
+    unsigned int nb = 0;
+
+    for (auto& entry : infos.lightFrames.entries)
+    {
+        if (entry.registered && entry.valid)
+        {
+            entry.processing = true;
+            ++nb;
+
+            if (nb == nbFrames)
+                break;
+        }
+    }
+
+    infos.lightFrames.nbStacking = nbFrames;
+
+    listener->progressNotification(infos);
+
+    framesMutex.unlock();
 }
 
 //-----------------------------------------------------------------------------
@@ -599,28 +723,24 @@ void LiveStacking<BITMAP>::lightFrameRegistered(const std::string& filename, boo
 template<class BITMAP>
 void LiveStacking<BITMAP>::lightFramesStacked(const std::string& filename, unsigned int nbFrames)
 {
-    if (!cancelled)
+    framesMutex.lock();
+
+    for (auto& entry : infos.lightFrames.entries)
     {
-        unsigned int nb = 0;
-
-        for (auto& entry : lightFrames)
+        if (entry.registered && entry.valid && entry.processing)
         {
-            if (entry.registered && entry.valid)
-            {
-                entry.stacked = true;
-                entry.ready = true;
-                ++nb;
-
-                if (nb == nbFrames)
-                    break;
-            }
+            entry.stacked = true;
+            entry.processing = false;
         }
-
-        infos.lightFrames.nbStacked = nbFrames;
-
-        listener->progressNotification(infos);
-        listener->stackingDone(filename);
     }
+
+    infos.lightFrames.nbStacked = infos.lightFrames.nbStacking;
+    infos.lightFrames.nbStacking = 0;
+
+    listener->progressNotification(infos);
+    listener->stackingDone(filename);
+
+    framesMutex.unlock();
 }
 
 //-----------------------------------------------------------------------------
@@ -628,7 +748,7 @@ void LiveStacking<BITMAP>::lightFramesStacked(const std::string& filename, unsig
 template<class BITMAP>
 void LiveStacking<BITMAP>::nextStep()
 {
-    mutex.lock();
+    framesMutex.lock();
 
     bool mustRecomputeMasterDark = false;
     for (const auto& entry : darkFrames)
@@ -642,43 +762,53 @@ void LiveStacking<BITMAP>::nextStep()
 
     if (mustRecomputeMasterDark)
     {
+        step = STEP_MASTER_DARK;
+
         std::vector<std::string> allDarkFrames;
         for (auto& entry : darkFrames)
         {
-            allDarkFrames.push_back(entry.filename);
-            entry.ready = false;
+            std::filesystem::path path = getAbsoluteFilename(entry.filename);
+            allDarkFrames.push_back(path);
+            entry.processing = true;
         }
 
-        mutex.unlock();
+        framesMutex.unlock();
 
-        masterDarkThread->processFrames(allDarkFrames, folder / MASTER_DARK_TEMP_PATH);
+        masterDarkThread->processFrames(allDarkFrames);
     }
-    else if (!lightFrames.empty())
+    else if (!infos.lightFrames.entries.empty())
     {
-        auto reference = lightFrames[referenceFrame];
+        step = STEP_STACKING;
+
+        auto reference = infos.lightFrames.entries[referenceFrame];
         std::vector<std::string> lightFramesToProcess;
         std::vector<std::string> lightFramesToRegister;
         std::vector<std::string> lightFramesToStack;
 
-        for (auto& entry : lightFrames)
+        for (auto& entry : infos.lightFrames.entries)
         {
-            if (!entry.valid || !entry.ready)
+            if (!entry.valid || entry.processing)
                 continue;
 
             if (entry.filename != reference.filename)
             {
                 if (!entry.calibrated)
-                    lightFramesToProcess.push_back(entry.filename);
+                {
+                    std::filesystem::path path = getAbsoluteFilename(entry.filename);
+                    lightFramesToProcess.push_back(path);
+                }
                 else if (!entry.registered)
+                {
                     lightFramesToRegister.push_back(folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(entry.filename));
+                }
                 else if (!entry.stacked)
+                {
                     lightFramesToStack.push_back(folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(entry.filename));
+                }
             }
-
-            entry.ready = false;
         }
 
-        mutex.unlock();
+        framesMutex.unlock();
 
         if (reference.calibrated)
         {
@@ -693,15 +823,20 @@ void LiveStacking<BITMAP>::nextStep()
                 registrationThread->setParameters(stars, luminancyThreshold);
             }
             else
-                registrationThread->processReferenceFrame(reference.filename);
+            {
+                registrationThread->processReferenceFrame(
+                    folder / CALIBRATED_LIGHT_FRAMES_PATH / getCalibratedFilename(reference.filename)
+                );
+            }
         }
         else
         {
-            lightFramesThread->processReferenceFrame(reference.filename);
+            std::filesystem::path path = getAbsoluteFilename(reference.filename);
+            lightFramesThread->processReferenceFrame(path);
         }
 
         if (reference.registered)
-            stackingThread->processFrames({ reference.filename });
+            stackingThread->processFrames({ getAbsoluteFilename(reference.filename) });
 
         if (!lightFramesToProcess.empty())
             lightFramesThread->processFrames(lightFramesToProcess);
@@ -714,19 +849,44 @@ void LiveStacking<BITMAP>::nextStep()
     }
     else
     {
-        mutex.unlock();
+        framesMutex.unlock();
     }
 }
 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-const std::string LiveStacking<BITMAP>::getCalibratedFilename(const std::string& path)
+const std::string LiveStacking<BITMAP>::getInternalFilename(const std::string& path) const
+{
+    if (!std::filesystem::path(path).is_absolute())
+        return path;
+
+    if (path.starts_with(folder.string()))
+        return path.substr(folder.string().size() + 1);
+
+    return path;
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+const std::string LiveStacking<BITMAP>::getAbsoluteFilename(const std::string& path) const
+{
+    if (!std::filesystem::path(path).is_absolute())
+        return folder / path;
+
+    return path;
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+const std::string LiveStacking<BITMAP>::getCalibratedFilename(const std::string& path) const
 {
     std::string filename = std::filesystem::path(path).filename().string();
     std::string extension = std::filesystem::path(path).extension().string();
     return filename.replace(filename.find(extension), extension.size(), ".fits");
-};
+}
 
 }
 }

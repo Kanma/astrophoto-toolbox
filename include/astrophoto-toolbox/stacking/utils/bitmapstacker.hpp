@@ -131,7 +131,6 @@ void BitmapStacker<BITMAP>::clear()
         std::filesystem::remove(part.filename);
 
     partFiles.clear();
-    nbBitmaps = 0;
     nbAddedBitmaps = 0;
 }
 

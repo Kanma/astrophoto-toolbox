@@ -9,4 +9,5 @@ target_sources(astrophoto-toolbox
         registration.hpp
         stacking.h
         stacking.hpp
+        thread.h
 )

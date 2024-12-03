@@ -103,13 +103,24 @@ BITMAP* FramesStacker<BITMAP>::process(const std::string& destination)
     return result;
 }
 
-
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
 void FramesStacker<BITMAP>::cancel()
 {
     stacker.cancel();
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void FramesStacker<BITMAP>::clear()
+{
+    stacker.clear();
+
+    outputRect = rect_t(
+        0, 0, std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()
+    );
 }
 
 }

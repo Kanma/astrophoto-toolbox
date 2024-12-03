@@ -454,6 +454,21 @@ bool FITS::write(
 
 //-----------------------------------------------------------------------------
 
+bool FITS::write(const std::string& keyword, bool value)
+{
+    if (!gotoHDU(0, ANY_HDU))
+        return false;
+
+    int status = 0;
+    int iValue = (int) value;
+
+    fits_update_key(_file, TLOGICAL, keyword.c_str(), (void*) &iValue, "", &status);
+
+    return (status == 0);
+}
+
+//-----------------------------------------------------------------------------
+
 bool FITS::writeAstrometryNetKeywords(const size2d_t& imageSize)
 {
     if (!gotoHDU(0, ANY_HDU))
@@ -576,6 +591,20 @@ stacking::utils::background_calibration_parameters_t FITS::readBackgroundCalibra
         return stacking::utils::background_calibration_parameters_t();
 
     return readBackgroundCalibrationParametersFromCurrentHDU();
+}
+
+//-----------------------------------------------------------------------------
+
+bool FITS::read(const std::string& keyword, bool& value)
+{
+    if (!gotoHDU(0, ANY_HDU))
+        return false;
+
+    int status = 0;
+
+    fits_read_key(_file, TLOGICAL, keyword.c_str(), &value, nullptr, &status);
+
+    return (status == 0);
 }
 
 

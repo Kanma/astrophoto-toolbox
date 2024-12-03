@@ -73,6 +73,13 @@ namespace processing {
         //--------------------------------------------------------------------------------
         void cancel();
 
+        //--------------------------------------------------------------------------------
+        /// @brief  Delete all the temporary files
+        ///
+        /// After this, the stacker object can be reused with an unrelated set of bitmaps.
+        //--------------------------------------------------------------------------------
+        void clear();
+
         inline unsigned int nbFrames() const
         {
             return stacker.nbStackedBitmaps();

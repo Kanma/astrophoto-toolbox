@@ -22,20 +22,91 @@ public:
         results[filename] = success;
     }
 
+    void lightFrameProcessingStarted(const std::string& filename) override
+    {
+        REQUIRE(false);
+    }
+
     void lightFrameProcessed(const std::string& filename, bool success) override
     {
+        REQUIRE(false);
+    }
+
+    void lightFrameRegistrationStarted(const std::string& filename) override
+    {
+        REQUIRE(false);
     }
 
     void lightFrameRegistered(const std::string& filename, bool success) override
     {
+        REQUIRE(false);
+    }
+
+    void lightFramesStackingStarted(unsigned int nbFrames) override
+    {
+        REQUIRE(false);
     }
 
     void lightFramesStacked(const std::string& filename, unsigned int nbFrames) override
     {
+        REQUIRE(false);
     }
 
     std::map<std::string, bool> results;
 };
+
+
+TEST_CASE("(Stacking/Threads/MasterDark) Not started", "[MasterDarkThread]")
+{
+    std::filesystem::remove(TEMP_DIR "threads/masterdark.fits");
+
+    MasterDarkTestListener listener;
+    MasterDarkThread<UInt16ColorBitmap> thread(
+        &listener, TEMP_DIR "threads/masterdark.fits", TEMP_DIR "threads/tmp_darkframe"
+    );
+
+    thread.processFrames(
+        {
+            DATA_DIR "downloads/dark1.fits",
+            DATA_DIR "downloads/dark2.fits",
+            DATA_DIR "downloads/dark3.fits",
+        }
+    );
+
+    SECTION("no latch")
+    {
+        REQUIRE(!thread.cancel());
+        REQUIRE(!thread.stop());
+
+        thread.join();
+
+        REQUIRE(listener.results.empty());
+    }
+
+    SECTION("cancel with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(!thread.cancel(&latch));
+        REQUIRE(latch.try_wait());
+
+        thread.join();
+
+        REQUIRE(listener.results.empty());
+    }
+
+    SECTION("stop with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(!thread.stop(&latch));
+        REQUIRE(latch.try_wait());
+
+        thread.join();
+
+        REQUIRE(listener.results.empty());
+    }
+}
 
 
 TEST_CASE("(Stacking/Threads/MasterDark) Cancel processing", "[MasterDarkThread]")
@@ -43,52 +114,78 @@ TEST_CASE("(Stacking/Threads/MasterDark) Cancel processing", "[MasterDarkThread]
     std::filesystem::remove(TEMP_DIR "threads/masterdark.fits");
 
     MasterDarkTestListener listener;
-    MasterDarkThread<UInt16ColorBitmap> thread(&listener, TEMP_DIR "threads/masterdark.fits");
- 
-    REQUIRE(thread.processFrames(
+    MasterDarkThread<UInt16ColorBitmap> thread(
+        &listener, TEMP_DIR "threads/masterdark.fits", TEMP_DIR "threads/tmp_darkframe"
+    );
+
+    REQUIRE(thread.start());
+
+    thread.processFrames(
         {
             DATA_DIR "downloads/dark1.fits",
             DATA_DIR "downloads/dark2.fits",
             DATA_DIR "downloads/dark3.fits",
-        },
-        TEMP_DIR "threads/tmp_darkframe"
-    ));
+        }
+    );
 
-    thread.cancel();
-    thread.wait();
+    SECTION("without latch")
+    {
+        REQUIRE(thread.cancel());
+        thread.join();
+    }
 
-    REQUIRE(listener.results.size() == 1);
-    REQUIRE(!listener.results[TEMP_DIR "threads/masterdark.fits"]);
+    SECTION("with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(thread.cancel(&latch));
+
+        latch.wait();
+        thread.join();
+    }
+
+    REQUIRE(listener.results.empty());
 }
 
 
-TEST_CASE("(Stacking/Threads/MasterDark) Fail to process frames while already running", "[MasterDarkThread]")
+TEST_CASE("(Stacking/Threads/MasterDark) Reset processing", "[MasterDarkThread]")
 {
     std::filesystem::remove(TEMP_DIR "threads/masterdark.fits");
 
     MasterDarkTestListener listener;
-    MasterDarkThread<UInt16ColorBitmap> thread(&listener, TEMP_DIR "threads/masterdark.fits");
- 
-    REQUIRE(thread.processFrames(
+    MasterDarkThread<UInt16ColorBitmap> thread(
+        &listener, TEMP_DIR "threads/masterdark.fits", TEMP_DIR "threads/tmp_darkframe"
+    );
+
+    REQUIRE(thread.start());
+
+    thread.processFrames(
         {
             DATA_DIR "downloads/dark1.fits",
             DATA_DIR "downloads/dark2.fits",
-        },
-        TEMP_DIR "threads/tmp_darkframe"
-    ));
-
-    REQUIRE(!thread.processFrames(
-        {
             DATA_DIR "downloads/dark3.fits",
-        },
-        TEMP_DIR "threads/tmp_darkframe"
-    ));
+        }
+    );
 
-    thread.cancel();
-    thread.wait();
+    REQUIRE(thread.reset());
 
-    REQUIRE(listener.results.size() == 1);
-    REQUIRE(!listener.results[TEMP_DIR "threads/masterdark.fits"]);
+    SECTION("without latch")
+    {
+        REQUIRE(thread.stop());
+        thread.join();
+    }
+
+    SECTION("with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(thread.stop(&latch));
+
+        latch.wait();
+        thread.join();
+    }
+
+    REQUIRE(listener.results.empty());
 }
 
 
@@ -97,18 +194,35 @@ TEST_CASE("(Stacking/Threads/MasterDark) Generate master dark", "[MasterDarkThre
     std::filesystem::remove(TEMP_DIR "threads/masterdark.fits");
 
     MasterDarkTestListener listener;
-    MasterDarkThread<UInt16ColorBitmap> thread(&listener, TEMP_DIR "threads/masterdark.fits");
+    MasterDarkThread<UInt16ColorBitmap> thread(
+        &listener, TEMP_DIR "threads/masterdark.fits", TEMP_DIR "threads/tmp_darkframe"
+    );
  
-    REQUIRE(thread.processFrames(
+    REQUIRE(thread.start());
+
+    thread.processFrames(
         {
             DATA_DIR "downloads/dark1.fits",
             DATA_DIR "downloads/dark2.fits",
             DATA_DIR "downloads/dark3.fits",
-        },
-        TEMP_DIR "threads/tmp_darkframe"
-    ));
+        }
+    );
 
-    thread.wait();
+    SECTION("without latch")
+    {
+        REQUIRE(thread.stop());
+        thread.join();
+    }
+
+    SECTION("with latch")
+    {
+        std::latch latch(1);
+
+        REQUIRE(thread.stop(&latch));
+
+        latch.wait();
+        thread.join();
+    }
 
     REQUIRE(listener.results.size() == 1);
     REQUIRE(listener.results[TEMP_DIR "threads/masterdark.fits"]);

@@ -15,9 +15,10 @@ namespace threads {
 
 template<class BITMAP>
 MasterDarkThread<BITMAP>::MasterDarkThread(
-    StackingListener* listener, const std::filesystem::path& destFilename
+    StackingListener* listener, const std::filesystem::path& destFilename,
+    const std::filesystem::path& tempFolder
 )
-: listener(listener), destFilename(destFilename)
+: listener(listener), destFilename(destFilename), tempFolder(tempFolder)
 {
 }
 
@@ -26,69 +27,81 @@ MasterDarkThread<BITMAP>::MasterDarkThread(
 template<class BITMAP>
 MasterDarkThread<BITMAP>::~MasterDarkThread()
 {
-    if (thread.joinable())
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void MasterDarkThread<BITMAP>::processFrames(const std::vector<std::string>& darkFrames)
+{
+    mutex.lock();
+    this->darkFrames = darkFrames;
+    mutex.unlock();
+    condition.notify_one();
+}
+
+//-----------------------------------------------------------------------------
+
+template<class BITMAP>
+void MasterDarkThread<BITMAP>::process()
+{
+    auto jobAvailable = [this]{
+        return !darkFrames.empty() || (state == STATE_CANCELLING) ||
+               (state == STATE_STOPPING) || (state == STATE_RESETTING);
+    };
+
+    while (true)
     {
-        cancel();
-        thread.join();
+        // Wait for a frame to process
+        std::unique_lock lock(mutex);
+        if (!jobAvailable())
+            condition.wait(lock, jobAvailable);
+
+        if (state == STATE_RESETTING)
+        {
+            darkFrames.clear();
+            state = STATE_RUNNING;
+            latch->count_down();
+            continue;
+        }
+
+        if (state == STATE_CANCELLING)
+        {
+            darkFrames.clear();
+            break;
+        }
+
+        if ((state == STATE_STOPPING) && darkFrames.empty())
+            break;
+
+        auto filenames = darkFrames;
+        darkFrames.clear();
+
+        lock.unlock();
+
+        BITMAP* bitmap = generator.compute(filenames, destFilename, tempFolder);
+
+        if ((state != STATE_CANCELLING) && (state != STATE_RESETTING))
+            listener->masterDarkFrameComputed(destFilename, (bool) bitmap);
+
+        delete bitmap;
     }
 }
 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool MasterDarkThread<BITMAP>::processFrames(
-    const std::vector<std::string>& darkFrames,
-    const std::filesystem::path& tempFolder
-)
+void MasterDarkThread<BITMAP>::onCancel()
 {
-    if (thread.joinable())
-        return false;
-
-    cancelled = false;
-
-    thread = std::thread(&MasterDarkThread<BITMAP>::process, this, darkFrames, tempFolder);
-
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-void MasterDarkThread<BITMAP>::cancel()
-{
-    cancelled = true;
     generator.cancel();
 }
 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void MasterDarkThread<BITMAP>::wait()
+void MasterDarkThread<BITMAP>::onReset()
 {
-    if (thread.joinable())
-        thread.join();
-}
-
-//-----------------------------------------------------------------------------
-
-template<class BITMAP>
-void MasterDarkThread<BITMAP>::process(
-    const std::vector<std::string>& darkFrames,
-    const std::filesystem::path& tempFolder
-)
-{
-    if (cancelled)
-    {
-        listener->masterDarkFrameComputed(destFilename, false);
-        return;
-    }
-
-    BITMAP* bitmap = generator.compute(darkFrames, destFilename, tempFolder);
-
-    listener->masterDarkFrameComputed(destFilename, bitmap != nullptr);
-
-    if (bitmap)
-        delete bitmap;
+    generator.cancel();
 }
 
 }
