@@ -127,6 +127,7 @@ namespace platesolving {
 
             coordinates = Coordinates();
             pixelScale = 0.0;
+            raOrientation = 0.0;
         }
 
         //--------------------------------------------------------------------------------
@@ -161,6 +162,24 @@ namespace platesolving {
         inline double getPixelSize() const
         {
             return pixelScale;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the angle of the right ascension axis at the center of the
+        ///         image
+        //--------------------------------------------------------------------------------
+        inline double getRightAscensionOrientation() const
+        {
+            return raOrientation;
+        }
+
+        //--------------------------------------------------------------------------------
+        /// @brief  Returns the angle of the declination axis at the center of the image
+        //--------------------------------------------------------------------------------
+        inline double getDeclinationOrientation() const
+        {
+            double angle = raOrientation - 90.0;
+            return (angle < -180.0 ? angle + 360.0 : angle);  
         }
 
         //--------------------------------------------------------------------------------
@@ -206,6 +225,7 @@ namespace platesolving {
 
         Coordinates coordinates;
         double pixelScale = 0.0;    // in arcsec/pixel
+        double raOrientation = 0.0; // in degrees
 
         std::vector<index_t*> indexes;
 

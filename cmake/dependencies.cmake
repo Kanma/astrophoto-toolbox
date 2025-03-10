@@ -49,7 +49,7 @@ set(ASTROMETRY_NET_LITE_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     astrometry-net-lite
     GIT_REPOSITORY https://github.com/Kanma/astrometry.net-lite.git
-    GIT_TAG "e4e6f24316db83392ff64a23ff193af3b2704b90"
+    GIT_TAG "ccb3ba0dcb5f8b66c16948a8dc21b5c7c4c73fa1"
 )
 
 FetchContent_MakeAvailable(astrometry-net-lite)

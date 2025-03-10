@@ -213,6 +213,9 @@ TEST_CASE("Plate solving", "[PlateSolver]")
     REQUIRE(coordinates.getDEC() == Approx(-12.9414));
 
     REQUIRE(solver.getPixelSize() == Approx(1.173130749).margin(0.001));
+
+    REQUIRE(solver.getRightAscensionOrientation() == Approx(-109.18136).margin(0.001));
+    REQUIRE(solver.getDeclinationOrientation() == Approx(160.81863).margin(0.001));
 }
 
 

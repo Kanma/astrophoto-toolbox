@@ -254,6 +254,7 @@ bool PlateSolver::solve(double minWidth, double maxWidth, time_t limit)
 
     coordinates = Coordinates();
     pixelScale = 0.0;
+    raOrientation = 0.0;
 
     if (stars.empty() || (imageSize.width == 0) || (imageSize.height == 0) ||
         indexes.empty())
@@ -337,6 +338,8 @@ bool PlateSolver::solve(double minWidth, double maxWidth, time_t limit)
 
         coordinates.set(ra, dec);
         pixelScale = solver->best_match.scale;
+
+        raOrientation = -tan_get_orientation(&solver->best_match.wcstan);
     }
 
     solver_free(solver);
