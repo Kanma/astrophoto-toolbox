@@ -216,6 +216,48 @@ TEST_CASE("Plate solving", "[PlateSolver]")
 
     REQUIRE(solver.getRightAscensionOrientation() == Approx(-109.18136).margin(0.001));
     REQUIRE(solver.getDeclinationOrientation() == Approx(160.81863).margin(0.001));
+
+    CoordinatesSystem system = solver.getCoordinatesSystem();
+
+    point_t position = system.convert(coordinates);
+    REQUIRE(position.x == Approx(1953.0));
+    REQUIRE(position.y == Approx(1301.0));
+
+    coordinates = system.convert(position);
+    REQUIRE(coordinates.getRA() == Approx(282.654));
+    REQUIRE(coordinates.getDEC() == Approx(-12.9414));
+
+    position = system.convert(Coordinates(282.0, -12.9414));
+    REQUIRE(position.x == Approx(2596.401).margin(0.001));
+    REQUIRE(position.y == Approx(-545.413).margin(0.001));
+
+    coordinates = system.convert(position);
+    REQUIRE(coordinates.getRA() == Approx(282.0));
+    REQUIRE(coordinates.getDEC() == Approx(-12.9414));
+
+    position = system.convert(Coordinates(283.0, -12.9414));
+    REQUIRE(position.x == Approx(1614.181).margin(0.001));
+    REQUIRE(position.y == Approx(2279.537).margin(0.001));
+
+    coordinates = system.convert(position);
+    REQUIRE(coordinates.getRA() == Approx(283.0));
+    REQUIRE(coordinates.getDEC() == Approx(-12.9414));
+
+    position = system.convert(Coordinates(282.654, -13.0));
+    REQUIRE(position.x == Approx(2122.674).margin(0.001));
+    REQUIRE(position.y == Approx(1360.608).margin(0.001));
+
+    coordinates = system.convert(position);
+    REQUIRE(coordinates.getRA() == Approx(282.654));
+    REQUIRE(coordinates.getDEC() == Approx(-13.0));
+
+    position = system.convert(Coordinates(282.654, -12.0));
+    REQUIRE(position.x == Approx(-776.716).margin(0.001));
+    REQUIRE(position.y == Approx(354.465).margin(0.001));
+
+    coordinates = system.convert(position);
+    REQUIRE(coordinates.getRA() == Approx(282.654));
+    REQUIRE(coordinates.getDEC() == Approx(-12.0));
 }
 
 

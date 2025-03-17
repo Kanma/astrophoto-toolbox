@@ -340,6 +340,8 @@ bool PlateSolver::solve(double minWidth, double maxWidth, time_t limit)
         pixelScale = solver->best_match.scale;
 
         raOrientation = -tan_get_orientation(&solver->best_match.wcstan);
+
+        memcpy(&wcstan, &solver->best_match.wcstan, sizeof(tan_t));
     }
 
     solver_free(solver);

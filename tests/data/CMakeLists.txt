@@ -1,8 +1,10 @@
 target_sources(unittests
     PUBLIC
         coordinates.cpp
+        coordinatessystem.cpp
         fits_helpers.h
         fits_helpers.cpp
         fits_bitmap.cpp
         fits_starlist.cpp
+        point.cpp
 )

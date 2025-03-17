@@ -32,6 +32,7 @@ enum
     OPT_MIN_SCALE,
     OPT_MAX_SCALE,
     OPT_INDEXES_FOLDER,
+    OPT_GRID_FILENAME,
 };
 
 
@@ -43,6 +44,7 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_MIN_SCALE,        "--min-scale",  SO_REQ_SEP },
     { OPT_MAX_SCALE,        "--max-scale",  SO_REQ_SEP },
     { OPT_INDEXES_FOLDER,   "--indexes",    SO_REQ_SEP },
+    { OPT_GRID_FILENAME,    "--grid",       SO_REQ_SEP },
     
     SO_END_OF_OPTIONS
 };
@@ -67,6 +69,7 @@ void showUsage(const std::string& strApplicationName)
          << "    --min-scale       Minimum size (in degrees) of the image (default: 0.1)" << endl
          << "    --max-scale       Maximum size (in degrees) of the image (default: 180.0)" << endl
          << "    --indexes         Folder from which load the index files (default: /usr/local/astrometry/data)" << endl
+         << "    --grid FILENAME   If specified, an image containing the celestial grid is saved at this location" << endl
          << endl;
 }
 
@@ -74,9 +77,10 @@ void showUsage(const std::string& strApplicationName)
 int main(int argc, char** argv)
 {
     bool verbose = false;
-    std::string indexesFolder = "/usr/local/astrometry/data";
     double minScale = 0.1;
     double maxScale = 180.0;
+    std::string indexesFolder = "/usr/local/astrometry/data";
+    std::string outputFilename = "";
 
     // Parse the command-line parameters
     CSimpleOpt args(argc, argv, COMMAND_LINE_OPTIONS);
@@ -104,6 +108,10 @@ int main(int argc, char** argv)
 
                 case OPT_INDEXES_FOLDER:
                     indexesFolder = args.OptionArg();
+                    break;
+
+                case OPT_GRID_FILENAME:
+                    outputFilename = args.OptionArg();
                     break;
             }
         }
@@ -139,22 +147,23 @@ int main(int argc, char** argv)
         // Attempt to retrieve stars from the FITS file
         stars = fits.readStars(0, &imageSize);
 
-        // Retrieve the bitmap if no stars were found
-        if (stars.empty())
+        // Retrieve the bitmap if no stars were found, or if we need to generate a grid image
+        if (stars.empty() || !outputFilename.empty())
         {
             bitmap = fits.readBitmap();
-            if (!bitmap)
-            {
-                cerr << "Failed to read stars or a bitmap from the FITS file" << endl;
-                return 1;
-            }
+            if (bitmap)
+                removeHotPixels(bitmap);
+        }
 
-            removeHotPixels(bitmap);
+        if (stars.empty() && !bitmap)
+        {
+            cerr << "Failed to read stars or a bitmap from the FITS file" << endl;
+            return 1;
         }
     }
     else
     {
-        bitmap = io::load(args.File(0));
+        bitmap = io::load(args.File(0), true);
         if (!bitmap)
         {
             cerr << "Failed to load an image from file '" << args.File(0) << "'" << endl;
@@ -177,35 +186,7 @@ int main(int argc, char** argv)
 
 
     // Process the bitmap if one was loaded
-    if (bitmap)
-    {
-        // Convert it to float & keep the first channel
-        if (bitmap->channels() == 3)
-        {
-            auto converted = new FloatColorBitmap(bitmap, RANGE_BYTE);
-            auto channel = converted->channel(0);
-            delete bitmap;
-            delete converted;
-            bitmap = channel;
-        }
-        else
-        {
-            auto converted = new FloatGrayBitmap(bitmap, RANGE_BYTE);
-            delete bitmap;
-            bitmap = converted;
-        }
-
-        // Plate solving
-        if (!solver.run(bitmap, minScale, maxScale))
-        {
-            cerr << "Failed to determine the coordinates" << endl;
-            delete bitmap;
-            return 1;
-        }
-
-        delete bitmap;
-    }
-    else
+    if (!stars.empty())
     {
         // Plate solving
         solver.setStars(stars, imageSize);
@@ -217,6 +198,34 @@ int main(int argc, char** argv)
             cerr << "Failed to determine the coordinates" << endl;
             return 1;
         }
+    }
+    else
+    {
+        Bitmap* converted = nullptr;
+
+        // Convert it to float & keep the first channel
+        if (bitmap->channels() == 3)
+        {
+            converted = new FloatColorBitmap(bitmap, RANGE_BYTE);
+            auto channel = converted->channel(0);
+            delete converted;
+            converted = channel;
+        }
+        else
+        {
+            converted = new FloatGrayBitmap(bitmap, RANGE_BYTE);
+        }
+
+        // Plate solving
+        if (!solver.run(converted, minScale, maxScale))
+        {
+            cerr << "Failed to determine the coordinates" << endl;
+            delete converted;
+            delete bitmap;
+            return 1;
+        }
+
+        delete converted;
     }
 
 
@@ -232,8 +241,28 @@ int main(int argc, char** argv)
     cout << "  * " << coordinates.getRADECasHMSDMS() << endl;
     cout << "  * " << coordinates.getRA() << "°, " << coordinates.getDEC() << "°" << endl;
     cout << endl;
+    cout << "RA Orientation: " << solver.getRightAscensionOrientation() << "°" << endl;
     cout << "Pixel size: " << solver.getPixelSize() << " arcsec" << endl;
     cout << endl;
+
+
+    // Generate the output image if necessary
+    if (!outputFilename.empty() && bitmap)
+    {
+        UInt16ColorBitmap* output = requiresFormat<UInt16ColorBitmap>(bitmap, RANGE_DEST, SPACE_LINEAR);
+
+        CoordinatesSystem system = solver.getCoordinatesSystem();
+        system.drawGrid(output);
+        system.drawAxes(output);
+
+        io::save(outputFilename, output, true);
+
+        if (output != bitmap)
+            delete output;
+    }
+
+    if (bitmap)
+        delete bitmap;
 
     return 0;
 }

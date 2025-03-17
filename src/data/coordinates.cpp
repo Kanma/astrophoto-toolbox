@@ -135,7 +135,7 @@ void Coordinates::set(const std::string& ra, const std::string& dec)
 
 bool Coordinates::isNull() const
 {
-    return std::isinf(ra) || std::isinf(dec) ;
+    return std::isinf(ra) || std::isinf(dec);
 }
 
 //-----------------------------------------------------------------------------

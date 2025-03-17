@@ -12,6 +12,7 @@
 #include <astrophoto-toolbox/data/star.h>
 #include <astrophoto-toolbox/data/size.h>
 #include <astrophoto-toolbox/data/coordinates.h>
+#include <astrophoto-toolbox/data/coordinatessystem.h>
 #include <string>
 
 extern "C" {
@@ -183,6 +184,16 @@ namespace platesolving {
         }
 
         //--------------------------------------------------------------------------------
+        /// @brief  Returns the coordinates system localized at the center of the image
+        //--------------------------------------------------------------------------------
+        inline CoordinatesSystem getCoordinatesSystem() const
+        {
+            return CoordinatesSystem(
+                imageSize, coordinates, pixelScale, raOrientation, wcstan
+            );
+        }
+
+        //--------------------------------------------------------------------------------
         /// @brief  Load the index files found in the specified folder
         //--------------------------------------------------------------------------------
         bool loadIndexes(const std::string& folder);
@@ -226,6 +237,7 @@ namespace platesolving {
         Coordinates coordinates;
         double pixelScale = 0.0;    // in arcsec/pixel
         double raOrientation = 0.0; // in degrees
+        tan_t wcstan;
 
         std::vector<index_t*> indexes;
 

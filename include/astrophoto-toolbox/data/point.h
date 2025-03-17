@@ -20,8 +20,8 @@ namespace astrophototoolbox {
     {
         //_____ Attributes __________
     public:
-        double x = 0.0;
-        double y = 0.0;
+        double x = INFINITY;
+        double y = INFINITY;
 
 
         //_____ Constructors (for convenience) __________
@@ -41,6 +41,12 @@ namespace astrophototoolbox {
         double distance(const point_t& p) const
         {
             return sqrt((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y));
+        }
+
+
+        bool isNull() const
+        {
+            return std::isinf(x) || std::isinf(y);
         }
 
 

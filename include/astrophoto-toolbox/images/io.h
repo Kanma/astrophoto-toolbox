@@ -38,7 +38,7 @@ namespace io {
     /// The PPM and PGM formats can be used to do both: ensure that the image is correctly
     /// displayed (the default) OR save the pixel values as-is to further open them in
     /// another software (it is way easier to parse a PNM file than a FITS one).
-    /// To do the letter, use the 'savePNM()' function instead.
+    /// To do the latter, use the 'savePNM()' function instead.
     //------------------------------------------------------------------------------------
     bool save(const std::filesystem::path& filename, Bitmap* bitmap, bool overwrite = false);
 

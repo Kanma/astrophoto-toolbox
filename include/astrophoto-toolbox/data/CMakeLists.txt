@@ -1,6 +1,7 @@
 target_sources(astrophoto-toolbox
     PUBLIC
         coordinates.h
+        coordinatessystem.h
         fits.h
         point.h
         rect.h
