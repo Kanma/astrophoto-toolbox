@@ -16,6 +16,7 @@
 #include <astrophoto-toolbox/stacking/utils/registration.h>
 #include <astrophoto-toolbox/images/helpers.h>
 #include <array>
+#include <algorithm>
 
 using namespace astrophototoolbox;
 using namespace stacking;

@@ -7,6 +7,7 @@
 */
 
 #include <astrophoto-toolbox/data/transformation.h>
+#include <algorithm>
 
 using namespace astrophototoolbox;
 
