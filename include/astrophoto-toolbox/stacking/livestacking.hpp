@@ -154,7 +154,7 @@ bool LiveStacking<BITMAP>::save()
         output << "DARKFRAMES" << std::endl;
 
         for (const auto& entry : darkFrames)
-            output << entry.filename << std::endl;
+            output << entry.filename.string() << std::endl;
 
         output << "---" << std::endl;
     }
@@ -164,7 +164,7 @@ bool LiveStacking<BITMAP>::save()
         output << "LIGHTFRAMES" << std::endl;
 
         for (const auto& entry : infos.lightFrames.entries)
-            output << entry.filename << std::endl;
+            output << entry.filename.string() << std::endl;
 
         output << "REF " << referenceFrame << std::endl;
         output << "---" << std::endl;
@@ -176,7 +176,7 @@ bool LiveStacking<BITMAP>::save()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool LiveStacking<BITMAP>::addDarkFrame(const std::string& filename)
+bool LiveStacking<BITMAP>::addDarkFrame(const std::filesystem::path& filename)
 {
     std::filesystem::path path = getAbsoluteFilename(filename);
     if (!std::filesystem::exists(path))
@@ -236,7 +236,7 @@ bool LiveStacking<BITMAP>::addDarkFrame(const std::string& filename)
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool LiveStacking<BITMAP>::addLightFrame(const std::string& filename)
+bool LiveStacking<BITMAP>::addLightFrame(const std::filesystem::path& filename)
 {
     std::filesystem::path path = getAbsoluteFilename(filename);
     if (!std::filesystem::exists(path))
@@ -408,7 +408,7 @@ void LiveStacking<BITMAP>::setLuminancyThreshold(int threshold)
     if (hasPendingJobs)
     {
         auto reference = infos.lightFrames.entries[referenceFrame];
-        std::vector<std::string> lightFramesToRegister;
+        std::vector<std::filesystem::path> lightFramesToRegister;
 
         for (auto& entry : infos.lightFrames.entries)
         {
@@ -543,7 +543,7 @@ void LiveStacking<BITMAP>::wait()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LiveStacking<BITMAP>::masterDarkFrameComputed(const std::string& filename, bool success)
+void LiveStacking<BITMAP>::masterDarkFrameComputed(const std::filesystem::path& filename, bool success)
 {
     framesMutex.lock();
 
@@ -570,11 +570,11 @@ void LiveStacking<BITMAP>::masterDarkFrameComputed(const std::string& filename, 
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LiveStacking<BITMAP>::lightFrameProcessingStarted(const std::string& filename)
+void LiveStacking<BITMAP>::lightFrameProcessingStarted(const std::filesystem::path& filename)
 {
     framesMutex.lock();
 
-    std::string internalFilename = getInternalFilename(filename);
+    std::filesystem::path internalFilename = getInternalFilename(filename);
 
     for (auto& entry : infos.lightFrames.entries)
     {
@@ -593,11 +593,11 @@ void LiveStacking<BITMAP>::lightFrameProcessingStarted(const std::string& filena
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LiveStacking<BITMAP>::lightFrameProcessed(const std::string& filename, bool success)
+void LiveStacking<BITMAP>::lightFrameProcessed(const std::filesystem::path& filename, bool success)
 {
     framesMutex.lock();
 
-    std::string internalFilename = getInternalFilename(filename);
+    std::filesystem::path internalFilename = getInternalFilename(filename);
 
     for (auto& entry : infos.lightFrames.entries)
     {
@@ -634,11 +634,11 @@ void LiveStacking<BITMAP>::lightFrameProcessed(const std::string& filename, bool
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LiveStacking<BITMAP>::lightFrameRegistrationStarted(const std::string& filename)
+void LiveStacking<BITMAP>::lightFrameRegistrationStarted(const std::filesystem::path& filename)
 {
     framesMutex.lock();
 
-    std::string internalFilename = getInternalFilename(filename);
+    std::filesystem::path internalFilename = getInternalFilename(filename);
 
     for (auto& entry : infos.lightFrames.entries)
     {
@@ -657,7 +657,7 @@ void LiveStacking<BITMAP>::lightFrameRegistrationStarted(const std::string& file
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LiveStacking<BITMAP>::lightFrameRegistered(const std::string& filename, bool success)
+void LiveStacking<BITMAP>::lightFrameRegistered(const std::filesystem::path& filename, bool success)
 {
     framesMutex.lock();
 
@@ -721,7 +721,7 @@ void LiveStacking<BITMAP>::lightFramesStackingStarted(unsigned int nbFrames)
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LiveStacking<BITMAP>::lightFramesStacked(const std::string& filename, unsigned int nbFrames)
+void LiveStacking<BITMAP>::lightFramesStacked(const std::filesystem::path& filename, unsigned int nbFrames)
 {
     framesMutex.lock();
 
@@ -764,7 +764,7 @@ void LiveStacking<BITMAP>::nextStep()
     {
         step = STEP_MASTER_DARK;
 
-        std::vector<std::string> allDarkFrames;
+        std::vector<std::filesystem::path> allDarkFrames;
         for (auto& entry : darkFrames)
         {
             std::filesystem::path path = getAbsoluteFilename(entry.filename);
@@ -781,9 +781,9 @@ void LiveStacking<BITMAP>::nextStep()
         step = STEP_STACKING;
 
         auto reference = infos.lightFrames.entries[referenceFrame];
-        std::vector<std::string> lightFramesToProcess;
-        std::vector<std::string> lightFramesToRegister;
-        std::vector<std::string> lightFramesToStack;
+        std::vector<std::filesystem::path> lightFramesToProcess;
+        std::vector<std::filesystem::path> lightFramesToRegister;
+        std::vector<std::filesystem::path> lightFramesToStack;
 
         for (auto& entry : infos.lightFrames.entries)
         {
@@ -856,13 +856,13 @@ void LiveStacking<BITMAP>::nextStep()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-const std::string LiveStacking<BITMAP>::getInternalFilename(const std::string& path) const
+const std::filesystem::path LiveStacking<BITMAP>::getInternalFilename(const std::filesystem::path& path) const
 {
     if (!std::filesystem::path(path).is_absolute())
         return path;
 
-    if (path.starts_with(folder.string()))
-        return path.substr(folder.string().size() + 1);
+    if (path.string().starts_with(folder.string()))
+        return path.string().substr(folder.string().size() + 1);
 
     return path;
 }
@@ -870,7 +870,7 @@ const std::string LiveStacking<BITMAP>::getInternalFilename(const std::string& p
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-const std::string LiveStacking<BITMAP>::getAbsoluteFilename(const std::string& path) const
+const std::filesystem::path LiveStacking<BITMAP>::getAbsoluteFilename(const std::filesystem::path& path) const
 {
     if (!std::filesystem::path(path).is_absolute())
         return folder / path;
@@ -881,7 +881,7 @@ const std::string LiveStacking<BITMAP>::getAbsoluteFilename(const std::string& p
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-const std::string LiveStacking<BITMAP>::getCalibratedFilename(const std::string& path) const
+const std::filesystem::path LiveStacking<BITMAP>::getCalibratedFilename(const std::filesystem::path& path) const
 {
     std::string filename = std::filesystem::path(path).filename().string();
     std::string extension = std::filesystem::path(path).extension().string();

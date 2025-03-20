@@ -30,22 +30,22 @@ FITS::~FITS()
 
 /************************************** METHODS ****************************************/
 
-bool FITS::open(const std::string& filename, bool readOnly)
+bool FITS::open(const std::filesystem::path& filename, bool readOnly)
 {
     int status = 0;
 
-    fits_open_file(&_file, filename.c_str(), readOnly ? READONLY : READWRITE, &status);
+    fits_open_file(&_file, filename.string().c_str(), readOnly ? READONLY : READWRITE, &status);
 
     return (status == 0);
 }
 
 //-----------------------------------------------------------------------------
 
-bool FITS::create(const std::string& filename)
+bool FITS::create(const std::filesystem::path& filename)
 {
     int status = 0;
 
-    fits_create_file(&_file, filename.c_str(), &status);
+    fits_create_file(&_file, filename.string().c_str(), &status);
 
     return (status == 0);
 }
@@ -610,12 +610,12 @@ bool FITS::read(const std::string& keyword, bool& value)
 
 /*********************************** STATIC METHODS ************************************/
 
-bool FITS::isFITS(const std::string& filename)
+bool FITS::isFITS(const std::filesystem::path& filename)
 {
     #define FITS_MAGIC "SIMPLE"
     #define FITS_MAGIC_SIZE 6
 
-    std::ifstream file(filename);
+    std::ifstream file(filename.string().c_str());
     if (!file.good())
         return false;
 

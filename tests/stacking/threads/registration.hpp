@@ -17,22 +17,22 @@ using namespace astrophototoolbox::stacking::threads;
 class RegistrationTestListener : public StackingListener
 {
 public:
-    void masterDarkFrameComputed(const std::string& filename, bool success) override
+    void masterDarkFrameComputed(const std::filesystem::path& filename, bool success) override
     {
         REQUIRE(false);
     }
 
-    void lightFrameProcessingStarted(const std::string& filename) override
+    void lightFrameProcessingStarted(const std::filesystem::path& filename) override
     {
         REQUIRE(false);
     }
 
-    void lightFrameProcessed(const std::string& filename, bool success) override
+    void lightFrameProcessed(const std::filesystem::path& filename, bool success) override
     {
         REQUIRE(false);
     }
 
-    void lightFrameRegistrationStarted(const std::string& filename) override
+    void lightFrameRegistrationStarted(const std::filesystem::path& filename) override
     {
         started.push_back(filename);
 
@@ -40,7 +40,7 @@ public:
             condition.notify_one();
     }
 
-    void lightFrameRegistered(const std::string& filename, bool success) override
+    void lightFrameRegistered(const std::filesystem::path& filename, bool success) override
     {
         results[filename] = success;
     }
@@ -50,13 +50,13 @@ public:
         REQUIRE(false);
     }
 
-    void lightFramesStacked(const std::string& filename, unsigned int nbFrames) override
+    void lightFramesStacked(const std::filesystem::path& filename, unsigned int nbFrames) override
     {
         REQUIRE(false);
     }
 
-    std::vector<std::string> started;
-    std::map<std::string, bool> results;
+    std::vector<std::filesystem::path> started;
+    std::map<std::filesystem::path, bool> results;
 
     std::condition_variable condition;
     std::mutex mutex;

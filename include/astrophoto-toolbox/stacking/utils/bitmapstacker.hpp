@@ -64,7 +64,7 @@ bool BitmapStacker<BITMAP>::addBitmap(BITMAP* bitmap)
 
     for (const auto& part : partFiles)
     {
-        FILE* f = std::fopen(part.filename.c_str(), "ab");
+        FILE* f = std::fopen(part.filename.string().c_str(), "ab");
         if (!f)
             return false;
 
@@ -100,7 +100,7 @@ BITMAP* BitmapStacker<BITMAP>::process() const
         if (bufferSize > buffer.size())
             buffer.resize(bufferSize);
 
-        FILE* f = std::fopen(part.filename.c_str(), "rb");
+        FILE* f = std::fopen(part.filename.string().c_str(), "rb");
         if (!f)
         {
             delete output;
@@ -171,7 +171,7 @@ void BitmapStacker<BITMAP>::initPartFiles()
         std::stringstream stream;
         stream << "part" << std::setfill('0') << std::setw(4) << part << ".dat";
 
-        partFiles.push_back(part_file_t{ (tempFolder / stream.str()).c_str(), startRow, endRow });
+        partFiles.push_back(part_file_t{ tempFolder / stream.str(), startRow, endRow });
 
         startRow = endRow + 1;
         ++part;

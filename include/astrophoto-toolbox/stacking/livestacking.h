@@ -14,7 +14,6 @@
 #include <astrophoto-toolbox/stacking/threads/stacking.h>
 #include <filesystem>
 #include <vector>
-#include <string>
 
 
 namespace astrophototoolbox {
@@ -28,7 +27,7 @@ namespace stacking {
     //------------------------------------------------------------------------------------
     struct live_stacking_light_frame_t
     {
-        std::string filename;
+        std::filesystem::path filename;
         bool calibrated = false;
         bool registered = false;
         bool stacked = false;
@@ -74,7 +73,7 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         /// @brief  Called when a new stacked image is available
         //--------------------------------------------------------------------------------
-        virtual void stackingDone(const std::string& filename) = 0;
+        virtual void stackingDone(const std::filesystem::path& filename) = 0;
     };
 
 
@@ -125,14 +124,14 @@ namespace stacking {
         /// Note: Calling this method when the stacking is running invalidates all the
         /// light frames already processed, which will need to be reprocessed again.
         //--------------------------------------------------------------------------------
-        bool addDarkFrame(const std::string& filename);
+        bool addDarkFrame(const std::filesystem::path& filename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Add a light frame
         ///
         /// By default, the first one is considered as the reference one.
         //--------------------------------------------------------------------------------
-        bool addLightFrame(const std::string& filename);
+        bool addLightFrame(const std::filesystem::path& filename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Returns the infos about the progress of the stacking
@@ -220,30 +219,30 @@ namespace stacking {
 
         //_____ Implementation of threads::StackingListener __________
     public:
-        void masterDarkFrameComputed(const std::string& filename, bool success) override;
+        void masterDarkFrameComputed(const std::filesystem::path& filename, bool success) override;
 
-        void lightFrameProcessingStarted(const std::string& filename) override;
-        void lightFrameProcessed(const std::string& filename, bool success) override;
+        void lightFrameProcessingStarted(const std::filesystem::path& filename) override;
+        void lightFrameProcessed(const std::filesystem::path& filename, bool success) override;
 
-        void lightFrameRegistrationStarted(const std::string& filename) override;
-        void lightFrameRegistered(const std::string& filename, bool success) override;
+        void lightFrameRegistrationStarted(const std::filesystem::path& filename) override;
+        void lightFrameRegistered(const std::filesystem::path& filename, bool success) override;
 
         void lightFramesStackingStarted(unsigned int nbFrames) override;
-        void lightFramesStacked(const std::string& filename, unsigned int nbFrames) override;
+        void lightFramesStacked(const std::filesystem::path& filename, unsigned int nbFrames) override;
 
 
     private:
         void nextStep();
 
-        const std::string getInternalFilename(const std::string& path) const;
-        const std::string getAbsoluteFilename(const std::string& path) const;
-        const std::string getCalibratedFilename(const std::string& path) const;
+        const std::filesystem::path getInternalFilename(const std::filesystem::path& path) const;
+        const std::filesystem::path getAbsoluteFilename(const std::filesystem::path& path) const;
+        const std::filesystem::path getCalibratedFilename(const std::filesystem::path& path) const;
 
 
     private:
         struct dark_frame_t
         {
-            std::string filename;
+            std::filesystem::path filename;
             bool stacked = false;
             bool processing = false;
         };

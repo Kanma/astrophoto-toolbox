@@ -51,7 +51,7 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         /// @brief  Add a dark frame
         //--------------------------------------------------------------------------------
-        bool addDarkFrame(const std::string& filename);
+        bool addDarkFrame(const std::filesystem::path& filename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Returns the number of dark frames
@@ -64,7 +64,7 @@ namespace stacking {
         //--------------------------------------------------------------------------------
         /// @brief  Add a light frame
         //--------------------------------------------------------------------------------
-        bool addLightFrame(const std::string& filename, bool reference = false);
+        bool addLightFrame(const std::filesystem::path& filename, bool reference = false);
 
         //--------------------------------------------------------------------------------
         /// @brief  Returns the number of light frames
@@ -102,14 +102,14 @@ namespace stacking {
 
 
     private:
-        const std::string getCalibratedFilename(const std::string& path);
+        const std::string getCalibratedFilename(const std::filesystem::path& path);
 
 
     private:
         std::filesystem::path folder;
 
-        std::vector<std::string> darkFrames;
-        std::vector<std::string> lightFrames;
+        std::vector<std::filesystem::path> darkFrames;
+        std::vector<std::filesystem::path> lightFrames;
 
         size_t referenceFrame = -1;
 

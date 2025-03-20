@@ -17,27 +17,27 @@ using namespace astrophototoolbox::stacking::threads;
 class MasterDarkTestListener : public StackingListener
 {
 public:
-    void masterDarkFrameComputed(const std::string& filename, bool success) override
+    void masterDarkFrameComputed(const std::filesystem::path& filename, bool success) override
     {
         results[filename] = success;
     }
 
-    void lightFrameProcessingStarted(const std::string& filename) override
+    void lightFrameProcessingStarted(const std::filesystem::path& filename) override
     {
         REQUIRE(false);
     }
 
-    void lightFrameProcessed(const std::string& filename, bool success) override
+    void lightFrameProcessed(const std::filesystem::path& filename, bool success) override
     {
         REQUIRE(false);
     }
 
-    void lightFrameRegistrationStarted(const std::string& filename) override
+    void lightFrameRegistrationStarted(const std::filesystem::path& filename) override
     {
         REQUIRE(false);
     }
 
-    void lightFrameRegistered(const std::string& filename, bool success) override
+    void lightFrameRegistered(const std::filesystem::path& filename, bool success) override
     {
         REQUIRE(false);
     }
@@ -47,12 +47,12 @@ public:
         REQUIRE(false);
     }
 
-    void lightFramesStacked(const std::string& filename, unsigned int nbFrames) override
+    void lightFramesStacked(const std::filesystem::path& filename, unsigned int nbFrames) override
     {
         REQUIRE(false);
     }
 
-    std::map<std::string, bool> results;
+    std::map<std::filesystem::path, bool> results;
 };
 
 

@@ -202,13 +202,13 @@ bool saveImage(
     int result = 0;
 
     if (extension == ".png")
-        result = stbi_write_png(filename.c_str(), w, h, comp, data, stride_in_bytes);
+        result = stbi_write_png(filename.string().c_str(), w, h, comp, data, stride_in_bytes);
     else if (extension == ".bmp")
-        result = stbi_write_bmp(filename.c_str(), w, h, comp, data);
+        result = stbi_write_bmp(filename.string().c_str(), w, h, comp, data);
     else if (extension == ".tga")
-        result = stbi_write_tga(filename.c_str(), w, h, comp, data);
+        result = stbi_write_tga(filename.string().c_str(), w, h, comp, data);
     else if ((extension == ".jpg") || (extension == ".jpeg"))
-        result = stbi_write_jpg(filename.c_str(), w, h, comp, data, 90);
+        result = stbi_write_jpg(filename.string().c_str(), w, h, comp, data, 90);
 
     return (result != 0);
 }
@@ -272,7 +272,7 @@ bool save(const std::filesystem::path& filename, Bitmap* bitmap, bool overwrite)
             FloatColorBitmap* converted = requiresFormat<FloatColorBitmap>(bitmap, RANGE_DEST, SPACE_LINEAR);
 
             int result = stbi_write_hdr(
-                filename.c_str(), converted->width(), converted->height(), 3, converted->data()
+                filename.string().c_str(), converted->width(), converted->height(), 3, converted->data()
             );
 
             if (converted != bitmap)
@@ -285,7 +285,7 @@ bool save(const std::filesystem::path& filename, Bitmap* bitmap, bool overwrite)
             FloatGrayBitmap* converted = requiresFormat<FloatGrayBitmap>(bitmap, RANGE_DEST, SPACE_LINEAR);
 
             int result = stbi_write_hdr(
-                filename.c_str(), converted->width(), converted->height(), 1, converted->data()
+                filename.string().c_str(), converted->width(), converted->height(), 1, converted->data()
             );
 
             if (converted != bitmap)
@@ -357,10 +357,10 @@ Bitmap* load(const std::filesystem::path& filename, bool useCameraWhiteBalance, 
     {
         int width, height, channels;
 
-        int is16bits = stbi_is_16_bit(filename.c_str());
+        int is16bits = stbi_is_16_bit(filename.string().c_str());
         if (is16bits)
         {
-            unsigned short* pixels = stbi_load_16(filename.c_str(), &width, &height, &channels, 0);
+            unsigned short* pixels = stbi_load_16(filename.string().c_str(), &width, &height, &channels, 0);
             if (!pixels)
                 return nullptr;
 
@@ -373,7 +373,7 @@ Bitmap* load(const std::filesystem::path& filename, bool useCameraWhiteBalance, 
         }
         else
         {
-            unsigned char* pixels = stbi_load(filename.c_str(), &width, &height, &channels, 0);
+            unsigned char* pixels = stbi_load(filename.string().c_str(), &width, &height, &channels, 0);
             if (!pixels)
                 return nullptr;
 
@@ -391,7 +391,7 @@ Bitmap* load(const std::filesystem::path& filename, bool useCameraWhiteBalance, 
     {
         int width, height, channels;
 
-        float* pixels = stbi_loadf(filename.c_str(), &width, &height, &channels, 0);
+        float* pixels = stbi_loadf(filename.string().c_str(), &width, &height, &channels, 0);
         if (!pixels)
             return nullptr;
 

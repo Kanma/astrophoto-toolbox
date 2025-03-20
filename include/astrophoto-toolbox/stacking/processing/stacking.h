@@ -12,7 +12,6 @@
 #include <astrophoto-toolbox/data/point.h>
 #include <astrophoto-toolbox/stacking/utils/bitmapstacker.h>
 #include <filesystem>
-#include <string>
 
 
 namespace astrophototoolbox {
@@ -42,7 +41,7 @@ namespace processing {
         ///
         /// Note: 'setup()' must have been called before this method.
         //--------------------------------------------------------------------------------
-        bool addFrame(const std::string& lightFrame);
+        bool addFrame(const std::filesystem::path& lightFrame);
 
         //--------------------------------------------------------------------------------
         /// @brief  Add a bitmap to the list of bitmaps to be stacked
@@ -63,7 +62,7 @@ namespace processing {
         /// specify a temp folder to user (it will be created and destroyed by this
         /// method).
         //--------------------------------------------------------------------------------
-        BITMAP* process(const std::string& destination = "");
+        BITMAP* process(const std::filesystem::path& destination = "");
 
         //--------------------------------------------------------------------------------
         /// @brief  Cancel the processing

@@ -24,7 +24,7 @@ namespace processing {
 
 
 template<class BITMAP>
-bool LightFrameProcessor<BITMAP>::setMasterDark(const std::string& filename)
+bool LightFrameProcessor<BITMAP>::setMasterDark(const std::filesystem::path& filename)
 {
     masterDark.reset();
 
@@ -51,7 +51,8 @@ void LightFrameProcessor<BITMAP>::setParameters(
 
 template<class BITMAP>
 std::shared_ptr<BITMAP> LightFrameProcessor<BITMAP>::process(
-    const std::string& lightFrame, bool reference, const std::string& destination
+    const std::filesystem::path& lightFrame, bool reference,
+    const std::filesystem::path& destination
 )
 {
     BITMAP* bitmap = loadProcessedBitmap<BITMAP>(lightFrame);
@@ -65,7 +66,7 @@ std::shared_ptr<BITMAP> LightFrameProcessor<BITMAP>::process(
 
 template<class BITMAP>
 std::shared_ptr<BITMAP> LightFrameProcessor<BITMAP>::process(
-    const std::shared_ptr<BITMAP>& lightFrame, bool reference, const std::string& destination
+    const std::shared_ptr<BITMAP>& lightFrame, bool reference, const std::filesystem::path& destination
 )
 {
     if (masterDark)

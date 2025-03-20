@@ -33,9 +33,9 @@ RawImage::~RawImage()
 
 /************************************** METHODS ****************************************/
 
-bool RawImage::open(const std::string& filename)
+bool RawImage::open(const std::filesystem::path& filename)
 {
-    int err = _processor.open_file(filename.c_str());
+    int err = _processor.open_file(filename.string().c_str());
 
     if (err == 0)
         err = _processor.unpack();

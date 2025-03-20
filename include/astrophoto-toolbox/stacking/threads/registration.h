@@ -12,7 +12,6 @@
 #include <astrophoto-toolbox/stacking/threads/listener.h>
 #include <astrophoto-toolbox/stacking/processing/registration.h>
 #include <filesystem>
-#include <string>
 
 
 namespace astrophototoolbox {
@@ -64,7 +63,7 @@ namespace threads {
         /// It is expected that the light frame has been properly processed.
         //--------------------------------------------------------------------------------
         void processReferenceFrame(
-            const std::string& lightFrame, int luminancyThreshold=-1
+            const std::filesystem::path& lightFrame, int luminancyThreshold=-1
         );
 
         //--------------------------------------------------------------------------------
@@ -72,7 +71,7 @@ namespace threads {
         ///
         /// It is expected that the light frames have been properly processed.
         //--------------------------------------------------------------------------------
-        void processFrames(const std::vector<std::string>& lightFrames);
+        void processFrames(const std::vector<std::filesystem::path>& lightFrames);
 
 
     private:
@@ -87,8 +86,8 @@ namespace threads {
 
         star_list_t stars;
         int luminancyThreshold = -1;
-        std::string referenceFrame;
-        std::vector<std::string> lightFrames;
+        std::filesystem::path referenceFrame;
+        std::vector<std::filesystem::path> lightFrames;
     };
 
 }

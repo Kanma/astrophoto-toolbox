@@ -12,8 +12,6 @@
 #include <astrophoto-toolbox/data/point.h>
 #include <astrophoto-toolbox/stacking/utils/backgroundcalibration.h>
 #include <filesystem>
-#include <string>
-#include <memory>
 
 
 namespace astrophototoolbox {
@@ -34,7 +32,7 @@ namespace processing {
         /// It is expected that it is a FITS file containing a bitmap and a list of hot
         /// pixels.
         //--------------------------------------------------------------------------------
-        bool setMasterDark(const std::string& filename);
+        bool setMasterDark(const std::filesystem::path& filename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Set the master dark frame bitmap and list of hot pixels to use
@@ -66,8 +64,8 @@ namespace processing {
         /// 'setParameters()' method.
         //--------------------------------------------------------------------------------
         std::shared_ptr<BITMAP> process(
-            const std::string& lightFrame, bool reference = false,
-            const std::string& destination = ""
+            const std::filesystem::path& lightFrame, bool reference = false,
+            const std::filesystem::path& destination = ""
         );
 
         //--------------------------------------------------------------------------------
@@ -80,7 +78,7 @@ namespace processing {
         //--------------------------------------------------------------------------------
         std::shared_ptr<BITMAP> process(
             const std::shared_ptr<BITMAP>& lightFrame, bool reference = false,
-            const std::string& destination = ""
+            const std::filesystem::path& destination = ""
         );
 
 

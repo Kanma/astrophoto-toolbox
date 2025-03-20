@@ -46,7 +46,7 @@ void RegistrationThread<BITMAP>::setParameters(const star_list_t& stars, int lum
 
 template<class BITMAP>
 void RegistrationThread<BITMAP>::processReferenceFrame(
-    const std::string& lightFrame, int luminancyThreshold
+    const std::filesystem::path& lightFrame, int luminancyThreshold
 )
 {
     mutex.lock();
@@ -59,7 +59,7 @@ void RegistrationThread<BITMAP>::processReferenceFrame(
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void RegistrationThread<BITMAP>::processFrames(const std::vector<std::string>& lightFrames)
+void RegistrationThread<BITMAP>::processFrames(const std::vector<std::filesystem::path>& lightFrames)
 {
     mutex.lock();
 
@@ -122,7 +122,7 @@ void RegistrationThread<BITMAP>::process()
             continue;
 
         bool reference = !referenceFrame.empty();
-        const std::string filename = reference ? referenceFrame : lightFrames[0];
+        const std::filesystem::path filename = reference ? referenceFrame : lightFrames[0];
 
         if (!reference)
             lightFrames.erase(lightFrames.begin());

@@ -24,7 +24,7 @@ TEST_CASE("(LiveStacking) Master dark frame computation only", "[LiveStacking]")
             REQUIRE(infos.nbDarkFrames == 3);
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(false);
         }
@@ -60,7 +60,7 @@ TEST_CASE("(LiveStacking) Cancelling during master dark frame computation", "[Li
             REQUIRE(false);
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(false);
         }
@@ -110,7 +110,7 @@ TEST_CASE("(LiveStacking) Cancel during processing", "[LiveStacking]")
             REQUIRE(infos.lightFrames.nbStacked != 3);
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(filename == TEMP_DIR "livestacking/stacked.fits");
         }
@@ -182,7 +182,7 @@ TEST_CASE("(LiveStacking) Full process", "[LiveStacking]")
             }
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(filename == TEMP_DIR "livestacking/stacked.fits");
         }
@@ -236,7 +236,7 @@ TEST_CASE("(LiveStacking) Save config file", "[LiveStacking]")
             REQUIRE(infos.lightFrames.nb == infos.lightFrames.entries.size());
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(false);
         }
@@ -330,7 +330,7 @@ TEST_CASE("(LiveStacking) Load and process in populated folder", "[LiveStacking]
             }
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(filename == TEMP_DIR "livestacking/stacked.fits");
         }
@@ -384,7 +384,7 @@ TEST_CASE("(LiveStacking) Load and process in empty folder", "[LiveStacking]")
             }
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(filename == TEMP_DIR "livestacking/stacked.fits");
         }
@@ -451,7 +451,7 @@ TEST_CASE("(LiveStacking) Add dark frame during processing", "[LiveStacking]")
             }
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(filename == TEMP_DIR "livestacking/stacked.fits");
         }
@@ -522,7 +522,7 @@ TEST_CASE("(LiveStacking) Add light frame during processing", "[LiveStacking]")
                 stackingComplete = true;
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(filename == TEMP_DIR "livestacking/stacked.fits");
         }
@@ -588,7 +588,7 @@ TEST_CASE("(LiveStacking) Change reference light frame during processing", "[Liv
                 stackingComplete = true;
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(filename == TEMP_DIR "livestacking/stacked.fits");
         }
@@ -661,7 +661,7 @@ TEST_CASE("(LiveStacking) Change luminancy threshold during processing", "[LiveS
                 stackingComplete = true;
         }
 
-        void stackingDone(const std::string& filename) override
+        void stackingDone(const std::filesystem::path& filename) override
         {
             REQUIRE(filename == TEMP_DIR "livestacking/stacked.fits");
         }

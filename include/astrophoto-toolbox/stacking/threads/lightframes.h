@@ -12,7 +12,6 @@
 #include <astrophoto-toolbox/stacking/threads/listener.h>
 #include <astrophoto-toolbox/stacking/processing/lightframes.h>
 #include <filesystem>
-#include <string>
 
 
 namespace astrophototoolbox {
@@ -51,7 +50,7 @@ namespace threads {
         /// It is expected that the file is a FITS one containing a bitmap and a list of
         /// hot pixels.
         //--------------------------------------------------------------------------------
-        void setMasterDark(const std::string& filename);
+        void setMasterDark(const std::filesystem::path& filename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Set the parameters to use for background calibration
@@ -65,14 +64,14 @@ namespace threads {
         //--------------------------------------------------------------------------------
         /// @brief  Process the reference frame
         //--------------------------------------------------------------------------------
-        void processReferenceFrame(const std::string& lightFrame);
+        void processReferenceFrame(const std::filesystem::path& lightFrame);
 
         //--------------------------------------------------------------------------------
         /// @brief  Process a list of light frame files
         ///
         /// It is expected that a reference frame was already processed
         //--------------------------------------------------------------------------------
-        void processFrames(const std::vector<std::string>& lightFrames);
+        void processFrames(const std::vector<std::filesystem::path>& lightFrames);
 
 
     protected:
@@ -85,11 +84,11 @@ namespace threads {
 
         processing::LightFrameProcessor<BITMAP> processor;
 
-        std::string masterDark;
+        std::filesystem::path masterDark;
         utils::background_calibration_parameters_t parameters;
         bool parametersValid = false;
-        std::string referenceFrame;
-        std::vector<std::string> lightFrames;
+        std::filesystem::path referenceFrame;
+        std::vector<std::filesystem::path> lightFrames;
     };
 
 }

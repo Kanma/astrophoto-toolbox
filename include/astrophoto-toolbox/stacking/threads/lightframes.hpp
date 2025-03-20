@@ -33,7 +33,7 @@ LightFrameThread<BITMAP>::~LightFrameThread()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LightFrameThread<BITMAP>::setMasterDark(const std::string& filename)
+void LightFrameThread<BITMAP>::setMasterDark(const std::filesystem::path& filename)
 {
     mutex.lock();
     masterDark = filename;
@@ -58,7 +58,7 @@ void LightFrameThread<BITMAP>::setParameters(
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LightFrameThread<BITMAP>::processReferenceFrame(const std::string& lightFrame)
+void LightFrameThread<BITMAP>::processReferenceFrame(const std::filesystem::path& lightFrame)
 {
     mutex.lock();
     referenceFrame = lightFrame;
@@ -69,7 +69,7 @@ void LightFrameThread<BITMAP>::processReferenceFrame(const std::string& lightFra
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void LightFrameThread<BITMAP>::processFrames(const std::vector<std::string>& lightFrames)
+void LightFrameThread<BITMAP>::processFrames(const std::vector<std::filesystem::path>& lightFrames)
 {
     mutex.lock();
 
@@ -137,7 +137,7 @@ void LightFrameThread<BITMAP>::process()
             continue;
 
         bool reference = !referenceFrame.empty();
-        const std::string filename = reference ? referenceFrame : lightFrames[0];
+        const std::filesystem::path filename = reference ? referenceFrame : lightFrames[0];
 
         if (!reference)
             lightFrames.erase(lightFrames.begin());

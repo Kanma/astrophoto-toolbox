@@ -32,7 +32,7 @@ MasterDarkThread<BITMAP>::~MasterDarkThread()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void MasterDarkThread<BITMAP>::processFrames(const std::vector<std::string>& darkFrames)
+void MasterDarkThread<BITMAP>::processFrames(const std::vector<std::filesystem::path>& darkFrames)
 {
     mutex.lock();
     this->darkFrames = darkFrames;

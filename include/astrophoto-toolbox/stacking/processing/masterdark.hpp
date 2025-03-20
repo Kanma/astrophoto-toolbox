@@ -24,7 +24,8 @@ namespace processing {
 
 template<class BITMAP>
 BITMAP* MasterDarkGenerator<BITMAP>::compute(
-    const std::vector<std::string>& darkFrames, const std::string& destination,
+    const std::vector<std::filesystem::path>& darkFrames,
+    const std::filesystem::path& destination,
     const std::filesystem::path& tmpFolder
 )
 {

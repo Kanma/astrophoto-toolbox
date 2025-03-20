@@ -15,6 +15,7 @@
 #include <astrophoto-toolbox/stacking/utils/backgroundcalibration.h>
 #include <fitsio.h>
 #include <string>
+#include <filesystem>
 
 
 namespace astrophototoolbox {
@@ -35,12 +36,12 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Open a FITS file
         //--------------------------------------------------------------------------------
-        bool open(const std::string& filename, bool readOnly = true);
+        bool open(const std::filesystem::path& filename, bool readOnly = true);
 
         //--------------------------------------------------------------------------------
         /// @brief  Create a new FITS file
         //--------------------------------------------------------------------------------
-        bool create(const std::string& filename);
+        bool create(const std::filesystem::path& filename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Close the FITS file
@@ -185,7 +186,7 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Determine if a file is a FITS one, by inspecting its header
         //--------------------------------------------------------------------------------
-        static bool isFITS(const std::string& filename);
+        static bool isFITS(const std::filesystem::path& filename);
 
 
         //_____ Internal methods __________

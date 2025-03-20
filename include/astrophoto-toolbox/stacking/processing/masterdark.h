@@ -12,7 +12,6 @@
 #include <astrophoto-toolbox/data/point.h>
 #include <astrophoto-toolbox/stacking/utils/bitmapstacker.h>
 #include <filesystem>
-#include <string>
 
 
 namespace astrophototoolbox {
@@ -36,7 +35,8 @@ namespace processing {
         /// method).
         //--------------------------------------------------------------------------------
         BITMAP* compute(
-            const std::vector<std::string>& darkFrames, const std::string& destination,
+            const std::vector<std::filesystem::path>& darkFrames,
+            const std::filesystem::path& destination,
             const std::filesystem::path& tmpFolder
         );
 

@@ -10,7 +10,7 @@
 
 #include <astrophoto-toolbox/images/bitmap.h>
 #include <libraw/libraw.h>
-#include <string>
+#include <filesystem>
 
 
 namespace astrophototoolbox {
@@ -33,7 +33,7 @@ namespace astrophototoolbox {
         //--------------------------------------------------------------------------------
         /// @brief  Open a RAW image from a file
         //--------------------------------------------------------------------------------
-        bool open(const std::string& filename);
+        bool open(const std::filesystem::path& filename);
 
         //--------------------------------------------------------------------------------
         /// @brief  Open a RAW image from a memory buffer

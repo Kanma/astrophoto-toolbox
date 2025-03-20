@@ -136,7 +136,7 @@ namespace utils {
         /// @brief  Infos about a given temporary file
         //--------------------------------------------------------------------------------
         struct part_file_t {
-            std::string filename;
+            std::filesystem::path filename;
             unsigned int startRow;
             unsigned int endRow;
         };

@@ -31,7 +31,7 @@ void FramesStacker<BITMAP>::setup(
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool FramesStacker<BITMAP>::addFrame(const std::string& lightFrame)
+bool FramesStacker<BITMAP>::addFrame(const std::filesystem::path& lightFrame)
 {
     Transformation transformation;
 
@@ -77,7 +77,7 @@ bool FramesStacker<BITMAP>::addFrame(
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-BITMAP* FramesStacker<BITMAP>::process(const std::string& destination)
+BITMAP* FramesStacker<BITMAP>::process(const std::filesystem::path& destination)
 {
     BITMAP* stacked = stacker.process();
     if (!stacked)

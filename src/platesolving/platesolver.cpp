@@ -366,8 +366,10 @@ bool PlateSolver::loadIndexes(const std::string& folder)
 
         if (dirEntry.path().extension() == ".fits")
         {
-            if (index_is_file_index(dirEntry.path().c_str()))
-                files.push_back(dirEntry.path().c_str());
+            std::string filename = dirEntry.path().string();
+
+            if (index_is_file_index(filename.c_str()))
+                files.push_back(filename.c_str());
         }
     }
 

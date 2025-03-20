@@ -17,7 +17,7 @@ using namespace astrophototoolbox::stacking::processing;
 
 TEST_CASE("(Stacking/Processing/MasterDark) Fail to compute master dark frame without dark frames", "[MasterDark]")
 {
-    std::vector<std::string> darkFrames = {
+    std::vector<std::filesystem::path> darkFrames = {
     };
 
     MasterDarkGenerator<UInt16ColorBitmap> generator;
@@ -34,7 +34,7 @@ TEST_CASE("(Stacking/Processing/MasterDark) Fail to compute master dark frame wi
 
 TEST_CASE("(Stacking/Processing/MasterDark) Fail to compute master dark frame with missing dark frames", "[MasterDark]")
 {
-    std::vector<std::string> darkFrames = {
+    std::vector<std::filesystem::path> darkFrames = {
         DATA_DIR "downloads/missing1.fits",
         DATA_DIR "downloads/missing2.fits",
         DATA_DIR "downloads/missing3.fits"
@@ -57,7 +57,7 @@ TEST_CASE("(Stacking/Processing/MasterDark) Master dark frame computation", "[Ma
     REQUIRE(!std::filesystem::exists(TEMP_DIR "tmp_masterdark"));
     REQUIRE(!std::filesystem::exists(TEMP_DIR "master_dark.fits"));
 
-    std::vector<std::string> darkFrames = {
+    std::vector<std::filesystem::path> darkFrames = {
         DATA_DIR "downloads/dark1.fits",
         DATA_DIR "downloads/dark2.fits",
         DATA_DIR "downloads/dark3.fits"

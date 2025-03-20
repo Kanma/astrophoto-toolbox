@@ -12,7 +12,6 @@
 #include <astrophoto-toolbox/stacking/threads/listener.h>
 #include <astrophoto-toolbox/stacking/processing/stacking.h>
 #include <filesystem>
-#include <string>
 
 
 namespace astrophototoolbox {
@@ -58,7 +57,7 @@ namespace threads {
         ///
         /// It is expected that the light frame has been properly processed.
         //--------------------------------------------------------------------------------
-        void processFrames(const std::vector<std::string>& lightFrames);
+        void processFrames(const std::vector<std::filesystem::path>& lightFrames);
 
 
     private:
@@ -74,7 +73,7 @@ namespace threads {
 
         processing::FramesStacker<BITMAP> stacker;
 
-        std::vector<std::string> lightFrames;
+        std::vector<std::filesystem::path> lightFrames;
     };
 
 }

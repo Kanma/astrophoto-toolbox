@@ -12,8 +12,6 @@
 #include <astrophoto-toolbox/stacking/utils/registration.h>
 #include <astrophoto-toolbox/stacking/utils/starmatcher.h>
 #include <filesystem>
-#include <string>
-#include <memory>
 
 
 namespace astrophototoolbox {
@@ -48,8 +46,8 @@ namespace processing {
         /// It is expected that the light frame has been properly processed.
         //--------------------------------------------------------------------------------
         star_list_t processReference(
-            const std::string& lightFrame, int luminancyThreshold=-1,
-            const std::string& destination = ""
+            const std::filesystem::path& lightFrame, int luminancyThreshold=-1,
+            const std::filesystem::path& destination = ""
         );
 
         //--------------------------------------------------------------------------------
@@ -66,7 +64,7 @@ namespace processing {
         //--------------------------------------------------------------------------------
         star_list_t processReference(
             const std::shared_ptr<BITMAP>& lightFrame, int luminancyThreshold=-1,
-            const std::string& destination = ""
+            const std::filesystem::path& destination = ""
         );
 
         //--------------------------------------------------------------------------------
@@ -80,7 +78,8 @@ namespace processing {
         /// It is expected that the light frame has been properly processed.
         //--------------------------------------------------------------------------------
         std::tuple<star_list_t, Transformation> process(
-            const std::string& lightFrame, const std::string& destination = ""
+            const std::filesystem::path& lightFrame,
+            const std::filesystem::path& destination = ""
         );
 
         //--------------------------------------------------------------------------------
@@ -94,13 +93,14 @@ namespace processing {
         /// It is expected that the light frame has been properly processed.
         //--------------------------------------------------------------------------------
         std::tuple<star_list_t, Transformation> process(
-            const std::shared_ptr<BITMAP>& lightFrame, const std::string& destination = ""
+            const std::shared_ptr<BITMAP>& lightFrame,
+            const std::filesystem::path& destination = ""
         );
 
 
     private:
         utils::Registration registration;
-        int luminancyThreshold;
+        int luminancyThreshold = -1;
         utils::StarMatcher matcher;
         star_list_t referenceStars;
     };

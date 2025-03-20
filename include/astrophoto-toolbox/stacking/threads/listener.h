@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <string>
+#include <filesystem>
 
 
 namespace astrophototoolbox {
@@ -21,16 +21,16 @@ namespace threads {
     class StackingListener
     {
     public:
-        virtual void masterDarkFrameComputed(const std::string& filename, bool success) = 0;
+        virtual void masterDarkFrameComputed(const std::filesystem::path& filename, bool success) = 0;
 
-        virtual void lightFrameProcessingStarted(const std::string& filename) = 0;
-        virtual void lightFrameProcessed(const std::string& filename, bool success) = 0;
+        virtual void lightFrameProcessingStarted(const std::filesystem::path& filename) = 0;
+        virtual void lightFrameProcessed(const std::filesystem::path& filename, bool success) = 0;
 
-        virtual void lightFrameRegistrationStarted(const std::string& filename) = 0;
-        virtual void lightFrameRegistered(const std::string& filename, bool success) = 0;
+        virtual void lightFrameRegistrationStarted(const std::filesystem::path& filename) = 0;
+        virtual void lightFrameRegistered(const std::filesystem::path& filename, bool success) = 0;
 
         virtual void lightFramesStackingStarted(unsigned int nbFrames) = 0;
-        virtual void lightFramesStacked(const std::string& filename, unsigned int nbFrames) = 0;
+        virtual void lightFramesStacked(const std::filesystem::path& filename, unsigned int nbFrames) = 0;
     };
 
 }

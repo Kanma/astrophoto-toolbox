@@ -26,8 +26,8 @@ void RegistrationProcessor<BITMAP>::setParameters(const star_list_t& stars, int 
 
 template<class BITMAP>
 star_list_t RegistrationProcessor<BITMAP>::processReference(
-    const std::string& lightFrame, int luminancyThreshold,
-    const std::string& destination
+    const std::filesystem::path& lightFrame, int luminancyThreshold,
+    const std::filesystem::path& destination
 )
 {
     referenceStars.clear();
@@ -44,7 +44,7 @@ star_list_t RegistrationProcessor<BITMAP>::processReference(
 template<class BITMAP>
 star_list_t RegistrationProcessor<BITMAP>::processReference(
     const std::shared_ptr<BITMAP>& lightFrame, int luminancyThreshold,
-    const std::string& destination
+    const std::filesystem::path& destination
 )
 {
     referenceStars = registration.registerBitmap(lightFrame.get(), luminancyThreshold);
@@ -85,7 +85,7 @@ star_list_t RegistrationProcessor<BITMAP>::processReference(
 
 template<class BITMAP>
 std::tuple<star_list_t, Transformation> RegistrationProcessor<BITMAP>::process(
-    const std::string& lightFrame, const std::string& destination
+    const std::filesystem::path& lightFrame, const std::filesystem::path& destination
 )
 {
     Bitmap* bitmap = io::load(lightFrame);
@@ -99,7 +99,7 @@ std::tuple<star_list_t, Transformation> RegistrationProcessor<BITMAP>::process(
 
 template<class BITMAP>
 std::tuple<star_list_t, Transformation> RegistrationProcessor<BITMAP>::process(
-    const std::shared_ptr<BITMAP>& lightFrame, const std::string& destination
+    const std::shared_ptr<BITMAP>& lightFrame, const std::filesystem::path& destination
 )
 {
     star_list_t stars = registration.registerBitmap(lightFrame.get(), luminancyThreshold);

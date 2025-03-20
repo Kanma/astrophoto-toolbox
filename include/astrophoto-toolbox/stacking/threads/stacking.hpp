@@ -47,7 +47,7 @@ bool StackingThread<BITMAP>::setup(
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-void StackingThread<BITMAP>::processFrames(const std::vector<std::string>& lightFrames)
+void StackingThread<BITMAP>::processFrames(const std::vector<std::filesystem::path>& lightFrames)
 {
     mutex.lock();
 

@@ -107,7 +107,7 @@ bool Stacking<BITMAP>::save()
         output << "DARKFRAMES" << std::endl;
 
         for (const auto& filename : darkFrames)
-            output << filename << std::endl;
+            output << filename.string() << std::endl;
 
         output << "---" << std::endl;
     }
@@ -117,7 +117,7 @@ bool Stacking<BITMAP>::save()
         output << "LIGHTFRAMES" << std::endl;
 
         for (const auto& filename : lightFrames)
-            output << filename << std::endl;
+            output << filename.string() << std::endl;
 
         output << "REF " << referenceFrame << std::endl;
         output << "---" << std::endl;
@@ -129,7 +129,7 @@ bool Stacking<BITMAP>::save()
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool Stacking<BITMAP>::addDarkFrame(const std::string& filename)
+bool Stacking<BITMAP>::addDarkFrame(const std::filesystem::path& filename)
 {
     std::filesystem::path path(filename);
     if (!path.is_absolute())
@@ -146,7 +146,7 @@ bool Stacking<BITMAP>::addDarkFrame(const std::string& filename)
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-bool Stacking<BITMAP>::addLightFrame(const std::string& filename, bool reference)
+bool Stacking<BITMAP>::addLightFrame(const std::filesystem::path& filename, bool reference)
 {
     std::filesystem::path path(filename);
     if (!path.is_absolute())
@@ -213,7 +213,7 @@ BITMAP* Stacking<BITMAP>::process(int luminancyThreshold)
     if (stars.empty())
         return nullptr;
 
-    std::vector<std::string> toStack;
+    std::vector<std::filesystem::path> toStack;
     toStack.push_back(filename);
 
     for (unsigned int i = 0; i < lightFrames.size(); ++i)
@@ -238,10 +238,10 @@ BITMAP* Stacking<BITMAP>::process(int luminancyThreshold)
 //-----------------------------------------------------------------------------
 
 template<class BITMAP>
-const std::string Stacking<BITMAP>::getCalibratedFilename(const std::string& path)
+const std::string Stacking<BITMAP>::getCalibratedFilename(const std::filesystem::path& path)
 {
-    std::string filename = std::filesystem::path(path).filename().string();
-    std::string extension = std::filesystem::path(path).extension().string();
+    std::string filename = path.filename().string();
+    std::string extension = path.extension().string();
     return filename.replace(filename.find(extension), extension.size(), ".fits");
 }
 

@@ -12,7 +12,6 @@
 #include <astrophoto-toolbox/stacking/threads/listener.h>
 #include <astrophoto-toolbox/stacking/processing/masterdark.h>
 #include <filesystem>
-#include <string>
 
 
 namespace astrophototoolbox {
@@ -51,7 +50,7 @@ namespace threads {
         ///
         /// It is expected that the dark frames have been properly processed.
         //--------------------------------------------------------------------------------
-        void processFrames(const std::vector<std::string>& darkFrames);
+        void processFrames(const std::vector<std::filesystem::path>& darkFrames);
 
 
     private:
@@ -68,7 +67,7 @@ namespace threads {
         processing::MasterDarkGenerator<BITMAP> generator;
         std::filesystem::path tempFolder;
 
-        std::vector<std::string> darkFrames;
+        std::vector<std::filesystem::path> darkFrames;
     };
 
 }

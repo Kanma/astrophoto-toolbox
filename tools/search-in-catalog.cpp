@@ -59,7 +59,7 @@ int main(int argc, char** argv)
 {
     std::string outputFileName;
     bool verbose = false;
-    std::string catalogFolder;
+    std::filesystem::path catalogFolder;
 
     // Parse the command-line parameters
     CSimpleOpt args(argc, argv, COMMAND_LINE_OPTIONS);
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
     {
         std::filesystem::path path(argv[0]);
         path.remove_filename();
-        catalogFolder = (path / "catalogs").c_str();
+        catalogFolder = path / "catalogs";
     }
 
 
