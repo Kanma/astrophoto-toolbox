@@ -15,6 +15,19 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 
 #################################################
+# astrometry.net lite
+set(ASTROMETRY_NET_LITE_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    astrometry-net-lite
+    GIT_REPOSITORY https://github.com/Kanma/astrometry.net-lite.git
+    GIT_TAG "e56bf05313f9cafaa6aa812c19b792b6d4fcd385"
+)
+
+FetchContent_MakeAvailable(astrometry-net-lite)
+
+
+#################################################
 # LibRaw
 set(ENABLE_JASPER OFF CACHE BOOL "" FORCE)
 set(LIBRAW_PATH "${FETCHCONTENT_BASE_DIR}/libraw-src/" CACHE STRING "" FORCE)
@@ -40,16 +53,3 @@ FetchContent_MakeAvailable(LibRaw LibRaw-cmake)
 
 # Disable warnings
 target_compile_options(raw_r PRIVATE "-w")
-
-
-#################################################
-# astrometry.net lite
-set(ASTROMETRY_NET_LITE_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
-
-FetchContent_Declare(
-    astrometry-net-lite
-    GIT_REPOSITORY https://github.com/Kanma/astrometry.net-lite.git
-    GIT_TAG "ccb3ba0dcb5f8b66c16948a8dc21b5c7c4c73fa1"
-)
-
-FetchContent_MakeAvailable(astrometry-net-lite)

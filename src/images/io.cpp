@@ -13,10 +13,13 @@
 #include <fstream>
 #include <iostream>
 #include <thread>
+#include <mutex>
 #include <assert.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#ifndef _WIN32
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -24,7 +27,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#pragma clang diagnostic pop
+#ifndef _WIN32
+    #pragma clang diagnostic pop
+#endif
 
 
 using namespace astrophototoolbox;

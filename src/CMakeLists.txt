@@ -15,6 +15,9 @@ target_link_libraries(astrophoto-toolbox
         astrometry-net-lite
 )
 
+if(WIN32)
+    target_compile_definitions(astrophoto-toolbox PUBLIC WINDOWS_LEAN_AND_MEAN NOMINMAX)
+endif()
 
 add_subdirectory(algorithms)
 add_subdirectory(catalogs)

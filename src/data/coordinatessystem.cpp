@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
 */
 
+#define _USE_MATH_DEFINES
+
 #include <astrophoto-toolbox/data/coordinatessystem.h>
 #include <cmath>
 #include <string.h>

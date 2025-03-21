@@ -18,7 +18,7 @@ using namespace astrophototoolbox;
 template<typename T>
 void checkIntegralContent(const char* filename, Bitmap* ref, uint64_t bzero, unsigned int channel = 0)
 {
-    std::ifstream test(filename);
+    std::ifstream test(filename, std::ios_base::in | std::ios_base::binary);
     REQUIRE(test.is_open());
 
     test.seekg(2880 + channel * ref->width() * ref->height() * sizeof(T), std::ios_base::beg);
@@ -29,7 +29,7 @@ void checkIntegralContent(const char* filename, Bitmap* ref, uint64_t bzero, uns
         for (unsigned int x = 0; x < ref->width(); ++x)
         {
             T v = 0;
-            uint8_t c;
+            uint8_t c = 0;
             for (unsigned int i = 0; i < sizeof(T); ++i)
             {
                 test.read((char*) &c, sizeof(uint8_t));
@@ -48,7 +48,7 @@ void checkIntegralContent(const char* filename, Bitmap* ref, uint64_t bzero, uns
 template<typename T, typename T2>
 void checkFloatContent(const char* filename, Bitmap* ref, unsigned int channel = 0)
 {
-    std::ifstream test(filename);
+    std::ifstream test(filename, std::ios_base::in | std::ios_base::binary);
     REQUIRE(test.is_open());
 
     test.seekg(2880 + channel * ref->width() * ref->height() * sizeof(T), std::ios_base::beg);

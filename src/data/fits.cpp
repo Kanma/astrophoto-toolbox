@@ -123,9 +123,9 @@ bool FITS::write(Bitmap* bitmap, const std::string& name)
     int bitpix = bitmap->channelSize() * 8  * (bitmap->isFloatingPoint() ? -1 : 1);
     int naxis = 2 + (bitmap->channels() == 3 ? 1 : 0);
     long naxes[3] = {
-        bitmap->width(),
-        bitmap->height(),
-        bitmap->channels()
+        (long) bitmap->width(),
+        (long) bitmap->height(),
+        (long) bitmap->channels()
     };
 
     fits_create_img(_file, bitpix, naxis, naxes, &status);
@@ -601,10 +601,16 @@ bool FITS::read(const std::string& keyword, bool& value)
         return false;
 
     int status = 0;
+    int iValue = 0;
 
-    fits_read_key(_file, TLOGICAL, keyword.c_str(), &value, nullptr, &status);
+    fits_read_key(_file, TLOGICAL, keyword.c_str(), &iValue, nullptr, &status);
+    if (status == 0)
+    {
+        value = (iValue == 1);
+        return true;
+    }
 
-    return (status == 0);
+    return false;
 }
 
 
@@ -762,9 +768,9 @@ Bitmap* FITS::readBitmapFromCurrentHDU()
             dest->setRange(RANGE_BYTE, false);
     }
 
-    bool sRGB = false;
+    int sRGB = 0;
     fits_read_key(_file, TLOGICAL, "sRGB", &sRGB, nullptr, &status);
-    dest->setSpace(sRGB ? SPACE_sRGB : SPACE_LINEAR, false);
+    dest->setSpace(sRGB == 1 ? SPACE_sRGB : SPACE_LINEAR, false);
 
     status = 0;
 

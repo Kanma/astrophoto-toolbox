@@ -47,11 +47,11 @@ void checkHeaderEntry(const std::string& header, const std::string& key, double 
 
     char buffer[512] = { 0 };
 
-    snprintf(buffer, 512, " %f ", value);
+    snprintf(buffer, 512, " %lf ", value);
     int pos2 = header.find(buffer, pos);
     if (pos2 == -1)
     {
-        snprintf(buffer, 512, " %ld. ", long(value));
+        snprintf(buffer, 512, " %lld. ", int64_t(value));
         pos2 = header.find(buffer, pos);
     }
 
@@ -90,7 +90,7 @@ void checkBitmapHeader(
     const std::string& extname
 )
 {
-    std::ifstream test(filename);
+    std::ifstream test(filename, std::ios_base::in | std::ios_base::binary);
     REQUIRE(test.is_open());
 
     char header[2881] = { 0 };
