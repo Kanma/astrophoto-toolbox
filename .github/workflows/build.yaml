@@ -10,10 +10,12 @@ jobs:
   build:
     name: Build
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -25,21 +27,22 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "unittests-binary=${{ matrix.os == 'windows-latest' && 'bin/Release/unittests.exe' || 'bin/unittests' }}" >> "$GITHUB_OUTPUT"
 
     - name: Configure CMake
+      shell: bash
       run: |
-        cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+        cmake -B '${{ steps.strings.outputs.build-output-dir }}' \
           -DASTROPHOTOTOOLBOX_RUN_TESTS=OFF \
           -DENABLE_OPENMP=OFF \
           -DCMAKE_BUILD_TYPE=Release \
-          -S ${{ github.workspace }}
+          -S '${{ github.workspace }}'
 
     - name: Build
       run: |
-        cmake --build ${{ steps.strings.outputs.build-output-dir }}
+        cmake --build '${{ steps.strings.outputs.build-output-dir }}' --config Release
 
     - name: Run unit tests
+      shell: bash
       run: |
-        rm -rf ${{ steps.strings.outputs.build-output-dir }}/tests/tmp/
-        mkdir -p ${{ steps.strings.outputs.build-output-dir }}/tests/tmp/empty
-        ${{ steps.strings.outputs.build-output-dir }}/bin/unittests
+        '${{ steps.strings.outputs.build-output-dir }}/${{ steps.strings.outputs.unittests-binary }}'
