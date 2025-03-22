@@ -1,5 +1,17 @@
+/*
+ * SPDX-FileCopyrightText: 2024 Philip Abbet <philip.abbet@gmail.com>
+ *
+ * SPDX-FileContributor: Philip Abbet <philip.abbet@gmail.com>
+ *
+ * SPDX-License-Identifier: OFL-1.1
+*/
+
+
 namespace astrophototoolbox {
 
+// This is a base64 representation of the font 'Courier Prime',
+// released under the 'SIL Open Font License, Version 1.1',
+// downloaded from 'https://www.fontsquirrel.com/fonts/courier-prime'
 char const BASE64_FONT[] =
     "AAEAAAAPAIAAAwBwT1MvMnS4eVgAAAF4AAAAYFZETVhgAmd6AAAHxAAABeBj"
     "bWFwvFHY/AAADaQAAAjuY3Z0IA7xA3IAABjAAAAAJGZwZ20GU5wxAAAWlAAA"
