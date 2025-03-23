@@ -64,6 +64,12 @@ void base64_decode(char const* input, std::vector<unsigned char>& output)
 
 /**************************** CONSTRUCTION / DESTRUCTION *******************************/
 
+CoordinatesSystem::CoordinatesSystem()
+{
+}
+
+//-----------------------------------------------------------------------------
+
 CoordinatesSystem::CoordinatesSystem(
     const size2d_t& imageSize, const Coordinates& coords, double pixelSize,
     double raAngle, const tan_t& wcstan
@@ -142,8 +148,7 @@ bool CoordinatesSystem::isInsideImage(const point_t& point) const
             (point.y >= 1) && (point.y <= imageSize.height));
 }
 
-
-/********************************* INTERNAL METHODS ************************************/
+//-----------------------------------------------------------------------------
 
 uint8_t* CoordinatesSystem::drawAxes(
     unsigned int width, unsigned int height, unsigned int length
@@ -152,11 +157,14 @@ uint8_t* CoordinatesSystem::drawAxes(
     if (length == 0)
         length = std::min(width, height) / 5;
 
-    double ra_x = center.x + length * dy;
-    double ra_y = center.y - length * dx;
-    
-    double dec_x = center.x + length * dx;
-    double dec_y = center.y + length * dy;
+    double centerX = double(width) * 0.5;
+    double centerY = double(height) * 0.5;
+
+    double ra_x = centerX + length * dy;
+    double ra_y = centerY - length * dx;
+
+    double dec_x = centerX + length * dx;
+    double dec_y = centerY + length * dy;
 
     canvas dest(width, height);
 
@@ -164,13 +172,13 @@ uint8_t* CoordinatesSystem::drawAxes(
 
     dest.set_color(brush_type::stroke_style, 1.0f, 0.0f, 0.0f, 1.0f);
     dest.begin_path();
-    dest.move_to(center.x, center.y);
+    dest.move_to(centerX, centerY);
     dest.line_to(ra_x, ra_y);
     dest.stroke();
 
     dest.set_color(brush_type::stroke_style, 0.0f, 1.0f, 0.0f, 1.0f);
     dest.begin_path();
-    dest.move_to(center.x, center.y);
+    dest.move_to(centerX, centerY);
     dest.line_to(dec_x, dec_y);
     dest.stroke();
 
@@ -196,10 +204,13 @@ uint8_t* CoordinatesSystem::drawGrid(unsigned int width, unsigned int height, fl
     double decmin2, decmax2, decstep;
     computeGridParameters(decmin, decmax, decmin2, decmax2, decstep);
 
+    double scaleX = double(width) / imageSize.width;
+    double scaleY = double(height) / imageSize.height;
+
     canvas dest(width, height);
 
     if (fontSize <= 0.0f)
-        fontSize = float(std::min(imageSize.width, imageSize.height)) / 60.0f;
+        fontSize = float(std::min(width, height)) / 60.0f;
 
     if (FONT.empty())
         base64_decode(BASE64_FONT, FONT);
@@ -217,7 +228,7 @@ uint8_t* CoordinatesSystem::drawGrid(unsigned int width, unsigned int height, fl
         for (double dec = decmin; dec <= decmax; dec += decstep / 10.0)
         {
             point_t p = convert(Coordinates(ra, dec));
-            dest.line_to(p.x, p.y);
+            dest.line_to(p.x * scaleX, p.y * scaleY);
         }
 
         dest.stroke();
@@ -229,14 +240,17 @@ uint8_t* CoordinatesSystem::drawGrid(unsigned int width, unsigned int height, fl
             point_t point = convert(coords);
             std::string label = coords.getRAasHMS();
 
-            float width = dest.measure_text(label.c_str());
+            point.x *= scaleX;
+            point.y *= scaleY;
 
-            if (point.x > imageSize.width - width)
-                point.x -= width;
+            float textWidth = dest.measure_text(label.c_str());
+
+            if (point.x > width - textWidth)
+                point.x -= textWidth;
 
             if (point.y < fontSize)
                 point.y += fontSize;
-            else if (point.y > imageSize.height - 5)
+            else if (point.y > height - 5)
                 point.y -= 5;
 
             dest.fill_text(label.c_str(), point.x, point.y);
@@ -253,7 +267,7 @@ uint8_t* CoordinatesSystem::drawGrid(unsigned int width, unsigned int height, fl
         for (double ra = ramin; ra <= ramax; ra += rastep / 10.0)
         {
             point_t p = convert(Coordinates(ra, dec));
-            dest.line_to(p.x, p.y);
+            dest.line_to(p.x * scaleX, p.y * scaleY);
         }
 
         dest.stroke();
@@ -265,14 +279,17 @@ uint8_t* CoordinatesSystem::drawGrid(unsigned int width, unsigned int height, fl
             point_t point = convert(coords);
             std::string label = coords.getDECasDMS();
 
-            float width = dest.measure_text(label.c_str());
+            point.x *= scaleX;
+            point.y *= scaleY;
 
-            if (point.x > imageSize.width - width)
-                point.x -= width;
+            float textWidth = dest.measure_text(label.c_str());
+
+            if (point.x > width - textWidth)
+                point.x -= textWidth;
 
             if (point.y < fontSize)
                 point.y += fontSize;
-            else if (point.y > imageSize.height - 5)
+            else if (point.y > height - 5)
                 point.y -= 5;
 
             dest.fill_text(label.c_str(), point.x, point.y);
@@ -285,6 +302,14 @@ uint8_t* CoordinatesSystem::drawGrid(unsigned int width, unsigned int height, fl
 }
 
 //-----------------------------------------------------------------------------
+
+bool CoordinatesSystem::isNull() const
+{
+    return coords.isNull();
+}
+
+
+/********************************* INTERNAL METHODS ************************************/
 
 void CoordinatesSystem::computeGridParameters(
     double inMin, double inMax, double& outMin, double& outMax, double& step

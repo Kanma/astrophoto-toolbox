@@ -27,6 +27,8 @@ namespace astrophototoolbox {
     {
         //_____ Construction / Destruction __________
     public:
+        CoordinatesSystem();
+
         CoordinatesSystem(
             const size2d_t& imageSize, const Coordinates& coords, double pixelSize,
             double raAngle, const tan_t& wcstan
@@ -67,7 +69,16 @@ namespace astrophototoolbox {
         }
 
         //------------------------------------------------------------------------------------
+        /// @brief  Returns a RGBA buffer containing RA and DEC axes
+        //------------------------------------------------------------------------------------
+        uint8_t* drawAxes(unsigned int width, unsigned int height, unsigned int length) const;
+
+        //------------------------------------------------------------------------------------
         /// @brief  Draw a grid into a color bitmap
+        ///
+        /// If the dimensions of the bitmap aren't the same than the ones of the image from
+        /// which the coordinates system was generated, the grid is scaled to cover the whole
+        /// bitmap.
         //------------------------------------------------------------------------------------
         template<class BITMAP>
             requires(BITMAP::Channels == 3)
@@ -77,19 +88,20 @@ namespace astrophototoolbox {
             mix(bitmap, layer);
         }
 
-
-        //_____ Internal methods __________
-    private:
-        //------------------------------------------------------------------------------------
-        /// @brief  Returns a RGBA buffer containing RA and DEC axes
-        //------------------------------------------------------------------------------------
-        uint8_t* drawAxes(unsigned int width, unsigned int height, unsigned int length) const;
-
         //------------------------------------------------------------------------------------
         /// @brief  Returns a RGBA buffer containing a grid
+        ///
+        /// If the requested dimensions aren't the same than the ones of the image from
+        /// which the coordinates system was generated, the grid is scaled to cover the whole
+        /// buffer.
         //------------------------------------------------------------------------------------
         uint8_t* drawGrid(unsigned int width, unsigned int height, float fontSize = -1.0f) const;
 
+        bool isNull() const;
+
+
+        //_____ Internal methods __________
+    private:
         void computeGridParameters(
             double inMin, double inMaxValue, double& outMin, double& outMax, double& step
         ) const;
